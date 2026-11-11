@@ -1,0 +1,31 @@
+# One MEM hub behind the host's reverse proxy (hub/deploy/README.md).
+# The hub listens on 127.0.0.1:4111 only; nginx on the host terminates TLS for wss://.
+services:
+  hub:
+    build:
+      context: ./src
+      dockerfile: hub/Dockerfile
+    image: mem-hub:local
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:4111:4000"
+    environment:
+      MEM_HUB_PORT: "4000"
+      MEM_HUB_DB: /var/lib/mem_hub/mem_hub.db
+      # The host's nginx reaches the hub through this network's gateway; only it may name the
+      # client (x-real-ip) for the per-address limits.
+      MEM_HUB_TRUSTED_PROXIES: "172.31.250.1"
+    volumes:
+      - hub-data:/var/lib/mem_hub
+    networks:
+      - hub
+
+networks:
+  hub:
+    ipam:
+      config:
+        - subnet: 172.31.250.0/24
+          gateway: 172.31.250.1
+
+volumes:
+  hub-data:

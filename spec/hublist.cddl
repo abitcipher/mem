@@ -1,0 +1,23 @@
+; The operator-signed hub list. Deterministic CBOR, integer keys ascending.
+
+hub_list = {
+  0: 1,                        ; format version
+  1: uint,                     ; serial, rises with every new list
+  2: uint,                     ; issued, Unix ms
+  3: uint,                     ; expires, Unix ms
+  4: [1*64 hub_entry],
+  5: bstr .size 64,            ; Ed25519 (operator key) over "MEM/v1/hub-list" || cbor(list without 5)
+  ? 6: [1*16 partner_entry],   ; other operators' hubs this network exchanges with
+}
+
+hub_entry = {
+  0: tstr .size (1..256),      ; wss:// URL
+  1: bstr .size 32,            ; the hub's Ed25519 public key
+  ? 2: tstr .size (1..32),     ; region label
+}
+
+partner_entry = {
+  0: tstr .size (1..256),      ; wss:// URL
+  1: bstr .size 32,            ; that hub's Ed25519 public key
+  2: tstr .size (1..32),       ; the operator's name, shown in the app
+}

@@ -1,0 +1,10 @@
+; Contact request content (inner content type 4, envelope kind 2 "intro").
+; Sealed with HPKE suite 1 to the recipient's mailbox key from its card, under
+; mailbox_key_id = BLAKE3-derive_key("MEM v1 2026-10 intro-key-id", mailbox_pk)[0..8].
+; Both sides then derive contact_secret as in pairing, from the two pairing nonces.
+
+intro-content = {
+  0: bstr .size (1..512),   ; the sender's signed card (card.cddl)
+  1: bstr .size 16,         ; the pairing nonce of the recipient's card the sender used
+  ? 2: tstr .size (1..280), ; short note shown with the request
+}

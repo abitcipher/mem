@@ -1,0 +1,7 @@
+# Library code must not unwrap/expect/panic; tests may.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-panic-in-tests = true
+
+# Project vocabulary that is prose, not code.
+doc-valid-idents = ["RaptorQ", "SQLCipher", "ATProto", "BLAKE3", "ChaCha20", "XChaCha20", "WebSocket", "..", "MiB", "KiB", "PoW", "UUIDv7", "CBOR", "HPKE", "MLS", "UnifiedPush"]

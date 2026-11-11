@@ -1,0 +1,33 @@
+[package]
+name = "mem-runtime"
+description = "MEM runtime: clocks, RNG, storage, channel text and network channels around the sans-IO core."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+mem-core.workspace = true
+mem-store.workspace = true
+mem-proto.workspace = true
+data-encoding.workspace = true
+mem-crypto.workspace = true
+rand_core.workspace = true
+rand_chacha.workspace = true
+getrandom.workspace = true
+zeroize.workspace = true
+thiserror.workspace = true
+cla-iroh.workspace = true
+cla-ble.workspace = true
+cla-hub.workspace = true
+cla-email.workspace = true
+iroh.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "time", "sync"] }
+tracing.workspace = true
+
+[dev-dependencies]
+cla-hub = { workspace = true, features = ["test-hub"] }

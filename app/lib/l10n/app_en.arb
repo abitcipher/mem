@@ -1,0 +1,629 @@
+{
+ "@@locale": "en",
+ "appTitle": "MEM",
+ "conversations": "Conversations",
+ "noContactsTitle": "No contacts yet",
+ "noContactsBody": "MEM only talks to people you have approved. Meet someone in person and scan each other's codes, or exchange codes through another app.",
+ "addContact": "Add contact",
+ "receive": "Receive",
+ "privacyLog": "Privacy log",
+ "profile": "Profile",
+ "pairTitle": "Add contact",
+ "myCodeTab": "My code",
+ "scanTab": "Scan or paste",
+ "myCodeHint": "Let your contact scan this code. Then scan theirs.",
+ "copyCode": "Copy code",
+ "shareCode": "Share code…",
+ "newCode": "New pairing code",
+ "codeCopied": "Code copied",
+ "shareCodeWarning": "Sharing your code through another app tells that app that you use MEM and links your MEM identity to your account there. Meeting in person and scanning is more private.",
+ "continueAction": "Continue",
+ "cancel": "Cancel",
+ "scanHint": "Point the camera at a MEM code",
+ "pasteHint": "Paste a MEM code or message here",
+ "pasteFromClipboard": "Paste from clipboard",
+ "open": "Open",
+ "cameraUnavailable": "Camera scanning is not available on this device. Paste the text instead.",
+ "contactAddedTitle": "Contact added",
+ "contactUpdatedTitle": "Contact re-paired",
+ "compareSas": "Compare these symbols with the ones on your contact's screen. If they match, nobody is in the middle.",
+ "sasMatch": "They match",
+ "sasMismatch": "They don't match",
+ "sasMismatchBody": "Ask your contact to show a new pairing code, then pair again. Do not send anything sensitive until the symbols match.",
+ "fingerprint": "Fingerprint",
+ "metInPerson": "Met in person",
+ "remote": "Paired remotely",
+ "messageReceived": "Message received",
+ "notMem": "This text contains no MEM code or message.",
+ "typeMessage": "Message",
+ "tapToSend": "Not sent yet — tap to choose how",
+ "chooseChannel": "How should this message travel?",
+ "needsConsent": "Below your privacy floor — you'll see what is exposed",
+ "tooLarge": "Too long for this channel",
+ "showQrTitle": "Show this to your contact",
+ "showQrHint": "Your contact opens MEM → Receive and points the camera at this screen.",
+ "done": "Done",
+ "shareTitle": "Send through another app",
+ "shareHint": "Send this text to your contact through any app. They paste it into MEM → Receive.",
+ "copyText": "Copy",
+ "shareText": "Share…",
+ "copied": "Copied",
+ "consentTitle": "Privacy check",
+ "whoCanSee": "Who can see it: {observers}",
+ "@whoCanSee": {
+  "placeholders": {
+   "observers": {
+    "type": "String"
+   }
+  }
+ },
+ "theyLearn": "They will learn",
+ "theyLearnPartly": "They may partly learn",
+ "staysPrivate": "Stays private",
+ "allowOnce": "Allow for this message",
+ "allowContact": "Allow for this contact…",
+ "dontSend": "Don't send",
+ "confirmAlwaysTitle": "Allow without asking?",
+ "confirmAlwaysBody": "Future messages to this contact may use this channel without this dialog, for the time you choose. Every such send still appears in the Privacy log, and you can revoke it in the contact's settings.",
+ "allow": "Allow",
+ "viaChannel": "via {channel}",
+ "@viaChannel": {
+  "placeholders": {
+   "channel": {
+    "type": "String"
+   }
+  }
+ },
+ "channelQr": "QR",
+ "channelShare": "other app",
+ "contactSettings": "Contact",
+ "privacyFloor": "Privacy floor",
+ "privacyFloorHelp": "Channels above this grade are used without asking. Lower grades always ask first and are recorded in the Privacy log.",
+ "grade0": "P0 · in person (QR, radio)",
+ "grade1": "P1 · direct network",
+ "grade2": "P2 · own relay or hub",
+ "grade3": "P3 · MEM couriers",
+ "grade4": "P4 · other apps (encrypted)",
+ "grade5": "P5 · plain text",
+ "standingRules": "Standing permissions",
+ "noRules": "None",
+ "revoke": "Revoke",
+ "allContacts": "all contacts",
+ "logEmpty": "No message has gone below a privacy floor.",
+ "basisOnce": "allowed once",
+ "basisNewRule": "allowed, permission created",
+ "basisRule": "allowed by permission",
+ "logEntry": "{grade} below floor {floor} · {basis}",
+ "@logEntry": {
+  "placeholders": {
+   "grade": {
+    "type": "String"
+   },
+   "floor": {
+    "type": "String"
+   },
+   "basis": {
+    "type": "String"
+   }
+  }
+ },
+ "yourName": "Your name (optional, shown on your code)",
+ "save": "Save",
+ "saved": "Saved",
+ "yourFingerprint": "Your fingerprint",
+ "about": "About this build",
+ "aboutBody": "MEM v0.2 — experimental. Messages are end-to-end encrypted (HPKE, Ed25519). They travel by animated QR code in person, directly over the same Wi-Fi network, or as encrypted text through another app. Courier and hub delivery come later. Do not rely on it for high-risk communication until an external security review.",
+ "error": "Something went wrong: {details}",
+ "@error": {
+  "placeholders": {
+   "details": {
+    "type": "String"
+   }
+  }
+ },
+ "reason_malformed": "This is not valid MEM data.",
+ "reason_unsupported": "Made by a newer MEM version.",
+ "reason_not_for_us": "Not addressed to you, or from someone you haven't added.",
+ "reason_undecryptable": "Could not be decrypted. Ask the sender to pair again.",
+ "reason_bad_signature": "The sender could not be verified.",
+ "reason_duplicate": "You already have this message.",
+ "reason_purged": "You already received this message (or the sender withdrew it).",
+ "reason_expired": "This message has expired.",
+ "reason_own_card": "That's your own code.",
+ "reason_unknown_contact": "Unknown contact.",
+ "reason_unknown_message": "This message can no longer be sent.",
+ "reason_too_large_for_channel": "Too long for this channel.",
+ "reason_consent_mismatch": "Permission did not match. Please try again.",
+ "reason_invalid_text": "The message is empty or too long.",
+ "reason_invalid_name": "The name is too long.",
+ "channelLan": "Wi-Fi",
+ "nearby": "nearby",
+ "nearbyDevices": "{count, plural, =0{No MEM devices nearby} =1{1 MEM device nearby} other{{count} MEM devices nearby}}",
+ "@nearbyDevices": {
+  "placeholders": {
+   "count": {
+    "type": "int"
+   }
+  }
+ },
+ "lanOffShort": "Wi-Fi delivery off",
+ "notNearby": "Not nearby now",
+ "sendingNearby": "Sending to a device nearby…",
+ "waitForWifi": "Wait until nearby",
+ "waitForWifiHint": "Sent automatically when you are on the same Wi-Fi, or next to each other with Bluetooth on",
+ "channels": "Channels",
+ "channelsIntro": "What others can learn when MEM uses each channel. Message contents are always end-to-end encrypted, except a P5 fallback you confirm per message.",
+ "lanToggle": "Deliver over the local network",
+ "lanToggleHelp": "While on, other devices on the same Wi-Fi can see that this device runs MEM and its network addresses. Turn off on networks you don't trust.",
+ "scanProgress": "Receiving… {received} of {needed}",
+ "@scanProgress": {
+  "placeholders": {
+   "received": {
+    "type": "int"
+   },
+   "needed": {
+    "type": "int"
+   }
+  }
+ },
+ "animatedQrHint": "Keep this on screen until your contact's phone has it. Missed frames don't matter: any {needed} are enough.",
+ "@animatedQrHint": {
+  "placeholders": {
+   "needed": {
+    "type": "int"
+   }
+  }
+ },
+ "reason_unreachable": "Your contact is not nearby right now.",
+ "reason_channel_disabled": "This channel is turned off in Channels.",
+ "reason_quota": "Too much data from a nearby device; disconnected.",
+ "reason_unknown": "Something unexpected happened.",
+ "appearance": "Appearance",
+ "themeSystem": "System",
+ "themeWhite": "White",
+ "themeGray": "Gray",
+ "themeBlack": "Black",
+ "notConfirmed": "Not confirmed yet — tap to send again",
+ "awaitingConfirmation": "Waiting for confirmation",
+ "retryTitle": "Retry unconfirmed messages",
+ "retryDays": "{days, plural, =1{1 day} other{{days} days}}",
+ "@retryDays": {
+  "placeholders": {
+   "days": {
+    "type": "int"
+   }
+  }
+ },
+ "retryHelp": "Messages your contact has not confirmed are sent again whenever you are connected, for up to this long. Applies to new messages.",
+ "backupTitle": "Backup and recovery",
+ "backupIntro": "A backup holds your identity, contacts, keys and, if you choose, your messages. It is encrypted: only your recovery phrase opens it. MEM keeps no copy anywhere.",
+ "backupOffBody": "Turn on backups to get a recovery phrase. Write it on paper and keep it apart from your backup files: anyone who has both can read your messages and write as you.",
+ "phraseFormTitle": "Recovery phrase",
+ "formEnglish": "English words",
+ "formSyllables": "Latin syllables",
+ "turnOnBackups": "Turn on backups",
+ "phraseTitle": "Your recovery phrase",
+ "phraseHint": "Write these down in order, on paper. Screenshots are blocked on this screen.",
+ "phraseWritten": "I have written it down",
+ "confirmTitle": "Check your phrase",
+ "confirmHint": "Type these words from your note.",
+ "confirmWrong": "That does not match. Look at your note again.",
+ "confirmDone": "Backups are on.",
+ "wordN": "Word {n}",
+ "@wordN": {
+  "placeholders": {
+   "n": {
+    "type": "int"
+   }
+  }
+ },
+ "includeHistory": "Include messages",
+ "saveBackupFile": "Save backup file",
+ "backupSaved": "Backup saved",
+ "showBackupQr": "Show as QR code",
+ "backupQrHint": "On the new phone, open MEM → Profile → Backup and recovery → Restore from backup, and point it at this screen.",
+ "backupTooLargeForQr": "Too large for a QR code with messages: showing it without messages.",
+ "shareBackup": "Send through another app…",
+ "shareBackupWarning": "The app you choose will see that you have a MEM backup, roughly how large it is, and when you sent it. It cannot read it.",
+ "showPhrase": "Show recovery phrase",
+ "newPhrase": "New recovery phrase",
+ "newPhraseWarning": "Backups you make from now on need the new phrase. Older backup files still open only with the old phrase.",
+ "scheduleTitle": "Automatic backups",
+ "scheduleOff": "Off",
+ "scheduleEveryDays": "{days, plural, =1{Every day} other{Every {days} days}}",
+ "@scheduleEveryDays": {
+  "placeholders": {
+   "days": {
+    "type": "int"
+   }
+  }
+ },
+ "scheduleAfterContact": "After each new contact",
+ "backupFolder": "Folder",
+ "chooseFolder": "Choose",
+ "noFolder": "No folder chosen",
+ "cloudFolderNote": "If this folder syncs to a cloud service, that service sees each backup's size and time. It cannot read them.",
+ "lastBackup": "Last backup: {when}",
+ "@lastBackup": {
+  "placeholders": {
+   "when": {
+    "type": "String"
+   }
+  }
+ },
+ "backupFailed": "The last automatic backup failed.",
+ "restoreTitle": "Restore from backup",
+ "restoreHint": "Scan the QR code from your old phone, open a backup file, or paste backup text. Then type your recovery phrase.",
+ "openBackupFile": "Open backup file",
+ "pasteBackup": "Paste backup text",
+ "backupReceived": "Backup received. Type your recovery phrase.",
+ "phraseInput": "Recovery phrase",
+ "restoreAction": "Restore",
+ "restoreReplaceTitle": "Replace this identity?",
+ "restoreReplaceBody": "This phone already has a MEM identity with contacts. Restoring replaces it. The current state is kept, encrypted, in the app's storage; it is not deleted.",
+ "restoreDone": "Restored. If you still have your old phone, reset MEM there: until then, both can read new messages.",
+ "restoreCorrected": "One letter in your phrase was corrected: {phrase}",
+ "@restoreCorrected": {
+  "placeholders": {
+   "phrase": {
+    "type": "String"
+   }
+  }
+ },
+ "restoreWrongPhrase": "This phrase does not open this backup.",
+ "restoreNotBackup": "This is not a MEM backup.",
+ "working": "Working…",
+ "qrPaceEasy": "Easy",
+ "qrPaceNormal": "Normal",
+ "qrPaceFast": "Fast",
+ "qrPaceHint": "If the other phone can't read the code, choose Easy.",
+ "settings": "Settings",
+ "language": "Language",
+ "followSystem": "System",
+ "textSize": "Use the phone's text size",
+ "percent": "{value} %",
+ "@percent": {
+  "placeholders": {
+   "value": {
+    "type": "int"
+   }
+  }
+ },
+ "sectionMessages": "Messages",
+ "showMessageTimes": "Show message times",
+ "badgeDetail": "Channel badges",
+ "badgeCompact": "Compact",
+ "badgeDetailed": "Detailed",
+ "badgeDetailHelp": "Every message always shows which channel carried it and its privacy grade. Detailed also shows when, and whether it was delivered.",
+ "sectionQr": "QR codes",
+ "qrPaceTitle": "Animated QR speed",
+ "sectionPrivacy": "Privacy",
+ "defaultFloor": "Privacy floor for new contacts",
+ "defaultFloorHelp": "Channels below the floor need your permission before a message goes out. Contacts you already have keep their own floor; change it on the contact's page.",
+ "blockScreenshots": "Block screenshots",
+ "blockScreenshotsHelp": "No screenshots or screen recording, and MEM's content is hidden in the recent apps list. The recovery phrase is always protected.",
+ "showNetworkStatus": "Show network status on the main screen",
+ "statusDelivered": "Delivered",
+ "statusReceived": "Received",
+ "reason_invalid_floor": "P5 cannot be a privacy floor: plaintext always needs your permission for each message.",
+ "phraseNotConfirmed": "The new phrase was not confirmed, so nothing changed.",
+ "scanFocusHint": "Blurry? Tap the picture to focus.",
+ "helpTooltip": "How it works",
+ "scanBrightness": "Brightness of the camera picture",
+ "codeBrightness": "Screen brightness for the code",
+ "stayReachable": "Stay reachable in the background",
+ "stayReachableHelp": "Keeps Wi-Fi and Bluetooth delivery working with the screen off. Shows a permanent notification, so anyone who sees your phone can tell MEM is running, and uses more battery.",
+ "reachableNotification": "Reachable over Wi-Fi",
+ "batteryRestricted": "Android may still pause MEM to save battery. Tap to let it run unrestricted.",
+ "batteryUnrestricted": "MEM may run unrestricted.",
+ "sectionCourier": "Courier",
+ "courierMode": "Carry messages for other MEM users",
+ "courierModeHelp": "Your phone keeps sealed messages for people nearby and passes them on when it meets their phones. It cannot read them: it sees only scrambled addresses, sizes and times. Uses storage and some battery.",
+ "courierLimit": "Up to {mb} MB",
+ "@courierLimit": {
+  "placeholders": {
+   "mb": {
+    "type": "int"
+   }
+  }
+ },
+ "courierUsage": "{count, plural, =1{Carrying 1 message} other{Carrying {count} messages}} · {used} of {limit} MB",
+ "@courierUsage": {
+  "placeholders": {
+   "count": {
+    "type": "int"
+   },
+   "used": {
+    "type": "String"
+   },
+   "limit": {
+    "type": "String"
+   }
+  }
+ },
+ "channelCourier": "couriers",
+ "courierQueued": "It will travel with the next MEM device you meet.",
+ "courierHint": "Goes with nearby MEM devices that cannot read it.",
+ "reason_waiting_for_key": "Waiting for your contact's new encryption key. Any message from them brings it, and this message then goes out by itself.",
+ "requestTab": "Request",
+ "requestHint": "For someone you cannot meet: paste their MEM code. They get a contact request with your code and your note, and decide whether to accept. It travels through nearby MEM devices, so it can take a while.",
+ "requestCodeLabel": "Their code (memcard1:…)",
+ "requestNoteLabel": "Note (optional)",
+ "requestNoteHelp": "Shown with your request: who you are and how they know you.",
+ "sendRequest": "Send request",
+ "requestPreparing": "Preparing the request. This takes a few seconds.",
+ "requestPendingBanner": "Waiting for {name} to accept your contact request. You can write once they do.",
+ "@requestPendingBanner": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "contactRequestLabel": "Contact request",
+ "requestNoNote": "(no note)",
+ "requestsTitle": "Contact requests",
+ "requestsTooltip": "{count, plural, =1{1 contact request} other{{count} contact requests}}",
+ "@requestsTooltip": {
+  "placeholders": {
+   "count": {
+    "type": "int"
+   }
+  }
+ },
+ "requestsEmpty": "No contact requests.",
+ "requestsHelp": "These people have your MEM code and want to become contacts. Names are not verified: compare the safety symbols when you meet.",
+ "nameNotVerified": "{name} (name not verified)",
+ "@nameNotVerified": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "acceptRequest": "Accept",
+ "declineRequest": "Decline",
+ "blockRequest": "Block",
+ "blockConfirm": "Block this sender? Their contact requests will be ignored from now on.",
+ "requestAccepted": "Contact added",
+ "requestReceived": "Contact request received",
+ "requestsNearby": "Accept contact requests from people you haven't met",
+ "requestsNearbyHelp": "Requests come through nearby MEM devices and, if you use one, the hub. Anyone who has your MEM code could notice when your phone is nearby, and the hub could link your internet address to your code. Requests you paste or scan arrive either way.",
+ "requestedSubtitle": "Request sent · waiting for an answer",
+ "reason_awaiting_approval": "They have not accepted your contact request yet.",
+ "reason_bad_proof_of_work": "This contact request is not valid.",
+ "reason_unknown_request": "This request was already answered.",
+ "reason_already_contact": "You are already contacts, or a request is on its way.",
+ "reason_invalid_note": "The note is too long (at most 280 bytes).",
+ "reason_not_a_card": "That is not a MEM code.",
+ "channelBle": "Bluetooth",
+ "bleToggle": "Deliver over Bluetooth",
+ "bleToggleHelp": "Phones next to each other exchange messages without any network. While on, any Bluetooth scanner nearby can tell that a MEM device is here, though not whose.",
+ "bleLocationExplain": "On this Android version, Android lets apps look for Bluetooth devices only with the location permission and with Location switched on. MEM never reads your location.",
+ "bleStatusRunning": "Looking for MEM devices nearby",
+ "bleStatusOff": "Bluetooth is switched off",
+ "bleStatusPermission": "Bluetooth permission is missing",
+ "bleStatusLocation": "Location is off, so Android hides nearby devices",
+ "bleStatusUnsupported": "This phone has no Bluetooth LE",
+ "bleTurnOn": "Turn on",
+ "bleOpenSettings": "Open settings",
+ "bleBackgroundNote": "In the background, only while \"Stay reachable in the background\" is on.",
+ "reachableNotificationBle": "Reachable over Wi-Fi and Bluetooth",
+ "newGroup": "New group",
+ "groupName": "Group name",
+ "groupMembersPick": "Who to invite (up to 15 contacts)",
+ "groupCreate": "Create",
+ "groupCreateHelp": "You will be the group's admin: only you add or remove members. Everyone you invite sees the names and codes of the members who join.",
+ "groupMembersCount": "{count, plural, =1{1 member} other{{count} members}}",
+ "@groupMembersCount": {
+  "placeholders": {
+   "count": {
+    "type": "int"
+   }
+  }
+ },
+ "groupJoining": "Joining… waiting for the admin",
+ "groupInvitedBanner": "You are invited to this group.",
+ "groupLeftBanner": "You left this group.",
+ "groupRemovedBanner": "The admin removed you from this group.",
+ "groupJoiningBanner": "Waiting for the admin to add you. Messages can be sent once you are in.",
+ "groupJoin": "Join",
+ "groupDecline": "Decline",
+ "groupInvitationsTitle": "Group invitations",
+ "groupInvitedBy": "Invited by {name}",
+ "@groupInvitedBy": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "groupInvitationHelp": "If you join, every member sees your name and MEM code, and you see theirs.",
+ "groupInfo": "Group info",
+ "groupAdmin": "admin",
+ "groupInvitedRole": "invited",
+ "groupYou": "you",
+ "groupNotAContact": "not your contact",
+ "groupAddAsContact": "Add to contacts",
+ "groupAddAsContactHelp": "{name} becomes your contact. You can write to each other directly once they add you too.",
+ "@groupAddAsContactHelp": {
+  "placeholders": {
+   "name": {
+    "type": "String"
+   }
+  }
+ },
+ "groupInvite": "Invite a contact",
+ "groupRemove": "Remove from group",
+ "groupLeave": "Leave group",
+ "groupEnd": "End group for everyone",
+ "groupLeaveConfirm": "Leave this group? You will not receive its messages any more.",
+ "groupEndConfirm": "End this group? Every member is removed.",
+ "deliveredToCount": "delivered to {done} of {total}",
+ "@deliveredToCount": {
+  "placeholders": {
+   "done": {
+    "type": "int"
+   },
+   "total": {
+    "type": "int"
+   }
+  }
+ },
+ "groupSentAutomatically": "Sent to each member automatically when a way to them opens",
+ "groupsSection": "Groups",
+ "contactsSection": "Contacts",
+ "reason_unknown_group": "That group is not available.",
+ "reason_not_group_admin": "Only the group's admin can do that.",
+ "reason_group_full": "A group has at most 16 members (and you can keep at most 64 groups).",
+ "reason_group_empty": "Nobody else is in this group yet.",
+ "reason_not_a_contact": "This person is only a fellow group member, not your contact.",
+ "channelHub": "Hub",
+ "hubToggle": "Deliver through a MEM hub",
+ "hubToggleHelp": "Messages wait in a mailbox on the Internet until your contact collects them, so phones far apart still exchange messages. The hub's operator sees your IP address, when you connect, message sizes and short parts of your mailbox addresses, never the content. Anyone watching your network can tell you use MEM.",
+ "hubUrl": "Hub address",
+ "hubUrlHint": "wss://hub.example.org/v1",
+ "hubUrlSave": "Save",
+ "hubNeedsUrl": "Enter the address of a hub first. There is no default hub yet.",
+ "hubOnline": "Connected to the hub",
+ "hubOffline": "Not connected; retrying",
+ "devices": "Devices",
+ "devicesHelp": "Your MEM can be on up to four devices. The main device holds your identity: only it adds contacts and devices. People who carry your mail cannot tell the devices apart, but may notice that one message goes out several times at once.",
+ "thisDevice": "This device",
+ "mainDevice": "Main device",
+ "otherDevice": "Other device",
+ "deviceWaiting": "Not joined yet. If adding it didn't finish, remove it and add the device again.",
+ "addDevice": "Add a device",
+ "addDeviceHelp": "On the new device, choose “Use as another device” on the start screen. Then scan the code it shows.",
+ "addDeviceConfirmTitle": "Add this device?",
+ "addDeviceConfirmBody": "It will get all your contacts and receive your messages. Add only a device of your own, here with you.",
+ "addDeviceShowSetup": "Show this to the new device",
+ "addDeviceSetupHint": "Hold the new device's camera to this code until it says it is ready.",
+ "removeDevice": "Remove",
+ "removeDeviceTitle": "Remove this device?",
+ "removeDeviceBody": "It stops receiving your messages, and deletes its copy of your MEM the next time it is online.",
+ "removeWaitingDeviceBody": "It never joined, so it has none of your messages. If it still reads the setup code, it will learn that it was removed.",
+ "joinAsDevice": "Use as another device",
+ "joinTitle": "Another device of my MEM",
+ "joinHelp": "On your main device, open ⋮ → Devices → Add a device and scan this code. Then point this camera at the code your main device shows.",
+ "joinDone": "This device is now part of your MEM.",
+ "deviceRetiredTitle": "This device was removed",
+ "deviceRetiredBody": "Your main device removed it from your MEM. Its copy will be deleted now.",
+ "addContactOnMain": "New contacts are added on your main device; they appear here by themselves.",
+ "reason_main_device_only": "Only your main device can do this.",
+ "reason_too_many_devices": "Your MEM already has four devices.",
+ "reason_device_known": "That device is already one of yours.",
+ "reason_unknown_device": "That is not one of your devices.",
+ "reason_not_empty": "This device already has contacts. Only a new installation can become another device.",
+ "reason_not_for_this_device": "That code is for another device.",
+ "joinWrongSetup": "This code was made for an earlier request, so it can't be opened here. On the main device, remove the device marked “Not joined yet”, then add this device again by scanning the code above.",
+ "channelHubPartners": "Hubs of several operators",
+ "hubPartners": "This hub also exchanges messages with the hubs of: {names}. A message to a contact who uses one of them is carried by both operators; both see what a hub sees. Such messages are marked P3.",
+ "@hubPartners": {"placeholders": {"names": {"type": "String"}}},
+ "ownOperatorOnly": "Only my operator's hubs",
+ "ownOperatorOnlyHelp": "Your messages never go to other operators' hubs. Contacts who use another operator's hub then cannot get them through the hub.",
+ "reason_invalid_hub_url": "Use a wss:// address (ws:// only for a hub on this device).",
+ "pushNotification": "New messages",
+ "pushToggle": "Wake up for new messages",
+ "pushToggleHelp": "A UnifiedPush app on this phone (for example ntfy) wakes MEM when the hub has something for you, so messages arrive with MEM closed. The push service learns when MEM is woken, nothing else. Needs the hub.",
+ "pushNoDistributor": "Install a UnifiedPush app (for example ntfy) first.",
+ "pushPick": "Which push app?",
+ "channelPlain": "Plain text",
+ "plainTitle": "Send as plain text?",
+ "plainWarning": "This exact text leaves MEM unencrypted. The app you pick, its operator, and anyone who can read that chat will see it. It cannot be taken back.",
+ "plainSend": "Send as plain text",
+ "reason_not_plain_text": "Only a one-to-one text message can be sent as plain text.",
+ "channelEmail": "Email",
+ "emailToggle": "Deliver by email",
+ "emailToggleHelp": "MEM sends sealed messages from your mail account and collects MEM mails from it. Your mail provider sees both addresses, when, how much, and that it is MEM mail, never the content. Below your default privacy floor, so each send asks unless you allow email for a contact.",
+ "emailAddress": "Your email address",
+ "emailImapHost": "IMAP server",
+ "emailSmtpHost": "SMTP server",
+ "emailPort": "Port",
+ "emailUsername": "Login",
+ "emailPassword": "App password",
+ "emailPasswordKept": "App password (saved; leave empty to keep)",
+ "emailSaveAccount": "Save account",
+ "emailRemoveAccount": "Remove account",
+ "emailOnline": "Connected to your mailbox",
+ "emailOffline": "Not connected; retrying",
+ "emailSaved": "Mail account saved",
+ "contactEmail": "Email address",
+ "contactEmailHelp": "Only on this phone; MEM mails sealed messages here when you allow email for this contact.",
+ "contactEmailSave": "Save",
+ "reason_invalid_email_account": "Check the mail account: address, servers, ports, login and app password are all needed.",
+ "reason_invalid_email_address": "That is not an email address.",
+  "alreadyContact": "Already in your contacts",
+  "compareSymbols": "Compare symbols",
+  "channelWifiDirect": "Wi-Fi Direct",
+  "wifiDirectToggle": "Deliver over Wi-Fi Direct",
+  "wifiDirectToggleHelp": "Phones nearby exchange messages over Wi-Fi without a router or the Internet. While on, nearby phones can see that yours runs MEM, and Android shows your phone's Wi-Fi Direct name to them. On Android 9 and older the other phone is asked to accept each connection. Android 12 and older need Location on to find phones; MEM never reads your location.",
+  "wifiDirectUnsupported": "This phone has no Wi-Fi Direct.",
+  "inboundCardTitle": "Add this contact?",
+  "inboundCardBody": "Another app handed MEM a contact code. Add it only if you meant to: this person will be able to message you. Check the fingerprint with them if you can.",
+  "wifiDirectPermission": "Permission to find nearby phones is missing",
+  "wifiDirectLocation": "Location is off: this Android version needs it to find phones over Wi-Fi Direct",
+  "removeContact": "Remove contact",
+  "removeContactTitle": "Remove this contact?",
+  "removeContactBody": "Your conversation and any messages still waiting to be sent are deleted, and their messages will no longer reach you. Groups you share keep working. To talk again you need to pair again.",
+  "ruleHowLong": "For how long?",
+  "ruleDays1": "1 day",
+  "ruleDays7": "7 days",
+  "ruleDays30": "30 days",
+  "ruleUntilRevoked": "Until I revoke",
+  "ruleUntil": "until {date}",
+  "@ruleUntil": {"placeholders": {"date": {"type": "String"}}},
+  "soundPairButton": "Pair by sound",
+  "soundPairTitle": "Pair by sound",
+  "soundPairHint": "Hold both phones close, with this screen open on both. They play their codes and listen for each other; it takes about a minute.",
+  "soundPairListening": "Playing my code and listening…",
+  "soundPairProgress": "Heard {received} of {needed} parts",
+  "soundPairGot": "Their code arrived. Keep this screen open until the other phone has it too.",
+  "soundPairNoMicrophone": "Pairing by sound needs the microphone. Allow it in the phone's settings, or pair with the QR code.",
+  "soundPairFailed": "Sound could not start on this phone. Pair with the QR code instead.",
+  "soundToneTitle": "Sound",
+  "soundToneAudible": "Audible",
+  "soundToneInaudible": "Almost inaudible",
+  "soundPairExposure": "Anyone within earshot, or any recording, can pick up your code, just as anyone who sees your QR code can. Messages never travel by sound. Both phones must use the same sound.",
+  "@soundPairProgress": {"placeholders": {"received": {"type": "int"}, "needed": {"type": "int"}}},
+  "channelAudio": "Sound",
+  "soundPairStopped": "Stopped after three rounds without hearing the other phone. Bring the phones closer or make the room quieter, then try again.",
+  "soundPairTryAgain": "Try again",
+  "nearbyTitle": "Nearby",
+  "connectBySound": "Connect by sound",
+  "connectByCode": "Connect by code",
+  "nearbyHelp": "Phones on the same Wi-Fi usually find each other by themselves. Some networks (guest, hotel, office) block that: then connect by sound or by code. One phone tells the other where to reach it on this Wi-Fi; the messages themselves go over Wi-Fi.",
+  "connectSoundHint": "Hold both phones close, with this screen open on both. Each plays where it can be reached on this Wi-Fi; one exchange takes about 6 seconds.",
+  "connectSoundExposure": "People nearby, or a recording, can hear that a MEM phone is here, its address on this network and a temporary key that changes when MEM restarts. Nothing that identifies you, and no messages.",
+  "connectGot": "Connecting to the other phone. Messages for your contacts follow by themselves.",
+  "connectNoMicrophone": "Connecting by sound needs the microphone. Allow it in the phone's settings, or connect by code.",
+  "connectFailed": "Sound could not start on this phone. Connect by code instead.",
+  "connectCodeHint": "Let the other phone scan this code, or scan theirs below.",
+  "reason_no_local_network": "Turn on Wi-Fi and the local network channel (Channels) first.",
+  "attestTitle": "Confirm in person",
+  "attestScanRequest": "Scan the code on the service's page, or paste it. You confirm together with the other person, each on your own phone.",
+  "attestMainOnly": "Only your main device can confirm in person.",
+  "attestAskedBy": "Asked by",
+  "attestWhat": "What",
+  "attestRole": "Your role",
+  "attestCheckCode": "Check that the page shows the same code: {code}",
+  "@attestCheckCode": {"placeholders": {"code": {"type": "String"}}},
+  "attestExchangeHint": "Show your code to the other phone, then scan theirs.",
+  "attestCompare": "Compare these symbols with the ones on the other phone. Confirm only if they match and the other person is in front of you.",
+  "attestSending": "Sending…",
+  "attestSent": "Sent. {origin} now has your confirmation.",
+  "@attestSent": {"placeholders": {"origin": {"type": "String"}}},
+  "attestSendFailed": "It could not be sent. Copy this code and paste it on the service's page.",
+  "attestTryAgain": "Try again",
+  "attestCancelled": "Cancelled. Nothing was signed.",
+  "attestErrWrongObject": "This is not the code needed here.",
+  "attestErrInvalid": "This code is damaged or not allowed.",
+  "attestErrOtherSubject": "The other phone is confirming something else.",
+  "attestErrSameRole": "Both phones have the same role. Each person must scan their own code on the service's page.",
+  "attestErrOwnCode": "This is your own code. Scan the other phone.",
+  "attestLog": "Confirmed in person",
+  "attestLogEntry": "{origin} · {how}",
+  "@attestLogEntry": {"placeholders": {"origin": {"type": "String"}, "how": {"type": "String"}}},
+  "attestLogSent": "sent",
+  "attestLogCopied": "copied"
+}

@@ -1,0 +1,17 @@
+[package]
+name = "mem-sim"
+description = "Deterministic multi-node DTN simulator for routing and abuse tests."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+mem-core.workspace = true
+mem-proto.workspace = true
+rand_core.workspace = true
+rand_chacha.workspace = true

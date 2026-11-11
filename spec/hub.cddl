@@ -1,0 +1,42 @@
+; Client <-> hub messages.
+; One WebSocket binary frame = one message. Deterministic CBOR, integer keys ascending.
+; Never JSON.
+
+hub_msg = hello / put / fetch / purge / bye / wake_register / wake_unregister / get_hubs
+        / welcome / put_ok / put_err / bundles / fetch_done / hubs
+        / peer_hello / peer_auth / sync_from / replicate / replicate_purge
+
+; client -> hub
+hello           = [0, {0: uint .le 255}]                       ; protocol version (1)
+put             = [1, {0: uint, 1: bundle_bytes, ? 2: true}]   ; request id, envelope,
+                                                               ; may cross to partner operators
+fetch           = [2, {0: prefixes}]                           ; replaces an earlier fetch
+purge           = [3, {0: [1*1024 bstr .size 16]}]             ; purge tokens
+bye             = [4, {}]
+wake_register   = [5, {0: endpoint, 1: prefixes}]
+wake_unregister = [6, {0: endpoint}]
+get_hubs        = [7, {}]
+
+; hub -> client
+welcome    = [16, {0: uint .le 255, 1: limits}]
+limits     = {0: uint, 1: uint, 2: uint}                      ; max bundle, per tag, puts/minute
+put_ok     = [17, {0: uint}]
+put_err    = [18, {0: uint, 1: put_error}]
+put_error  = 0..7   ; malformed, too large, expired, quota, rate limited, purged, bad PoW, unsupported
+bundles    = [19, {0: [0*16 bundle_bytes], ? 1: [1*16 uint .le 15]}]  ; positions from
+                                                              ; another operator, increasing
+fetch_done = [20, {}]
+hubs       = [21, {0: bstr .size (1..20000)}]                 ; signed hub list (spec/hublist.cddl)
+
+; hub <-> hub; peer_hello and peer_auth come first
+peer_hello      = [32, {0: bstr .size 32, 1: bstr .size 16}]  ; hub key, nonce
+peer_auth       = [33, {0: bstr .size 64}]                    ; Ed25519 over "MEM/v1/hub-peer" ||
+                                                              ; peer's nonce || own nonce
+sync_from       = [34, {0: uint}]                             ; everything after this seq
+replicate       = [35, {0: uint, 1: bundle_bytes, 2: uint,    ; seq, envelope, expires (Unix ms)
+                         ? 3: true, ? 4: true}]               ; foreign, may cross
+replicate_purge = [36, {0: uint, 1: [1*1024 bstr .size 16]}]  ; seq, purge tokens
+
+prefixes     = [8*64 bstr .size 2]                            ; 2-byte tag prefixes, decoys included
+endpoint     = tstr .size (1..1024)                           ; push endpoint URL
+bundle_bytes = bstr .size (1..65536)                          ; spec/envelope.cddl

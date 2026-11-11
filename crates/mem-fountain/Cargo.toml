@@ -1,0 +1,21 @@
+[package]
+name = "mem-fountain"
+description = "Fountain coding and framing for low-rate, lossy channels."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+mem-proto.workspace = true
+raptorq.workspace = true
+blake3.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+rand_core.workspace = true
+rand_chacha.workspace = true

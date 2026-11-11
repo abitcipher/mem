@@ -1,0 +1,26 @@
+; Fountain-coded transfer frame, v1.
+; One frame = one RaptorQ (RFC 6330) encoding symbol of an object, plus what a receiver needs to
+; start decoding from any frame in any order. Carried in QR codes (byte mode, ECC M); later
+; audio and BLE.
+;
+; RaptorQ parameters are not sent: one source block (Z = 1), no sub-blocks (N = 1),
+; alignment Al = 1, symbol size T = symbol_len, transfer length F = object_len.
+; Source symbols K = ceil(F / T) <= 1024.
+
+qr-frame = [
+  version: 1,
+  transfer_id: bstr .size 8,    ; BLAKE3-derive_key("MEM v1 2026-10 qr-transfer", kind || object)[0..8]
+  kind: object-kind,
+  object_len: 1..65536,         ; F
+  symbol_len: 64..1024,         ; T
+  esi: 0..16777215,             ; encoding symbol id (source block 0); < K: source, >= K: repair
+  symbol: bstr,                 ; exactly symbol_len bytes
+]
+
+object-kind = &(
+  bundle: 0,                    ; envelope.cddl
+  card: 1,                      ; card.cddl
+  backup: 2,                    ; backup.cddl
+  device-setup: 3,              ; device.cddl device_setup
+  connect-hint: 4,              ; hint.cddl
+)

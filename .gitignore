@@ -1,0 +1,19 @@
+/target
+**/*.rs.bk
+.DS_Store
+.idea/
+.vscode/
+*.swp
+# fuzz artifacts
+fuzz/artifacts/
+fuzz/corpus/
+/fuzz/target
+/fuzz/coverage
+/dist
+# moved-aside files awaiting review (never commit)
+/tmp/
+# private working notes and local tooling (never published)
+/internal/
+/CLAUDE.md
+/AGENTS.md
+/.claude/

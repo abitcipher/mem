@@ -1,0 +1,20 @@
+; MEM HPKE payload wrapper, v1.
+
+payload = suite1-payload / suite2-payload
+
+; Suite 1: HPKE DHKEM(X25519, HKDF-SHA256) / HKDF-SHA256 / ChaCha20-Poly1305, mode Base.
+suite1-payload = [
+  suite_id: 1,
+  mailbox_key_id: bstr .size 8,   ; opaque per-contact handle
+  enc: bstr .size 32,             ; HPKE encapsulated key
+  ct: bstr,                       ; HPKE ciphertext of the padded inner payload
+]
+
+; Suite 2: HPKE X-Wing (ML-KEM-768 + X25519, KEM 0x647a) / HKDF-SHA256 / ChaCha20-Poly1305,
+; mode Base. The key id uses the label "MEM/v1/xwing-key-id".
+suite2-payload = [
+  suite_id: 2,
+  mailbox_key_id: bstr .size 8,
+  enc: bstr .size 1120,
+  ct: bstr,
+]

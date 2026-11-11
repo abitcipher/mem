@@ -1,0 +1,27 @@
+; Group content types inside the E2E payload.
+; Deterministic CBOR, integer keys in ascending order. The content type (5, 6, 7) says which.
+
+group_content = group_text / group_state / group_reply
+
+group_text = {
+  0: bstr .size 16,          ; group id
+  1: uint .le 4294967295,    ; epoch the sender saw
+  2: tstr .size (1..4000),   ; text
+}
+
+group_state = {
+  0: bstr .size 16,          ; group id
+  1: uint .le 4294967295,    ; epoch, rises with every change
+  2: tstr .size (1..64),     ; name
+  3: [1*16 card_bytes],      ; cards of joined members, the admin first
+  4: role,                   ; what this state says about its recipient
+}
+
+role = 0 / 1 / 2             ; invited / member / removed
+
+group_reply = {
+  0: bstr .size 16,          ; group id
+  ? 1: card_bytes,           ; present: join with this card; absent: decline or leave
+}
+
+card_bytes = bstr .size (1..512)   ; spec/card.cddl, signed

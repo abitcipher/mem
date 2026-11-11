@@ -1,0 +1,10 @@
+; Connect hint: where to reach a phone on the local network. Played as one sound
+; frame or shown as one QR code (frame object kind 4). Deterministic CBOR, at most 64 bytes.
+
+connect-hint = {
+  0: 1,                          ; version
+  1: bstr .size 32,              ; Iroh endpoint id: the random transport key of this app run
+  2: [1*2 hint-addr],            ; local IPv4 socket addresses of that endpoint
+}
+
+hint-addr = bstr .size 6         ; IPv4 address (4 bytes) then UDP port (2 bytes, big-endian)

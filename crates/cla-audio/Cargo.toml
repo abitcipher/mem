@@ -1,0 +1,26 @@
+[package]
+name = "cla-audio"
+description = "Sound channel: pairing cards as fountain frames over ggwave, never bundles."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+mem-proto.workspace = true
+mem-fountain.workspace = true
+thiserror.workspace = true
+
+[build-dependencies]
+cc = "1.2"
+
+[dev-dependencies]
+# examples/sound_peer.rs: a throwaway identity whose card the laptop plays.
+mem-core.workspace = true
+rand_chacha.workspace = true
+rand_core.workspace = true
+getrandom.workspace = true

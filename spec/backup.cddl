@@ -1,0 +1,26 @@
+; MEM backup file, v1.
+; Opened only with the recovery secret (shown as a phrase). Every field is checked with bounds
+; before use; the KDF parameters are range-checked before any key derivation.
+;
+; key        = Argon2id(password = secret (16 bytes), salt, m = m_kib, t, p, output 32 bytes)
+; ciphertext = XChaCha20-Poly1305(key, nonce, aad = cbor(header), pad(cbor(backup-contents)))
+; header     = the first five elements as a CBOR array: [magic, version, kdf, salt, nonce]
+; pad        = ISO/IEC 7816-4 to the next power of two of at least 4096 bytes
+
+backup-file = [
+  magic: "MEM-BACKUP",
+  version: 1,
+  kdf: [m_kib: 19456..262144, t: 1..10, p: 1..4],
+  salt: bstr .size 16,
+  nonce: bstr .size 24,
+  ciphertext: bstr .size (16..67108864),
+]
+
+; Plaintext after decryption and unpadding (never seen by anyone but the owner).
+backup-contents = {
+  0: 1,                      ; contents version
+  1: uint,                   ; created, unix ms
+  2: tstr .size (1..32),     ; app version that wrote it
+  3: bstr,                   ; core state snapshot
+  4: bool,                   ; message history included
+}

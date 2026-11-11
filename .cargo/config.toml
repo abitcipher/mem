@@ -1,0 +1,6 @@
+[env]
+# The vendored OpenSSL under SQLCipher is configured by a Perl script. Flutter installed
+# as a snap puts its own perl first on PATH, and that perl fails against the system's Perl
+# libraries ("Perl lib version doesn't match executable"). Use the system perl explicitly.
+# An OPENSSL_SRC_PERL already set in the environment wins.
+OPENSSL_SRC_PERL = "/usr/bin/perl"

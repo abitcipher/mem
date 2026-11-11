@@ -1,0 +1,20 @@
+[package]
+name = "mem-proto"
+description = "MEM wire types: deterministic CBOR envelope, inner payload and encounter messages."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+minicbor.workspace = true
+thiserror.workspace = true
+data-encoding.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+hex.workspace = true

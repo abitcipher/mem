@@ -1,0 +1,166 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+  RUSTDOCFLAGS: -D warnings
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show active-toolchain # installs the pinned toolchain from rust-toolchain.toml
+      - run: cargo fmt --all --check
+
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show active-toolchain
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy --workspace --all-targets --all-features --locked
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show active-toolchain
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --workspace --all-features --locked
+      - run: cargo doc --workspace --no-deps --all-features --locked
+
+  wasm32:
+    # The sans-IO core must build for wasm32 (no I/O, no clocks).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show active-toolchain
+      - uses: Swatinem/rust-cache@v2
+      - run: >
+          cargo build --locked --target wasm32-unknown-unknown
+          -p mem-proto -p mem-crypto -p mem-core -p mem-fountain
+
+  deny:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check
+
+  vet:
+    # Supply chain: every dependency is audited by a trusted organisation
+    # (imports in supply-chain/config.toml) or explicitly exempted. A new crate or version
+    # fails here until it is audited or exempted in a reviewed change.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo install --locked cargo-vet@0.10.2
+      - run: cargo vet --locked
+
+  cddl:
+    # Syntax-check every CDDL schema and validate published vectors against it.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cddl
+      - run: for f in spec/*.cddl; do cddl --ci compile-cddl --cddl "$f"; done
+      - run: >
+          for f in spec/vectors/envelope/*.cbor; do
+          cddl --ci validate --cddl spec/envelope.cddl --cbor "$f" || exit 1; done
+      - run: >
+          for f in spec/vectors/frame/*.cbor; do
+          cddl --ci validate --cddl spec/frame.cddl --cbor "$f" || exit 1; done
+      - run: >
+          for f in spec/vectors/encounter/*.cbor; do
+          cddl --ci validate --cddl spec/encounter.cddl --cbor "$f" || exit 1; done
+      - run: >
+          for f in spec/vectors/backup/*.cbor; do
+          cddl --ci validate --cddl spec/backup.cddl --cbor "$f" || exit 1; done
+      - run: >
+          for f in spec/vectors/intro/*.cbor; do
+          cddl --ci validate --cddl spec/intro.cddl --cbor "$f" || exit 1; done
+      - run: >
+          for f in spec/vectors/group/*.cbor; do
+          cddl --ci validate --cddl spec/group.cddl --cbor "$f" || exit 1; done
+      - run: >
+          for f in spec/vectors/hub/*.cbor; do
+          cddl --ci validate --cddl spec/hub.cddl --cbor "$f" || exit 1; done
+      - run: >
+          for f in spec/vectors/payload/*.cbor; do
+          cddl --ci validate --cddl spec/payload.cddl --cbor "$f" || exit 1; done
+      - run: >
+          for f in spec/vectors/hublist/*.cbor; do
+          cddl --ci validate --cddl spec/hublist.cddl --cbor "$f" || exit 1; done
+      - run: >
+          for f in spec/vectors/device/*.cbor; do
+          cddl --ci validate --cddl spec/device.cddl --cbor "$f" || exit 1; done
+
+  hub:
+    # The Elixir hub with its Rust NIF.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: hub
+    steps:
+      - uses: actions/checkout@v4
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "29"
+          elixir-version: "1.20"
+      - run: rustup show active-toolchain
+      - run: mix deps.get
+      - run: mix compile --warnings-as-errors
+      - run: mix test
+      - run: cargo test --manifest-path native/mem_hub_nif/Cargo.toml
+
+  fuzz-smoke:
+    # Short run on every PR; long runs happen nightly (fuzz.yml).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install nightly --profile minimal
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-fuzz
+      - working-directory: fuzz
+        run: |
+          for t in $(cargo +nightly fuzz list); do
+            mkdir -p "corpus/$t"
+            seeds="seeds/$t"; [ -d "$seeds" ] || seeds=""
+            cargo +nightly fuzz run --target x86_64-unknown-linux-gnu "$t" "corpus/$t" $seeds -- -max_total_time=30
+          done
+
+  app:
+    # Flutter app: analyzer, widget tests, and the end-to-end integration test against the real
+    # Rust core (built by cargokit) under a virtual display.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show active-toolchain
+      - uses: Swatinem/rust-cache@v2
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.0
+          channel: stable
+      - run: sudo apt-get update && sudo apt-get install -y ninja-build libgtk-3-dev xvfb
+      - working-directory: app
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
+          # The Wi-Fi part needs multicast between two nodes on the runner; hosted runners do not
+          # guarantee it, so it runs locally and on device instead.
+          MEM_IT_SKIP_LAN=1 xvfb-run -a flutter test integration_test -d linux

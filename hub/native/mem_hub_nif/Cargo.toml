@@ -1,0 +1,19 @@
+[package]
+name = "mem_hub_nif"
+description = "The MEM hub's bridge to mem-proto and mem-crypto: the same bounded, fuzzed decoders and proof-of-work check the apps use."
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# Built by Rustler from the Elixir app, outside the main workspace.
+[workspace]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+rustler = { version = "0.37", default-features = false, features = ["derive", "nif_version_2_17"] }
+mem-proto = { path = "../../../crates/mem-proto" }
+mem-crypto = { path = "../../../crates/mem-crypto" }
+
+[dev-dependencies]

@@ -1,0 +1,20 @@
+[package]
+name = "mem-store"
+description = "MEM storage trait and backends."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+
+# SQLCipher with a vendored OpenSSL: Android has no system libcrypto to link (approved
+# 2026-10-16). Same build on every platform, so desktop tests exercise the shipped code.
+rusqlite = { version = "=0.40.2", default-features = false, features = ["bundled-sqlcipher-vendored-openssl"] }
+thiserror = { workspace = true }
+zeroize = { workspace = true }
+mem-core = { workspace = true }

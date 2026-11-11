@@ -1,0 +1,44 @@
+; MEM inner payload, v1. Only ever seen after HPKE decryption.
+; ISO/IEC 7816-4 padded to the next size bucket (256, 512, 1 KiB, 4 KiB, 16 KiB) before encryption.
+; Signature (field 8): Ed25519 over "MEM/v1/inner-sig" || recipient_identity_pk ||
+;   deterministic_cbor(inner without key 8)
+
+inner = {
+  0: bstr .size 32,        ; sender identity public key (Ed25519)
+  1: bstr .size 16,        ; message_id — UUIDv7
+  2: bstr .size 16,        ; conversation_id
+  3: uint,                 ; content_type
+  4: bstr,                 ; content (CBOR per content_type)
+  ? 5: [* attachment_ref],
+  ? 6: key_update,
+  ? 7: bool,               ; ack requested
+  8: bstr .size 64,        ; Ed25519 signature (see header)
+  9: bstr .size 16,        ; purge_token
+  ? 10: [1*64 bstr .size 16], ; piggybacked acks: message_ids from the recipient
+  ? 11: bstr .size 140,    ; device_cert of the signing secondary device (spec/device.cddl);
+                           ; field 8 is then that device key's signature
+}
+
+; Content type 2 (ack): the content is
+ack-content = [1*64 bstr .size 16]   ; message_ids being acknowledged
+
+; Content-addressed attachment. Shape not final.
+attachment_ref = {
+  0: bstr .size 32,        ; BLAKE3 hash
+  1: uint,                 ; size in bytes
+}
+
+; The sender's current mailbox key; only a higher serial replaces a held key.
+key_update = {
+  0: bstr .size 32,        ; mailbox public key (X25519)
+  1: uint .size 4,         ; serial
+  ? 2: bstr .size 1216,    ; the same key's X-Wing public half
+  ? 3: bstr .size 8,       ; device_id whose key this is
+  ? 4: bstr,               ; device_list (spec/device.cddl), the newest the sender knows
+  ? 5: 1..4294967295,      ; feature bits, absent when zero; bit 0: understands devices
+}
+
+; Content type 3 (key update, envelope kind 4): empty content, the key in field 6.
+
+; Content type 4 (contact request, envelope kind 2 "intro"): `intro-content`,
+; specified in intro.cddl.

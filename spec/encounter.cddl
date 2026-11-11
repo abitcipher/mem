@@ -1,0 +1,56 @@
+; MEM encounter protocol, v1. Runs over any duplex CLA.
+; Nothing here is trusted beyond quotas.
+; hello, tags, bundles and bye are the base protocol; summary, purge-tokens and the
+; direct-delivery proof belong to courier exchange.
+; On a stream transport (Iroh), each message is prefixed by its length as a u32 big-endian
+; (at most 1 048 768 bytes).
+
+encounter-msg = hello / tags / summary / purge-tokens / offer / want / bundles / bye
+
+hello = [0, {
+  0: uint,                 ; protocol_version
+  1: bstr .size 16,        ; node_ephemeral_id — rotates per encounter
+  2: caps,
+}]
+
+tags = [1, {
+  0: [0*4096 bstr .size 16], ; receiving tags: current epoch only, padded with random decoys to a
+                             ; power of two >= 8, sorted
+}]
+
+summary = [2, {
+  0: bstr .size 16,        ; salt, random per summary (keys the bloom hashes)
+  1: bstr .size (0..32768),; bloom over held (bundle_id || purge_commitment)
+  2: bstr .size (0..32768),; bloom over held purge commitments whose token is unknown
+}]
+; Bloom indexes: k = 7 32-bit big-endian words from the XOF output of
+; BLAKE3-keyed(key = BLAKE3-derive_key("MEM v1 2026-10 summary-bloom", salt), msg = item),
+; each taken modulo the filter's bit length.
+
+purge-tokens = [5, {
+  0: [0*1024 bstr .size 16], ; purge tokens, at most 1024 per encounter
+}]
+
+; Tags of older bundles a courier carries, and the ones the peer claims.
+offer = [6, {
+  0: [0*1024 bstr .size 16],
+}]
+
+want = [7, {
+  0: [0*1024 bstr .size 16],
+}]
+
+bundles = [3, {
+  0: [0*16 bundle-entry],
+}]
+
+; A bare encoded bundle (envelope.cddl), or the sender's own bundle to its recipient with a
+; direct-delivery proof: HMAC-SHA256(contact_secret, "MEM/v1/direct" || bundle_id ||
+; receiver_hello_ephemeral_id)[0..16].
+bundle-entry = bstr .size (0..65536) / [bstr .size (0..65536), bstr .size 16]
+
+bye = [4, {}]
+
+caps = {
+  * uint => any,           ; none defined in v1 (sent empty); unknown keys are ignored
+}

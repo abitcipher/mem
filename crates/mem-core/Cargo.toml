@@ -1,0 +1,24 @@
+[package]
+name = "mem-core"
+description = "MEM sans-IO bundle agent: contacts, outbox, routing, courier store, policy and consent."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+mem-proto.workspace = true
+mem-crypto.workspace = true
+mem-cla.workspace = true
+rand_core.workspace = true
+zeroize.workspace = true
+serde.workspace = true
+minicbor-serde.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+rand_chacha.workspace = true

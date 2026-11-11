@@ -1,0 +1,58 @@
+; In-person attestation for a relying party, v1.
+; Deterministic CBOR, integer keys ascending. Each object is one text QR or pasted text:
+; "memattreq1:" / "memattest1:" / "memattsig1:" + base64url (no padding).
+; Not deniable, unlike everything else MEM sends; never used by messaging.
+
+; Shown by the relying party to a signed-in user. Unsigned, untrusted.
+attest-request = {
+  0: 1,                          ; version
+  1: origin,                     ; rp_origin
+  2: bstr .size 32,              ; subject, the hash being attested
+  3: tstr .size (1..32),         ; subject_label, printable ASCII, shown to the user
+  4: role,                       ; this user's role
+  5: bstr .size 16,              ; rp_challenge, single use
+  6: tstr .size (1..512),        ; submit_url = rp_origin "/" path (printable ASCII, no "\")
+}
+
+; origin: "https://" host [":" port]; host of a-z 0-9 . -; "http://" only for the hosts
+; localhost and 127.0.0.1.
+origin = tstr .size (1..270)
+role = tstr .size (1..16)        ; a-z and "_"
+
+; Shown by one phone to the other.
+attest-offer = {
+  0: 1,                          ; version
+  1: bstr .size 32,              ; attest_pk (Ed25519), this phone's key for the relying party
+  2: bstr .size 32,              ; subject
+  3: role,
+  4: bstr .size 16,              ; nonce, fresh
+}
+
+; Built by both phones from the two offers; lo has the smaller attest_pk (bytewise), and
+; lo and hi differ in key and role.
+attest-statement = {
+  0: 1,                          ; version
+  1: origin,
+  2: bstr .size 32,              ; subject
+  3: bstr .size 32,              ; lo attest_pk
+  4: role,                       ; lo role
+  5: bstr .size 16,              ; lo nonce
+  6: bstr .size 32,              ; hi attest_pk
+  7: role,                       ; hi role
+  8: bstr .size 16,              ; hi nonce
+}
+
+; Returned to the relying party (HTTPS POST body, application/cbor, or memattsig1: text).
+attestation = {
+  0: 1,                          ; version
+  1: bstr .cbor attest-statement,
+  2: bstr .size 16,              ; rp_challenge of the signer's request
+  3: bstr .size 32,              ; the signer's attest_pk, lo or hi of the statement
+  4: bstr .size 64,              ; Ed25519 (RFC 8032, verified strictly) over
+                                 ;   "MEM/v1/attestation" || rp_challenge || statement bytes
+}
+
+; attest key seed = HKDF-SHA256(salt = "", ikm = identity seed (32 bytes),
+;                               info = "MEM/v1/attest-key" || rp_origin, L = 32)
+; emoji check     = HKDF-SHA256(salt = "", ikm = BLAKE3(statement bytes),
+;                               info = "MEM/v1/attest-sas", L = 6), each byte & 63

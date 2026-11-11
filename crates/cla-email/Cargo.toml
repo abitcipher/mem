@@ -1,0 +1,25 @@
+[package]
+name = "cla-email"
+description = "Email bridge client: sends sealed bundles by SMTP and imports MEM mails by IMAP from the user's own account."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+tokio = { workspace = true, features = ["rt", "sync", "time", "macros", "net"] }
+lettre = { version = "0.11.23", default-features = false, features = ["builder", "smtp-transport", "tokio1", "tokio1-rustls", "webpki-roots", "ring"] }
+async-imap = { version = "0.12.0", default-features = false, features = ["runtime-tokio"] }
+mail-parser = { version = "0.11.9", default-features = false }
+tokio-rustls = { version = "0.26.6", default-features = false, features = ["ring", "tls12"] }
+webpki-roots = "1.0.9"
+futures-util.workspace = true
+zeroize.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "net", "time"] }

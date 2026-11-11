@@ -1,0 +1,32 @@
+; MEM outer envelope, v1. Visible to every carrier.
+; No user ids, names, route history, sender identity, or absolute timestamps.
+
+bundle = {
+  0: 1,                    ; version
+  1: bstr .size 16,        ; bundle_id — 128 random bits (never UUIDv7)
+  2: kind,
+  3: bstr .size 16,        ; dst_tag — rendezvous tag
+  4: lifetime_s,           ; max lifetime
+  5: uint,                 ; age_ms — time since creation, updated per hop
+  6: uint .le 5,           ; hops_remaining
+  7: copies,               ; spray-and-wait copy budget
+  ? 8: pow,                ; intro bundles only, required there
+  9: bstr,                 ; payload — see payload.cddl
+  10: bstr .size 16,       ; purge_commitment
+}
+
+kind = &(
+  msg: 0,
+  ack: 1,
+  intro: 2,
+  control: 3,
+  key-update: 4,
+)
+
+lifetime_s = uint .le 2592000   ; 30 days; intro additionally capped at 72 h (259200) by policy
+copies = 1..64
+
+; Proof of work.
+; nonce (8 bytes) || difficulty (1 byte, leading zero bits of the Argon2id output).
+; Intro bundles additionally carry copies <= 4.
+pow = bstr .size 9

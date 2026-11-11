@@ -1,0 +1,11 @@
+; MEM pairing card, v1.
+; Text form: "memcard1:" + base64url (no padding) of this CBOR.
+
+card = {
+  0: 1,                    ; version
+  1: bstr .size 32,        ; identity_pk (Ed25519)
+  2: bstr .size 32,        ; mailbox_pk (X25519)
+  3: bstr .size 16,        ; pairing_nonce
+  ? 4: tstr .size (1..64), ; display_name (self-chosen, untrusted)
+  5: bstr .size 64,        ; Ed25519 signature over "MEM/v1/card" || cbor(card without key 5)
+}

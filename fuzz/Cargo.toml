@@ -1,0 +1,121 @@
+[package]
+name = "mem-fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+# Kept out of the main workspace: needs nightly and libFuzzer.
+[workspace]
+
+[dependencies]
+libfuzzer-sys = "0.4"
+mem-proto = { path = "../crates/mem-proto" }
+mem-fountain = { path = "../crates/mem-fountain" }
+cla-qr = { path = "../crates/cla-qr" }
+cla-ble = { path = "../crates/cla-ble" }
+
+[[bin]]
+name = "bundle_decode"
+path = "fuzz_targets/bundle_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "cbor_scan"
+path = "fuzz_targets/cbor_scan.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "frame_decode"
+path = "fuzz_targets/frame_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "encounter_decode"
+path = "fuzz_targets/encounter_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fountain_assemble"
+path = "fuzz_targets/fountain_assemble.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "qr_luma"
+path = "fuzz_targets/qr_luma.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "inner_decode"
+path = "fuzz_targets/inner_decode.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "backup_decode"
+path = "fuzz_targets/backup_decode.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "ble_stream"
+path = "fuzz_targets/ble_stream.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "group_decode"
+path = "fuzz_targets/group_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "hub_decode"
+path = "fuzz_targets/hub_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "hublist_decode"
+path = "fuzz_targets/hublist_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "device_decode"
+path = "fuzz_targets/device_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "hint_decode"
+path = "fuzz_targets/hint_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "attest_decode"
+path = "fuzz_targets/attest_decode.rs"
+test = false
+doc = false
+bench = false

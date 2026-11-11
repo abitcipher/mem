@@ -1,0 +1,31 @@
+[package]
+name = "mem_ffi"
+description = "flutter_rust_bridge API surface of MEM. Only views and opaque handles cross FFI."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+flutter_rust_bridge = "=2.13.0"
+mem-core.workspace = true
+mem-runtime.workspace = true
+mem-proto.workspace = true
+cla-qr.workspace = true
+cla-audio.workspace = true
+hex.workspace = true
+log = "0.4.27"
+zeroize.workspace = true
+
+# Android Keystore holds the state key; reached through JNI, never through Dart.
+[target.'cfg(target_os = "android")'.dependencies]
+jni = { version = "0.21.1", default-features = false }
+
+# Not `lints.workspace`: flutter_rust_bridge's generated glue cannot meet the pedantic set.
+# Hand-written code in `src/api` is still checked by clippy in CI.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

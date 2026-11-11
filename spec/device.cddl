@@ -1,0 +1,50 @@
+; Several devices for one identity. Deterministic CBOR, integer keys ascending.
+; Inside other objects a certificate or list travels as a byte string holding its own
+; canonical CBOR (as group states carry cards).
+
+device_object = device_cert / device_list / device_request / device_setup / own_sync
+
+; The identity certifies a device key.
+device_cert = {
+  0: 1,                            ; version
+  1: bstr .size 32,                ; identity_pk (Ed25519)
+  2: bstr .size 32,                ; device_pk (Ed25519)
+  3: bstr .size 64,                ; identity's signature over
+                                   ;   "MEM/v1/device-cert" || cbor(cert without key 3)
+}
+
+; All current devices of one identity, the primary first; a higher serial replaces a lower one.
+device_list = {
+  0: bstr .size 32,                ; identity_pk
+  1: uint .size 4,                 ; serial
+  2: [1*4 bstr .cbor device_cert], ; same identity, distinct device keys
+  3: bstr .size 64,                ; identity's signature over
+                                   ;   "MEM/v1/device-list" || cbor(list without key 3)
+}
+
+; Shown as a QR code ("memdevice1:" + base64url) by a new device; the primary scans it.
+device_request = {
+  0: bstr .size 32,                ; device_pk (Ed25519)
+  1: bstr .size 32,                ; the device's first mailbox key (X25519)
+  2: bstr .size 16,                ; nonce
+  3: bstr .size 64,                ; device key's signature over
+                                   ;   "MEM/v1/device-request" || cbor(request without key 3)
+}
+
+; device_id = BLAKE3(device_pk)[0..8]
+
+; Sealed to a new device (frame object kind 3): HPKE suite 1 to the request's mailbox key,
+; info "MEM/v1/device-setup", aad = the request's nonce. The plaintext is the main device's
+; state for the new device in the app's own snapshot format (same version on both devices).
+device_setup = {
+  0: 1,                            ; version
+  1: bstr .size 32,                ; HPKE enc
+  2: bstr .size (1..65472),        ; ciphertext
+}
+
+; Content type 8 inside an inner payload between the devices of one identity.
+own_sync = {
+  0: 1 / 2,                        ; 1 contact added, 2 contact removed
+  1: bstr .size (1..8192),         ; 1: the contact's record in the app's snapshot format;
+                                   ; 2: the contact's identity key (32 bytes)
+}
