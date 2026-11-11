@@ -1,6 +1,6 @@
-<p align="center"><img src="assets/brand/logo-128x128.png" width="96" height="96" alt="MEM logo"></p>
+<p align="center"><img src="assets/brand/logo.svg" width="166" height="166" alt="MEM logo"></p>
 
-# MEM — Mesh Messenger
+## MEM — Mesh Messenger
 
 End-to-end encrypted messages between people who have approved each other, over **any** medium
 that is available: an animated QR code on a screen, the local Wi-Fi network, another messaging
@@ -10,10 +10,8 @@ app, and later radio, couriers and our own hub.
 > works. If only a less private one is available, MEM tells you exactly what it would expose and
 > sends only with your consent.
 
-**Status: experimental.** See
-[CHANGELOG.md](CHANGELOG.md) for what works and the known gaps. No external security audit yet.
 
-## Try it
+### Try it
 
 1. Install the APK on two Android phones, or run the Linux build on a desktop.
 2. **Add contact**: one phone shows *My code*, the other scans it under *Scan or paste*. Then
@@ -28,7 +26,7 @@ app, and later radio, couriers and our own hub.
 4. *Channels* (Wi-Fi icon) shows what each channel exposes and turns Wi-Fi delivery off.
    *Privacy log* lists every message that went below a contact's privacy floor.
 
-## Build
+### Build
 
 Requirements: Rust (pinned by `rust-toolchain.toml`), Flutter 3.47+, and for Android the SDK
 and NDK.
@@ -46,7 +44,7 @@ flutter build apk --release --split-per-abi
 After changing `crates/mem-ffi/src/api`, regenerate the bindings with
 `flutter_rust_bridge_codegen generate` (version 2.13.0) in `app/`.
 
-## Repository
+### Repository
 
 - `crates/`: the Rust core (sans-IO protocol, crypto, runtime, FFI).
 - `app/`: the Flutter application.
@@ -54,6 +52,18 @@ After changing `crates/mem-ffi/src/api`, regenerate the bindings with
 - `hub/`: the store-and-forward hub (Elixir).
 - `tests/invariants/`: cross-crate tests of the security invariants.
 
-## License
+**Status: experimental.** See
+[CHANGELOG.md](CHANGELOG.md) for what works and the known gaps. No external security audit yet.
 
-Not yet decided. All rights reserved until then.
+
+### License
+
+MEM is source-available, not open source. See [LICENSE.md](LICENSE.md).
+
+- The protocol specification in `spec/` is under CC BY 4.0: implement it freely.
+- Everything else is under the PolyForm Strict License 1.0.0 with an additional permission for
+  security research: you may read, build, run and audit it for noncommercial purposes, but not
+  redistribute it or build other products on it without written permission.
+
+To report a vulnerability, see [SECURITY.md](SECURITY.md). To contribute, see
+[CONTRIBUTING.md](CONTRIBUTING.md).

@@ -25,5 +25,7 @@ machine-checkable form of the wire format, and `mem-proto` must match them.
 | `vectors/backup/backup-0.2.0-ft8.cbor`, `.txt` | The same identity backed up by builds up to 0.2.0-ft.8, before the default-floor setting; proves older backups still restore. Test-only secret. |
 | `vectors/attest/*` | Two fixed identities attesting at `https://basa.ua`: the objects as CBOR and `attest.json` (keys, emoji, text forms); checked by `mem-core` |
 
+License: the schemas and vectors in this directory are under CC BY 4.0 (`LICENSE`).
+
 Encoding rules: deterministic CBOR, integer map keys, definite lengths only, max nesting
 depth 8.

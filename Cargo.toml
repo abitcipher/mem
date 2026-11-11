@@ -25,7 +25,7 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.99"
 repository = "https://example.invalid/mem" # placeholder
-# License intentionally unset until one is chosen.
+# Source-available, see LICENSE.md. Not an SPDX-listed open-source license.
 publish = false
 
 [workspace.dependencies]

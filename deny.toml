@@ -71,7 +71,7 @@ crate = "ws_stream_wasm"
 allow = ["Unlicense"]
 
 [licenses.private]
-# Workspace crates are unpublished and unlicensed until a license is chosen.
+# Workspace crates are unpublished and source-available (LICENSE.md), not under an allowlisted license.
 ignore = true
 
 [bans]
