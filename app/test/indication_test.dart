@@ -1,6 +1,10 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart'
+    show GlobalCupertinoLocalizations;
+import 'package:flutter_localizations/flutter_localizations.dart'
+    show GlobalWidgetsLocalizations;
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_chat_core/flutter_chat_core.dart' as fc;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mem/l10n/gen/app_localizations.dart';
@@ -9,6 +13,14 @@ import 'package:mem/src/ui_settings.dart';
 import 'package:mem/widgets/grade_badge.dart';
 import 'package:mem/widgets/grade_symbol.dart';
 import 'package:mem/widgets/message_bubble.dart';
+
+/// The app's own delegates (the generated list still names the pre-split Material ones).
+const _delegates = <LocalizationsDelegate<dynamic>>[
+  AppLocalizations.delegate,
+  GlobalMaterialLocalizations.delegate,
+  GlobalWidgetsLocalizations.delegate,
+  GlobalCupertinoLocalizations.delegate,
+];
 
 const _t0 = 1800000000000;
 var _now = _t0;
@@ -45,7 +57,7 @@ Future<void> _show(
   final settings = UiSettings.read(null)..badgeMode = mode;
   await tester.pumpWidget(
     MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: _delegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: Center(
@@ -249,7 +261,7 @@ Future<MessageBubble> _bubble(
   );
   await tester.pumpWidget(
     MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: _delegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: Align(

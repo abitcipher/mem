@@ -14,6 +14,9 @@ analyzer:
     - build/**
     - android/**
     - linux/**
+    # Written by `flutter gen-l10n`, which still imports the pre-split Material and Cupertino
+    # localizations.
+    - lib/l10n/gen/**
 
     - rust_builder/cargokit/**
 linter:

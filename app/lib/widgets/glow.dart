@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The highlight of the neutral UI: a hairline outline with a faint rainbow glow, drawn along part
 /// of the edge only and fading into the background at both ends, so it is barely noticeable.

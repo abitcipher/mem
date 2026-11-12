@@ -1,8 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_chat_core/flutter_chat_core.dart' as fc;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
-// flutter_chat_ui builds on the standalone material_ui package; its composer needs this ancestor.
-import 'package:material_ui/material_ui.dart' as mui;
 
 import '../app_scope.dart';
 import '../l10n/gen/app_localizations.dart';
@@ -248,8 +246,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                   : const [SizedBox.shrink()],
             ),
           Expanded(
-            child: mui.Material(
-              type: mui.MaterialType.transparency,
+            // A transparent Material ancestor for the chat's composer and its ink effects.
+            child: Material(
+              type: MaterialType.transparency,
               child: Chat(
                 currentUserId: _me,
                 theme: chatTheme(Theme.of(context)),

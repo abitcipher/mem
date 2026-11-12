@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_chat_core/flutter_chat_core.dart' as fc;
 import 'package:intl/intl.dart';
 
@@ -317,7 +317,7 @@ class _IndicationState extends State<Indication> {
             child: SizeTransition(
               sizeFactor: animation,
               axis: Axis.horizontal,
-              axisAlignment: -1,
+              alignment: AlignmentDirectional.topStart,
               child: child,
             ),
           ),

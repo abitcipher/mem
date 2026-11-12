@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The user's appearance choice (Profile → Appearance).
 enum AppTheme { system, white, gray, black }

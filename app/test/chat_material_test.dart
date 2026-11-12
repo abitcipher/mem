@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_chat_core/flutter_chat_core.dart' as fc;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:material_ui/material_ui.dart' as mui;
 
 void main() {
   testWidgets('flutter_chat_ui composer builds inside the app shell', (
@@ -10,12 +9,10 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        localizationsDelegates: const [
-          mui.GlobalMaterialLocalizations.delegate,
-        ],
+        localizationsDelegates: const [GlobalMaterialLocalizations.delegate],
         home: Scaffold(
-          body: mui.Material(
-            type: mui.MaterialType.transparency,
+          body: Material(
+            type: MaterialType.transparency,
             child: Chat(
               currentUserId: 'me',
               chatController: fc.InMemoryChatController(),
@@ -27,6 +24,6 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    expect(find.byType(mui.TextField), findsOneWidget);
+    expect(find.byType(TextField), findsOneWidget);
   });
 }
