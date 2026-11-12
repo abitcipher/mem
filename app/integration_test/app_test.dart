@@ -86,8 +86,32 @@ Future<void> _until(
   }
 }
 
-/// Types into the chat composer. After a route was pushed and popped the field keeps focus
-/// but loses its input connection, so tap it to reconnect first.
+/// Waits for the channel sheet after a send. The offers come from the core in real time, so the
+/// sheet may open a moment after the frames settle.
+Future<void> _sheet(WidgetTester tester) async {
+  await _until(
+    tester,
+    () => find.text('How should this message travel?').evaluate().isNotEmpty,
+  );
+  await _settle(tester);
+}
+
+/// Sends [text] from the chat composer and waits for the channel sheet. A note shown over the
+/// composer can swallow the tap that connects the keyboard, and the send action is then lost:
+/// the text stays in the field, so try again.
+Future<void> _send(WidgetTester tester, String text) async {
+  final field = find.byType(mui.TextField);
+  for (var attempt = 0; attempt < 5; attempt++) {
+    await tester.tap(field);
+    await _settle(tester);
+    await tester.enterText(field, text);
+    await tester.testTextInput.receiveAction(TextInputAction.send);
+    await _settle(tester);
+    if (tester.widget<mui.TextField>(field).controller?.text != text) break;
+  }
+  await _sheet(tester);
+}
+
 /// Opens the home screen's menu and picks [label].
 Future<void> _menu(WidgetTester tester, String label) async {
   await tester.tap(find.byIcon(Icons.more_vert));
@@ -95,6 +119,8 @@ Future<void> _menu(WidgetTester tester, String label) async {
   await tester.tap(find.text(label).last);
 }
 
+/// Types into the chat composer. After a route was pushed and popped the field keeps focus
+/// but loses its input connection, so tap it to reconnect first.
 Future<void> _type(WidgetTester tester, String text) async {
   final field = find.byType(mui.TextField);
   await tester.tap(field);
@@ -172,6 +198,9 @@ String _attestRequest({
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
+  // The Rust library can be loaded once per process, so the tests share it.
+  setUpAll(RustLib.init);
+
   testWidgets('pair, consent-gated send, receive with provenance', (
     tester,
   ) async {
@@ -180,7 +209,6 @@ void main() {
     tester.platformDispatcher.accessibilityFeaturesTestValue =
         const FakeAccessibilityFeatures(disableAnimations: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
-    await RustLib.init();
     final tmp = await Directory.systemTemp.createTemp('mem-it-');
     final a = await openNode(dir: '${tmp.path}/a');
     final b = await openNode(dir: '${tmp.path}/b');
@@ -229,9 +257,7 @@ void main() {
     await tester.tap(find.text('Bohdan'));
     await _calm(tester);
     // The chat composer comes from flutter_chat_ui, built on material_ui.
-    await tester.enterText(find.byType(mui.TextField), 'Привіт! Meet at 6?');
-    await tester.testTextInput.receiveAction(TextInputAction.send);
-    await _settle(tester);
+    await _send(tester, 'Привіт! Meet at 6?');
     expect(find.text('How should this message travel?'), findsOneWidget);
     await _shot(tester, '04-channels');
     await tester.tap(find.text('Sharing through another app'));
@@ -275,11 +301,7 @@ void main() {
       const Duration(seconds: 6),
     ); // the "Copied" note covers the composer
     await _settle(tester);
-    await tester.tap(find.byType(mui.TextField));
-    await _settle(tester);
-    await tester.enterText(find.byType(mui.TextField), 'second');
-    await tester.testTextInput.receiveAction(TextInputAction.send);
-    await _settle(tester);
+    await _send(tester, 'second');
     await tester.tap(find.text('Sharing through another app'));
     await _settle(tester);
     await tester.tap(find.text('Allow for this contact…'));
@@ -299,11 +321,7 @@ void main() {
     expect(left, inInclusiveRange(86_400_000 - 120_000, 86_400_000));
     await tester.pump(const Duration(seconds: 6));
     await _settle(tester);
-    await tester.tap(find.byType(mui.TextField));
-    await _settle(tester);
-    await tester.enterText(find.byType(mui.TextField), 'third');
-    await tester.testTextInput.receiveAction(TextInputAction.send);
-    await _settle(tester);
+    await _send(tester, 'third');
     await tester.tap(find.text('Sharing through another app'));
     await _settle(tester);
     expect(find.text('Privacy check'), findsNothing);
@@ -316,11 +334,7 @@ void main() {
     // text on a second screen; backing out there sends nothing.
     await tester.pump(const Duration(seconds: 6));
     await _settle(tester);
-    await tester.tap(find.byType(mui.TextField));
-    await _settle(tester);
-    await tester.enterText(find.byType(mui.TextField), 'plain words');
-    await tester.testTextInput.receiveAction(TextInputAction.send);
-    await _settle(tester);
+    await _send(tester, 'plain words');
     await tester.ensureVisible(
       find.text('Plain text through another app (not encrypted)'),
     );
@@ -816,7 +830,6 @@ void main() {
     tester.platformDispatcher.accessibilityFeaturesTestValue =
         const FakeAccessibilityFeatures(disableAnimations: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
-    await RustLib.init();
     final tmp = await Directory.systemTemp.createTemp('mem-it-attest-');
     final a = await openNode(dir: '${tmp.path}/a');
     final b = await openNode(dir: '${tmp.path}/b');

@@ -7,7 +7,7 @@
 //!   floor), so the consent gate, the privacy log and provenance apply unchanged.
 //!   A bundle the hub accepted is not uploaded again; a resealed one is.
 //! - **Fetching** reveals only 2-byte tag prefixes, padded with random decoys to a power of two.
-//! On connecting, a backlog pass covers every day since the last completed
+//!   On connecting, a backlog pass covers every day since the last completed
 //!   fetch (at most the 31-day receive window), in batches; then a live set of the days around
 //!   now stays active. The pass repeats hourly and when the day changes.
 //! - **Purge tokens** of every bundle we tombstone go to the hub too, which is

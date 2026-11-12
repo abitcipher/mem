@@ -11,6 +11,15 @@ ignore = [
     # `paste` (proc-macro, build time only) is archived but has no known vulnerability. Pulled in
     # by netlink-packet-core ← netwatch ← iroh; no maintained alternative upstream.
     { id = "RUSTSEC-2024-0436", reason = "unmaintained build-time macro via iroh; no vulnerability" },
+    # `pin-utils` is archived but has no known vulnerability. Pulled in by async-imap (email
+    # channel); no maintained alternative upstream.
+    { id = "RUSTSEC-2026-0441", reason = "unmaintained helper macros via async-imap; no vulnerability" },
+    # SQLite before 3.54.0 can return stale memory when it opens a database with a crafted
+    # `-wal` file written by someone else. The only database here is the courier store, which
+    # the app creates itself in its private directory and never imports from outside. No
+    # SQLCipher release bundles a fixed SQLite yet (rusqlite 0.41 with `bundled-sqlcipher` still
+    # ships 3.53.4), so upgrading would only hide the finding. Remove when one does.
+    { id = "RUSTSEC-2026-0459", reason = "not reachable: only self-created private database files are opened; no fixed SQLCipher release yet" },
 ]
 
 [licenses]

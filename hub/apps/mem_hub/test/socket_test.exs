@@ -25,8 +25,11 @@ defmodule MemHub.SocketTest do
   end
 
   defp recv_http(conn) do
+    socket = Mint.HTTP.get_socket(conn)
+
+    # Only this connection's packets: an earlier connection's close may still be in the mailbox.
     receive do
-      msg ->
+      {tag, ^socket, _} = msg when tag in [:tcp, :tcp_closed] ->
         {:ok, conn, responses} = Mint.WebSocket.stream(conn, msg)
         {conn, responses}
     after
