@@ -490,6 +490,9 @@ pub struct SentText {
     pub message_id: String,
     /// Whether it is already on its way to the contact over a nearby connection.
     pub sending_nearby: bool,
+    /// Whether it is already being uploaded to the hub (the hub is on, connected and within
+    /// the contact's floor), so nothing needs to be chosen.
+    pub sending_hub: bool,
 }
 
 /// Our pairing card.
@@ -2456,7 +2459,8 @@ impl MemNode {
     }
 
     /// Seals a text message for a contact and queues it. If the contact is nearby on the local
-    /// network (and that is within the floor), it is sent right away.
+    /// network, or else the hub is connected (and that channel is within the floor), it is sent
+    /// right away.
     ///
     /// # Errors
     ///
@@ -2479,6 +2483,16 @@ impl MemNode {
             sending_nearby: out
                 .iter()
                 .any(|o| matches!(o, Output::Transmit { peer: Some(_), .. })),
+            sending_hub: out.iter().any(|o| {
+                matches!(
+                    o,
+                    Output::Transmit {
+                        cla: ClaId::Hub,
+                        peer: None,
+                        ..
+                    }
+                )
+            }),
         })
     }
 

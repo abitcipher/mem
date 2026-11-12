@@ -8,6 +8,7 @@ import '../app_scope.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../src/rust/api.dart';
 import '../src/ui_settings.dart';
+import '../widgets/chat_sync.dart';
 import 'chat.dart';
 
 /// A member's name as shown: the name from their card, else the start of their fingerprint.
@@ -140,7 +141,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   void _sync() {
     final items = _state!.node.groupMessages(groupId: widget.groupId);
     _items = {for (final m in items) m.id: m};
-    _controller.setMessages([
+    showMessages(_controller, [
       for (final m in items)
         fc.Message.text(
           id: m.id,

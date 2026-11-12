@@ -5567,11 +5567,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   SentText dco_decode_sent_text(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 2)
-      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
     return SentText(
       messageId: dco_decode_String(arr[0]),
       sendingNearby: dco_decode_bool(arr[1]),
+      sendingHub: dco_decode_bool(arr[2]),
     );
   }
 
@@ -6893,7 +6894,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_messageId = sse_decode_String(deserializer);
     var var_sendingNearby = sse_decode_bool(deserializer);
-    return SentText(messageId: var_messageId, sendingNearby: var_sendingNearby);
+    var var_sendingHub = sse_decode_bool(deserializer);
+    return SentText(
+      messageId: var_messageId,
+      sendingNearby: var_sendingNearby,
+      sendingHub: var_sendingHub,
+    );
   }
 
   @protected
@@ -8122,6 +8128,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.messageId, serializer);
     sse_encode_bool(self.sendingNearby, serializer);
+    sse_encode_bool(self.sendingHub, serializer);
   }
 
   @protected
@@ -8986,7 +8993,8 @@ class MemNodeImpl extends RustOpaque implements MemNode {
       );
 
   /// Seals a text message for a contact and queues it. If the contact is nearby on the local
-  /// network (and that is within the floor), it is sent right away.
+  /// network, or else the hub is connected (and that channel is within the floor), it is sent
+  /// right away.
   ///
   /// # Errors
   ///

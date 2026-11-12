@@ -369,6 +369,7 @@ void main() {
       text: 'Yes, see you 👍',
     );
     expect(reply.sendingNearby, isFalse);
+    expect(reply.sendingHub, isFalse);
     final ready = await b.transmit(
       messageId: reply.messageId,
       channel: Channel.qr,

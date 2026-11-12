@@ -7000,9 +7000,11 @@ impl SseDecode for crate::api::SentText {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_messageId = <String>::sse_decode(deserializer);
         let mut var_sendingNearby = <bool>::sse_decode(deserializer);
+        let mut var_sendingHub = <bool>::sse_decode(deserializer);
         return crate::api::SentText {
             message_id: var_messageId,
             sending_nearby: var_sendingNearby,
+            sending_hub: var_sendingHub,
         };
     }
 }
@@ -8126,6 +8128,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::SentText {
         [
             self.message_id.into_into_dart().into_dart(),
             self.sending_nearby.into_into_dart().into_dart(),
+            self.sending_hub.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -9163,6 +9166,7 @@ impl SseEncode for crate::api::SentText {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.message_id, serializer);
         <bool>::sse_encode(self.sending_nearby, serializer);
+        <bool>::sse_encode(self.sending_hub, serializer);
     }
 }
 

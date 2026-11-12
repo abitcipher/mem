@@ -619,7 +619,8 @@ abstract class MemNode implements RustOpaqueInterface {
   Future<void> sendGroupText({required String groupId, required String text});
 
   /// Seals a text message for a contact and queues it. If the contact is nearby on the local
-  /// network (and that is within the floor), it is sent right away.
+  /// network, or else the hub is connected (and that channel is within the floor), it is sent
+  /// right away.
   ///
   /// # Errors
   ///
@@ -2206,10 +2207,19 @@ class SentText {
   /// Whether it is already on its way to the contact over a nearby connection.
   final bool sendingNearby;
 
-  const SentText({required this.messageId, required this.sendingNearby});
+  /// Whether it is already being uploaded to the hub (the hub is on, connected and within
+  /// the contact's floor), so nothing needs to be chosen.
+  final bool sendingHub;
+
+  const SentText({
+    required this.messageId,
+    required this.sendingNearby,
+    required this.sendingHub,
+  });
 
   @override
-  int get hashCode => messageId.hashCode ^ sendingNearby.hashCode;
+  int get hashCode =>
+      messageId.hashCode ^ sendingNearby.hashCode ^ sendingHub.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -2217,7 +2227,8 @@ class SentText {
       other is SentText &&
           runtimeType == other.runtimeType &&
           messageId == other.messageId &&
-          sendingNearby == other.sendingNearby;
+          sendingNearby == other.sendingNearby &&
+          sendingHub == other.sendingHub;
 }
 
 /// A signed attestation, ready to send.

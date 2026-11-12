@@ -10,6 +10,7 @@ import '../app_scope.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../src/rust/api.dart';
 import '../src/ui_settings.dart';
+import '../widgets/chat_sync.dart';
 import '../widgets/grade_badge.dart';
 import 'contact.dart';
 import 'receive.dart';
@@ -55,7 +56,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (mounted) _noNote = AppLocalizations.of(context).requestNoNote;
     final items = _state!.node.messages(contactId: widget.contactId);
     _items = {for (final m in items) m.id: m};
-    _controller.setMessages([
+    final next = [
       for (final m in items)
         fc.Message.text(
           id: m.id,
@@ -73,7 +74,8 @@ class _ChatScreenState extends State<ChatScreen> {
             MessageStatus.queued || MessageStatus.received => null,
           },
         ),
-    ]);
+    ];
+    showMessages(_controller, next);
     if (mounted) setState(() {});
   }
 
@@ -85,8 +87,9 @@ class _ChatScreenState extends State<ChatScreen> {
         text: text,
       );
       state.changed();
-      // Already on its way over Wi-Fi: no need to ask how it should travel.
-      if (mounted && !sent.sendingNearby) {
+      // Already on its way over Wi-Fi or through the hub: no need to ask how it should
+      // travel. Tapping the message still offers every channel.
+      if (mounted && !sent.sendingNearby && !sent.sendingHub) {
         await startSendFlow(context, sent.messageId);
       }
     } on Object catch (e) {

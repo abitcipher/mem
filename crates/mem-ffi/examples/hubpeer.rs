@@ -1,8 +1,14 @@
-//! Test peer (not shipped): a headless MEM node on the dev hub, driven by a command file.
+//! Test peer (not shipped): a headless MEM node on the dev hub or the local network, driven by a
+//! command file.
 //!
-//! `cargo run -p mem_ffi --example hubpeer -- <state-dir> <hub-url> [name]`; append commands to
+//! `cargo run -p mem_ffi --example hubpeer -- <state-dir> <hub-url>|lan [name]`; with `lan` the
+//! hub stays off and the node uses the local network instead. Append commands to
 //! `<state-dir>/cmd`, one per line:
 //! - `card` prints this node's card text
+//! - `pair <raw-screencap>` reads a `memcard1:` QR as `request` does and pairs with that card
+//!   (the other side pairs by receiving this node's card text)
+//! - `nearby` prints the contacts reachable on the local network now
+//! - `qr <raw-screencap>` prints the text of a QR code found in a screencap
 //! - `request <raw-screencap> <note>` reads a `memcard1:` QR from an `adb exec-out screencap`
 //!   (raw RGBA) file and sends that card a contact request
 //! - `contacts`, `msgs <id-prefix>`, `send <id-prefix> <text>`
@@ -12,7 +18,7 @@
 use std::time::Duration;
 
 use cla_qr::{Payload, decode_luma};
-use mem_ffi::api::{MemNode, open_node};
+use mem_ffi::api::{Channel, MemNode, ReceiveOutcome, open_node};
 
 fn find(node: &MemNode, prefix: &str) -> Option<String> {
     node.contacts()
@@ -70,6 +76,20 @@ fn run(node: &MemNode, line: &str) {
             ),
             None => println!("REQUEST no QR found in {a}"),
         },
+        "pair" => match qr_text(a) {
+            Some(card) => match node.receive_text(card, Channel::Qr) {
+                Ok(ReceiveOutcome::Contact {
+                    contact_id, sas, ..
+                }) => {
+                    println!("PAIR ok {contact_id} symbols {sas}");
+                }
+                Ok(_) => println!("PAIR the code was not a card"),
+                Err(e) => println!("PAIR {e}"),
+            },
+            None => println!("PAIR no QR found in {a}"),
+        },
+        "nearby" => println!("NEARBY {:?}", node.nearby()),
+        "qr" => println!("QR {}", qr_text(a).unwrap_or_default()),
         "contacts" => {
             for c in node.contacts().unwrap_or_default() {
                 println!(
@@ -115,9 +135,14 @@ fn main() {
     let name = args.next().unwrap_or_else(|| "Hub peer".into());
     let node = open_node(dir.clone()).unwrap();
     node.set_display_name(Some(name)).unwrap();
-    node.set_lan_enabled(false).unwrap();
-    node.set_hub_url(Some(hub)).unwrap();
-    node.set_hub_enabled(true).unwrap();
+    if hub == "lan" {
+        node.set_hub_enabled(false).unwrap();
+        node.set_lan_enabled(true).unwrap();
+    } else {
+        node.set_lan_enabled(false).unwrap();
+        node.set_hub_url(Some(hub)).unwrap();
+        node.set_hub_enabled(true).unwrap();
+    }
     println!(
         "READY {}",
         node.profile().map(|p| p.fingerprint).unwrap_or_default()
