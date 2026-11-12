@@ -782,44 +782,47 @@ void main() {
     await _menu(tester, 'Devices');
     await _settle(tester);
     expect(find.text('This device'), findsOneWidget);
-    // E reports in to A at once (over the LAN here); F never does.
-    for (
-      var i = 0;
-      i < 60 && !a.ownDevices().where((d) => d.joined).skip(1).isNotEmpty;
-      i++
-    ) {
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    // E reports in to A at once (over the LAN here); F never does. Without the local network
+    // the report cannot travel, so the rest of the device list is checked only with it.
+    if (Platform.environment['MEM_IT_SKIP_LAN'] != '1') {
+      for (
+        var i = 0;
+        i < 60 && !a.ownDevices().where((d) => d.joined).skip(1).isNotEmpty;
+        i++
+      ) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 500)),
+        );
+      }
+      expect(a.ownDevices().where((d) => !d.main && d.joined).length, 1);
+      state.changed();
+      await _settle(tester);
+      expect(find.text('Other device'), findsNWidgets(2));
+      expect(find.textContaining('Not joined yet'), findsOneWidget);
+      await _shot(tester, '13-devices');
+      // Remove the abandoned one: nothing was shared with it.
+      final waiting = find.ancestor(
+        of: find.textContaining('Not joined yet'),
+        matching: find.byType(ListTile),
       );
+      await tester.tap(
+        find.descendant(of: waiting, matching: find.text('Remove')),
+      );
+      await _settle(tester);
+      expect(find.text('Remove this device?'), findsOneWidget);
+      expect(find.textContaining('It never joined'), findsOneWidget);
+      await tester.tap(find.text('Remove').last);
+      await _settle(tester);
+      expect(find.text('Other device'), findsOneWidget);
+      expect(find.textContaining('Not joined yet'), findsNothing);
+      // Then E, which joined: it is told to forget our MEM.
+      await tester.tap(find.text('Remove'));
+      await _settle(tester);
+      expect(find.textContaining('It never joined'), findsNothing);
+      await tester.tap(find.text('Remove').last);
+      await _settle(tester);
+      expect(find.text('Other device'), findsNothing);
     }
-    expect(a.ownDevices().where((d) => !d.main && d.joined).length, 1);
-    state.changed();
-    await _settle(tester);
-    expect(find.text('Other device'), findsNWidgets(2));
-    expect(find.textContaining('Not joined yet'), findsOneWidget);
-    await _shot(tester, '13-devices');
-    // Remove the abandoned one: nothing was shared with it.
-    final waiting = find.ancestor(
-      of: find.textContaining('Not joined yet'),
-      matching: find.byType(ListTile),
-    );
-    await tester.tap(
-      find.descendant(of: waiting, matching: find.text('Remove')),
-    );
-    await _settle(tester);
-    expect(find.text('Remove this device?'), findsOneWidget);
-    expect(find.textContaining('It never joined'), findsOneWidget);
-    await tester.tap(find.text('Remove').last);
-    await _settle(tester);
-    expect(find.text('Other device'), findsOneWidget);
-    expect(find.textContaining('Not joined yet'), findsNothing);
-    // Then E, which joined: it is told to forget our MEM.
-    await tester.tap(find.text('Remove'));
-    await _settle(tester);
-    expect(find.textContaining('It never joined'), findsNothing);
-    await tester.tap(find.text('Remove').last);
-    await _settle(tester);
-    expect(find.text('Other device'), findsNothing);
     await tester.pageBack();
     await _settle(tester);
 
