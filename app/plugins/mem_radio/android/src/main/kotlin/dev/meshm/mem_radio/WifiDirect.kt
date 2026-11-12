@@ -153,7 +153,7 @@ class WifiDirect(private val context: Context, private val events: Events) {
                 put("s", s)
             }
         }
-        val info = WifiP2pDnsSdServiceInfo.newInstance("mem", SERVICE_TYPE, txt)
+        val info = WifiP2pDnsSdServiceInfo.newInstance(INSTANCE, SERVICE_TYPE, txt)
         m.clearLocalServices(c, object : WifiP2pManager.ActionListener {
             override fun onSuccess() = m.addLocalService(c, info, null)
             override fun onFailure(reason: Int) = m.addLocalService(c, info, null)
@@ -168,7 +168,13 @@ class WifiDirect(private val context: Context, private val events: Events) {
             { _, _, _ -> },
             { fullDomain, record, device -> onRecord(fullDomain, record, device) },
         )
-        m.addServiceRequest(c, WifiP2pDnsSdServiceRequest.newInstance(SERVICE_TYPE), null)
+        // Ask for our instance by name: a request for the service type alone is answered with
+        // the instance names only, never with the TXT record that carries the details.
+        m.addServiceRequest(
+            c,
+            WifiP2pDnsSdServiceRequest.newInstance(INSTANCE, SERVICE_TYPE),
+            null,
+        )
         discover()
     }
 
@@ -270,6 +276,7 @@ class WifiDirect(private val context: Context, private val events: Events) {
     }
 
     companion object {
+        const val INSTANCE = "mem"
         const val SERVICE_TYPE = "_mem1._udp"
         const val NONCE_EVERY_MS = 15 * 60 * 1000L
         const val DISCOVER_EVERY_MS = 30_000L
