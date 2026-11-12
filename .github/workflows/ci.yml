@@ -12,16 +12,16 @@ env:
 
 jobs:
   fmt:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: rustup show active-toolchain # installs the pinned toolchain from rust-toolchain.toml
       - run: cargo fmt --all --check
 
   clippy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: rustup show active-toolchain
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy --workspace --all-targets --all-features --locked
@@ -30,10 +30,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-24.04, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: rustup show active-toolchain
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --workspace --all-features --locked
@@ -41,9 +41,9 @@ jobs:
 
   wasm32:
     # The sans-IO core must build for wasm32 (no I/O, no clocks).
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: rustup show active-toolchain
       - uses: Swatinem/rust-cache@v2
       - run: >
@@ -51,9 +51,9 @@ jobs:
           -p mem-proto -p mem-crypto -p mem-core -p mem-fountain
 
   deny:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: EmbarkStudios/cargo-deny-action@v2
         with:
           command: check
@@ -62,17 +62,17 @@ jobs:
     # Supply chain: every dependency is audited by a trusted organisation
     # (imports in supply-chain/config.toml) or explicitly exempted. A new crate or version
     # fails here until it is audited or exempted in a reviewed change.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: cargo install --locked cargo-vet@0.10.2
       - run: cargo vet --locked
 
   cddl:
     # Syntax-check every CDDL schema and validate published vectors against it.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: taiki-e/install-action@v2
         with:
           tool: cddl
@@ -110,12 +110,12 @@ jobs:
 
   hub:
     # The Elixir hub with its Rust NIF.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: hub
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: erlef/setup-beam@v1
         with:
           otp-version: "29"
@@ -128,9 +128,9 @@ jobs:
 
   fuzz-smoke:
     # Short run on every PR; long runs happen nightly (fuzz.yml).
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: rustup toolchain install nightly --profile minimal
       - uses: taiki-e/install-action@v2
         with:
@@ -146,9 +146,9 @@ jobs:
   app:
     # Flutter app: analyzer, widget tests, and the end-to-end integration test against the real
     # Rust core (built by cargokit) under a virtual display.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: rustup show active-toolchain
       - uses: Swatinem/rust-cache@v2
       - uses: subosito/flutter-action@v2
