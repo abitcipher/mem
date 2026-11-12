@@ -7,13 +7,14 @@ import 'package:material_ui/material_ui.dart' as mui;
 import '../app_scope.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../src/rust/api.dart';
-import '../src/ui_settings.dart';
 import '../widgets/chat_sync.dart';
+import '../widgets/message_bubble.dart';
 import 'chat.dart';
 
-/// A member's name as shown: the name from their card, else the start of their fingerprint.
+/// A member's name as shown: the name the user gave them (contacts only), else the name from
+/// their card, else the start of their fingerprint.
 String memberTitle(GroupMemberItem m) =>
-    m.displayName ?? m.fingerprint.split(' ').take(2).join(' ');
+    m.alias ?? m.displayName ?? m.fingerprint.split(' ').take(2).join(' ');
 
 /// Pick contacts and a name; we become the admin.
 class CreateGroupScreen extends StatefulWidget {
@@ -290,18 +291,13 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                                   style: Theme.of(context).textTheme.labelSmall,
                                 ),
                               ),
-                            SimpleTextMessage(
+                            MessageBubble(
                               message: message,
-                              index: index,
-                              showTime: settings.showMessageTimes,
+                              isSentByMe: isSentByMe,
+                              item: item,
+                              settings: settings,
                             ),
-                            if (item != null)
-                              Provenance(
-                                item: item,
-                                detailed:
-                                    settings.badgeDetail ==
-                                    BadgeDetail.detailed,
-                              ),
+                            if (item != null) Provenance(item: item),
                           ],
                         );
                       },

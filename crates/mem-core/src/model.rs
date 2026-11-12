@@ -117,6 +117,8 @@ pub struct GroupMemberView {
     pub contact: ContactId,
     /// Name from their card (unverified).
     pub display_name: Option<String>,
+    /// The name the user gave them, if they are a contact.
+    pub alias: Option<String>,
     /// Grouped base32 fingerprint.
     pub fingerprint: String,
     /// One of our contacts, not only a group member.
@@ -207,6 +209,8 @@ pub struct ContactView {
     pub requested: bool,
     /// Their email address, as the user typed it.
     pub email: Option<String>,
+    /// The name the user gave this contact, shown instead of `display_name`.
+    pub alias: Option<String>,
 }
 
 /// A contact request waiting in quarantine. Never shown as a message.

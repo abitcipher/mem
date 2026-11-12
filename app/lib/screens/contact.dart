@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../app_scope.dart';
 import '../l10n/gen/app_localizations.dart';
+import '../src/rust/api.dart';
 
 class ContactScreen extends StatelessWidget {
   const ContactScreen({required this.contactId, super.key});
@@ -25,7 +26,29 @@ class ContactScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(title, style: Theme.of(context).textTheme.headlineSmall),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined),
+                tooltip: l.contactAliasEdit,
+                onPressed: () => _rename(context, c),
+              ),
+            ],
+          ),
+          // With a name of the user's own, the one the contact chose stays visible.
+          if (c.alias != null)
+            Text(
+              c.displayName == null
+                  ? l.contactTheirNameNone
+                  : l.contactTheirName(c.displayName!),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           const SizedBox(height: 4),
           Row(
             children: [
@@ -117,6 +140,55 @@ class ContactScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// The name the user gives this contact, kept on this phone only.
+  Future<void> _rename(BuildContext context, ContactItem c) async {
+    final l = AppLocalizations.of(context);
+    final state = AppScope.read(context);
+    final controller = TextEditingController(text: c.alias ?? '');
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l.contactAliasTitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: controller,
+              autofocus: true,
+              maxLength: 64,
+              decoration: InputDecoration(hintText: c.displayName),
+              onSubmitted: (v) => Navigator.pop(context, v),
+            ),
+            Text(l.contactAliasHelp),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: Text(l.save),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (name == null || !context.mounted) return;
+    final trimmed = name.trim();
+    try {
+      await state.node.setContactAlias(
+        contactId: contactId,
+        alias: trimmed.isEmpty ? null : trimmed,
+      );
+      state.changed();
+    } on Object catch (e) {
+      if (context.mounted) showSnack(context, reasonText(context, e));
+    }
   }
 
   /// Asks, then removes the contact (it cannot be undone: pairing again is needed).

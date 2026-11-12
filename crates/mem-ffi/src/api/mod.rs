@@ -525,6 +525,8 @@ pub struct ContactItem {
     pub last_unix_ms: i64,
     /// Their email address, typed by the user.
     pub email: Option<String>,
+    /// The name the user gave them (local), shown instead of `display_name`.
+    pub alias: Option<String>,
 }
 
 /// The mail account for the email bridge. The password goes in, never out.
@@ -654,6 +656,8 @@ pub struct GroupMemberItem {
     pub contact_id: String,
     /// Name from their card (unverified).
     pub display_name: Option<String>,
+    /// The name the user gave them, if they are a contact.
+    pub alias: Option<String>,
     /// Grouped fingerprint.
     pub fingerprint: String,
     /// One of our contacts.
@@ -1397,6 +1401,27 @@ impl MemNode {
     pub fn remove_contact(&self, contact_id: String) -> Result<(), String> {
         self.handle(Input::RemoveContact(contact(&contact_id)?))?;
         Ok(())
+    }
+
+    /// Sets or clears the name the user gives a contact (local only; `None` shows the
+    /// contact's own name again).
+    ///
+    /// # Errors
+    ///
+    /// `"invalid_name"` (over 64 bytes), `"unknown_contact"`.
+    pub fn set_contact_alias(
+        &self,
+        contact_id: String,
+        alias: Option<String>,
+    ) -> Result<(), String> {
+        let out = self.handle(Input::SetContactAlias {
+            contact: contact(&contact_id)?,
+            alias,
+        })?;
+        match rejected(&out) {
+            Some(r) => Err(reason_key(r)),
+            None => Ok(()),
+        }
     }
 
     /// Sets or clears a contact's email address.
@@ -2293,6 +2318,7 @@ impl MemNode {
                             .map_or(c.added_unix_ms, |m| m.created_unix_ms)),
                         last_text: last.map(|m| m.text),
                         email: c.email.clone(),
+                        alias: c.alias.clone(),
                     }
                 })
                 .collect();
@@ -2902,6 +2928,7 @@ fn group_item(g: GroupView) -> GroupItem {
             .map(|m| GroupMemberItem {
                 contact_id: hex::encode(m.contact.as_bytes()),
                 display_name: m.display_name,
+                alias: m.alias,
                 fingerprint: m.fingerprint,
                 is_contact: m.is_contact,
                 is_me: m.is_me,
@@ -2927,7 +2954,7 @@ fn msg(hex_id: &str) -> Result<MsgId, String> {
 fn contact_name(agent: &mem_core::Agent, id: ContactId) -> String {
     agent
         .contact(id)
-        .map(|c| c.display_name.unwrap_or(c.fingerprint))
+        .map(|c| c.alias.or(c.display_name).unwrap_or(c.fingerprint))
         .unwrap_or_default()
 }
 

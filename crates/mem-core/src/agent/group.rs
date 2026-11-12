@@ -691,6 +691,7 @@ impl Agent {
                     requested: false,
                     group_only: true,
                     email: None,
+                    alias: None,
                     xwing: None,
                     told_xwing: 0,
                     devices: Vec::new(),
@@ -798,6 +799,7 @@ impl Agent {
             GroupMemberView {
                 contact: ContactId(*m),
                 display_name: c.and_then(|c| c.display_name.clone()),
+                alias: c.and_then(|c| c.alias.clone()),
                 fingerprint: mem_crypto::IdentityPublic::from_bytes(m)
                     .map(|p| p.fingerprint().to_string_grouped())
                     .unwrap_or_default(),

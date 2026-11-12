@@ -8,6 +8,8 @@ import '../src/platform.dart';
 import '../src/rust/api.dart';
 import '../src/ui_settings.dart';
 import '../theme.dart';
+import '../widgets/grade_symbol.dart';
+import '../widgets/help.dart';
 import '../widgets/logo.dart';
 import 'backup.dart';
 import 'channels.dart';
@@ -24,7 +26,6 @@ class SettingsScreen extends StatelessWidget {
     final state = AppScope.of(context);
     final s = state.settings;
     final profile = state.node.profile();
-    final small = Theme.of(context).textTheme.bodySmall;
     void push(Widget w) =>
         Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => w));
 
@@ -93,87 +94,98 @@ class SettingsScreen extends StatelessWidget {
             onChanged: (v) =>
                 state.updateSettings((s) => s.showMessageTimes = v),
           ),
-          Text(l.badgeDetail),
-          const SizedBox(height: 8),
-          SegmentedButton<BadgeDetail>(
-            showSelectedIcon: false,
-            segments: [
-              ButtonSegment(
-                value: BadgeDetail.compact,
-                label: Text(l.badgeCompact),
-              ),
-              ButtonSegment(
-                value: BadgeDetail.detailed,
-                label: Text(l.badgeDetailed),
-              ),
-            ],
-            selected: {s.badgeDetail},
-            onSelectionChanged: (v) =>
-                state.updateSettings((s) => s.badgeDetail = v.first),
-          ),
-          const SizedBox(height: 4),
-          Text(l.badgeDetailHelp, style: small),
+          const _BadgeSettings(),
 
           _Section(l.sectionQr),
-          Text(l.qrPaceTitle),
-          const SizedBox(height: 8),
-          SegmentedButton<QrPace>(
-            showSelectedIcon: false,
-            segments: [
-              ButtonSegment(value: QrPace.easy, label: Text(l.qrPaceEasy)),
-              ButtonSegment(value: QrPace.normal, label: Text(l.qrPaceNormal)),
-              ButtonSegment(value: QrPace.fast, label: Text(l.qrPaceFast)),
-            ],
-            selected: {s.qrPace},
-            onSelectionChanged: (v) =>
-                state.updateSettings((s) => s.qrPace = v.first),
+          Explained(
+            help: l.qrPaceHint,
+            builder: (context, help) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                titleWithHelp(l.qrPaceTitle, help),
+                const SizedBox(height: 8),
+                SegmentedButton<QrPace>(
+                  showSelectedIcon: false,
+                  segments: [
+                    ButtonSegment(
+                      value: QrPace.easy,
+                      label: Text(l.qrPaceEasy),
+                    ),
+                    ButtonSegment(
+                      value: QrPace.normal,
+                      label: Text(l.qrPaceNormal),
+                    ),
+                    ButtonSegment(
+                      value: QrPace.fast,
+                      label: Text(l.qrPaceFast),
+                    ),
+                  ],
+                  selected: {s.qrPace},
+                  onSelectionChanged: (v) =>
+                      state.updateSettings((s) => s.qrPace = v.first),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 4),
-          Text(l.qrPaceHint, style: small),
 
           _Section(l.sectionPrivacy),
-          Text(l.defaultFloor),
-          DropdownButton<int>(
-            isExpanded: true,
-            value: state.node.defaultFloor(),
-            items: [
-              for (var g = 0; g <= 4; g++)
-                DropdownMenuItem(value: g, child: Text(gradeLabel(l, g))),
-            ],
-            onChanged: (g) async {
-              if (g == null) return;
-              try {
-                await state.node.setDefaultFloor(floor: g);
-              } on Object catch (e) {
-                if (context.mounted) showSnack(context, reasonText(context, e));
-              }
-              state.changed();
-            },
+          Explained(
+            help: l.defaultFloorHelp,
+            builder: (context, help) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                titleWithHelp(l.defaultFloor, help),
+                DropdownButton<int>(
+                  isExpanded: true,
+                  value: state.node.defaultFloor(),
+                  items: [
+                    for (var g = 0; g <= 4; g++)
+                      DropdownMenuItem(value: g, child: Text(gradeLabel(l, g))),
+                  ],
+                  onChanged: (g) async {
+                    if (g == null) return;
+                    try {
+                      await state.node.setDefaultFloor(floor: g);
+                    } on Object catch (e) {
+                      if (context.mounted) {
+                        showSnack(context, reasonText(context, e));
+                      }
+                    }
+                    state.changed();
+                  },
+                ),
+              ],
+            ),
           ),
-          Text(l.defaultFloorHelp, style: small),
           // Off by default; advertising the intro tag lets card holders notice us.
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(l.requestsNearby),
-            subtitle: Text(l.requestsNearbyHelp),
-            value: state.node.acceptsRequestsNearby(),
-            onChanged: (v) async {
-              try {
-                await state.node.setAcceptsRequestsNearby(enabled: v);
-              } on Object catch (e) {
-                if (context.mounted) showSnack(context, reasonText(context, e));
-              }
-              state.changed();
-            },
+          Explained(
+            help: l.requestsNearbyHelp,
+            builder: (context, help) => SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: titleWithHelp(l.requestsNearby, help),
+              value: state.node.acceptsRequestsNearby(),
+              onChanged: (v) async {
+                try {
+                  await state.node.setAcceptsRequestsNearby(enabled: v);
+                } on Object catch (e) {
+                  if (context.mounted) {
+                    showSnack(context, reasonText(context, e));
+                  }
+                }
+                state.changed();
+              },
+            ),
           ),
           if (Platform.isAndroid)
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l.blockScreenshots),
-              subtitle: Text(l.blockScreenshotsHelp),
-              value: s.blockScreenshots,
-              onChanged: (v) =>
-                  state.updateSettings((s) => s.blockScreenshots = v),
+            Explained(
+              help: l.blockScreenshotsHelp,
+              builder: (context, help) => SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: titleWithHelp(l.blockScreenshots, help),
+                value: s.blockScreenshots,
+                onChanged: (v) =>
+                    state.updateSettings((s) => s.blockScreenshots = v),
+              ),
             ),
 
           _Section(l.sectionCourier),
@@ -188,13 +200,15 @@ class SettingsScreen extends StatelessWidget {
                 state.updateSettings((s) => s.showNetworkStatus = v),
           ),
           if (Platform.isAndroid) ...[
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l.stayReachable),
-              subtitle: Text(l.stayReachableHelp),
-              value: s.stayReachable,
-              onChanged: (v) =>
-                  state.updateSettings((s) => s.stayReachable = v),
+            Explained(
+              help: l.stayReachableHelp,
+              builder: (context, help) => SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: titleWithHelp(l.stayReachable, help),
+                value: s.stayReachable,
+                onChanged: (v) =>
+                    state.updateSettings((s) => s.stayReachable = v),
+              ),
             ),
             if (s.stayReachable) const _BatteryStatus(),
           ],
@@ -276,12 +290,14 @@ class _CourierSettingState extends State<_CourierSetting> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(l.courierMode),
-          subtitle: Text(l.courierModeHelp),
-          value: on,
-          onChanged: (v) => _set(v ? status.defaultBytes.toInt() : 0),
+        Explained(
+          help: l.courierModeHelp,
+          builder: (context, help) => SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: titleWithHelp(l.courierMode, help),
+            value: on,
+            onChanged: (v) => _set(v ? status.defaultBytes.toInt() : 0),
+          ),
         ),
         if (on) ...[
           Text(l.courierLimit(_steps[step])),
@@ -452,27 +468,190 @@ class _RetrySettingState extends State<_RetrySetting> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l.retryTitle),
-        Row(
-          children: [
-            Expanded(
-              child: Slider(
-                min: min,
-                max: max,
-                divisions: range.max - range.min,
-                value: days,
-                label: l.retryDays(days.round()),
-                onChanged: (v) => setState(() => _days = v),
-                onChangeEnd: (v) async {
-                  await state.node.setRetryDays(days: v.round());
-                  state.changed();
+        Explained(
+          help: l.retryHelp,
+          builder: (context, help) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              titleWithHelp(l.retryTitle, help),
+              Row(
+                children: [
+                  Expanded(
+                    child: Slider(
+                      min: min,
+                      max: max,
+                      divisions: range.max - range.min,
+                      value: days,
+                      label: l.retryDays(days.round()),
+                      onChanged: (v) => setState(() => _days = v),
+                      onChangeEnd: (v) async {
+                        await state.node.setRetryDays(days: v.round());
+                        state.changed();
+                      },
+                    ),
+                  ),
+                  Text(l.retryDays(days.round())),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// What the message badges slider does at [mode], in words.
+String badgeModeText(AppLocalizations l, int mode) {
+  if (mode <= UiSettings.minBadgeMode) return l.badgeModeMinimal;
+  if (mode == UiSettings.minBadgeMode + 1) return l.badgeModeSymbols;
+  final d = UiSettings.badgeDelay(mode);
+  if (d == null) return l.badgeModeFull;
+  final s = d.inSeconds;
+  final text = s < 60
+      ? l.durationSeconds(s)
+      : s < 3600
+      ? l.durationMinutes(s ~/ 60)
+      : l.durationHours(s ~/ 3600);
+  return l.badgeModeCollapse(text);
+}
+
+/// Message badges: the slider, the symbol style with a preview, and the detail of full badges.
+class _BadgeSettings extends StatefulWidget {
+  const _BadgeSettings();
+
+  @override
+  State<_BadgeSettings> createState() => _BadgeSettingsState();
+}
+
+class _BadgeSettingsState extends State<_BadgeSettings> {
+  double? _dragging;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final state = AppScope.of(context);
+    final s = state.settings;
+    final small = Theme.of(context).textTheme.bodySmall;
+    final mode = (_dragging ?? s.badgeMode.toDouble()).round();
+    final surface = Theme.of(context).colorScheme.surface;
+    final digit = Theme.of(context).textTheme.labelSmall?.fontSize ?? 11;
+    Widget symbol(String grade, SymbolShape shape) => GradeSymbol(
+      grade: grade,
+      shape: shape,
+      background: surface,
+      fontSize: digit * 1.6,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Explained(
+          help: l.messageBadgesHelp,
+          builder: (context, help) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              titleWithHelp(l.messageBadges, help),
+              Slider(
+                min: UiSettings.minBadgeMode.toDouble(),
+                max: UiSettings.maxBadgeMode.toDouble(),
+                divisions: UiSettings.maxBadgeMode - UiSettings.minBadgeMode,
+                value: mode.toDouble(),
+                label: badgeModeText(l, mode),
+                onChanged: (v) => setState(() => _dragging = v),
+                onChangeEnd: (v) {
+                  setState(() => _dragging = null);
+                  state.updateSettings((s) => s.badgeMode = v.round());
                 },
               ),
-            ),
-            Text(l.retryDays(days.round())),
-          ],
+              Text(badgeModeText(l, mode)),
+            ],
+          ),
         ),
-        Text(l.retryHelp, style: Theme.of(context).textTheme.bodySmall),
+        const SizedBox(height: 12),
+        Explained(
+          help: l.badgeSymbolsHelp,
+          builder: (context, help) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              titleWithHelp(l.badgeSymbols, help),
+              const SizedBox(height: 8),
+              SegmentedButton<SymbolStyle>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(
+                    value: SymbolStyle.byGrade,
+                    label: Text(l.badgeSymbolsByGrade),
+                  ),
+                  ButtonSegment(
+                    value: SymbolStyle.oneShape,
+                    label: Text(l.badgeSymbolsOneShape),
+                  ),
+                ],
+                selected: {s.symbolStyle},
+                onSelectionChanged: (v) =>
+                    state.updateSettings((s) => s.symbolStyle = v.first),
+              ),
+              if (s.symbolStyle == SymbolStyle.oneShape) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final shape in oneShapeChoices)
+                      ChoiceChip(
+                        label: symbol('P1', shape),
+                        selected: s.symbolShape == shape,
+                        onSelected: (_) =>
+                            state.updateSettings((s) => s.symbolShape = shape),
+                      ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 8),
+              // Preview: every grade as it will look.
+              Wrap(
+                spacing: 14,
+                children: [
+                  for (final g in const ['P0', 'P1', 'P2', 'P3', 'P4', 'P5'])
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        symbol(g, shapeFor(g, s.symbolStyle, s.symbolShape)),
+                        const SizedBox(width: 3),
+                        Text(g, style: small),
+                      ],
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Explained(
+          help: l.badgeDetailHelp,
+          builder: (context, help) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              titleWithHelp(l.badgeDetail, help),
+              const SizedBox(height: 8),
+              SegmentedButton<BadgeDetail>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(
+                    value: BadgeDetail.compact,
+                    label: Text(l.badgeCompact),
+                  ),
+                  ButtonSegment(
+                    value: BadgeDetail.detailed,
+                    label: Text(l.badgeDetailed),
+                  ),
+                ],
+                selected: {s.badgeDetail},
+                onSelectionChanged: (v) =>
+                    state.updateSettings((s) => s.badgeDetail = v.first),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }

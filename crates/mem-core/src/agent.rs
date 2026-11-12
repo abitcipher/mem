@@ -324,6 +324,14 @@ pub enum Input {
     /// Remove a contact: its pairing secret, conversation, queued messages and rules go. If it is
     /// in a group with us it stays only a fellow group member (its 1:1 messages are refused).
     RemoveContact(ContactId),
+    /// Set or clear the name the user gives a contact (stays local; shown instead of the name
+    /// the contact chose).
+    SetContactAlias {
+        /// Contact.
+        contact: ContactId,
+        /// Name, or `None` to show the contact's own name again.
+        alias: Option<String>,
+    },
     /// Set or clear a contact's email address (typed by the user; stays local).
     SetContactEmail {
         /// Contact.
@@ -572,6 +580,8 @@ pub(crate) struct Contact {
     pub(crate) mailbox: MailboxPublic,
     pub(crate) secret: ContactSecret,
     pub(crate) display_name: Option<String>,
+    /// The name the user gave this contact; local only.
+    pub(crate) alias: Option<String>,
     pub(crate) trust: TrustLevel,
     pub(crate) floor: PrivacyGrade,
     pub(crate) added_unix_ms: u64,
@@ -1122,6 +1132,7 @@ impl Agent {
                 alloc::vec![Output::Persist(StorageOp::SaveSnapshot)]
             }
             Input::SetDisplayName(name) => self.set_display_name(name),
+            Input::SetContactAlias { contact, alias } => self.set_contact_alias(contact, alias),
             Input::AttestationReturned(entry) => self.record_attestation(entry),
             Input::SetFloor { floor, .. } | Input::SetDefaultFloor { floor }
                 if !floor.allowed_as_floor() =>
@@ -4348,6 +4359,7 @@ impl Agent {
                 let updated = self.contacts.contains_key(&id);
                 // A re-pairing keeps the address the user typed.
                 let kept_email = self.contacts.get(&id).and_then(|c| c.email.clone());
+                let kept_alias = self.contacts.get(&id).and_then(|c| c.alias.clone());
                 let (floor, added, trust) = self
                     .contacts
                     .get(&id)
@@ -4373,6 +4385,7 @@ impl Agent {
                         requested: false,
                         group_only: false,
                         email: kept_email,
+                        alias: kept_alias,
                         xwing: None,
                         told_xwing: 0,
                         devices: Vec::new(),
@@ -4408,6 +4421,25 @@ impl Agent {
         }
         self.display_name = name;
         alloc::vec![Output::Persist(StorageOp::SaveSnapshot)]
+    }
+
+    fn set_contact_alias(&mut self, contact: ContactId, alias: Option<String>) -> Vec<Output> {
+        let alias = alias
+            .map(|n| String::from(n.trim()))
+            .filter(|n| !n.is_empty());
+        if alias
+            .as_ref()
+            .is_some_and(|n| n.len() > MAX_DISPLAY_NAME_LEN)
+        {
+            return alloc::vec![Output::Rejected(RejectReason::InvalidName)];
+        }
+        match self.contacts.get_mut(&contact) {
+            Some(c) if !c.group_only => {
+                c.alias = alias;
+                alloc::vec![Output::Persist(StorageOp::SaveSnapshot)]
+            }
+            _ => alloc::vec![Output::Rejected(RejectReason::UnknownContact)],
+        }
     }
 
     // ---------------------------------------------------------------- queries
@@ -4664,6 +4696,7 @@ fn view(id: ContactId, c: &Contact) -> ContactView {
         added_unix_ms: c.added_unix_ms,
         requested: c.requested,
         email: c.email.clone(),
+        alias: c.alias.clone(),
     }
 }
 

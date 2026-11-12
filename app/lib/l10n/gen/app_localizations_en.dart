@@ -671,7 +671,56 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get badgeDetailHelp =>
-      'Every message always shows which channel carried it and its privacy grade. Detailed also shows when, and whether it was delivered.';
+      'Detailed full badges also show when each channel carried the message, and whether it was delivered.';
+
+  @override
+  String get messageBadges => 'Message badges';
+
+  @override
+  String get messageBadgesHelp =>
+      'Channel badges sit at the bottom left of each message, on the line of its time. They can shrink to a symbol after a while; tap the badge area to see them in full. Other apps (P4), plain text (P5) and channels below the contact\'s privacy floor always keep their symbol.';
+
+  @override
+  String get badgeModeMinimal => 'Symbols only for P4, P5 and below the floor';
+
+  @override
+  String get badgeModeSymbols => 'Symbols only';
+
+  @override
+  String badgeModeCollapse(String delay) {
+    return 'Full, then symbols after $delay';
+  }
+
+  @override
+  String get badgeModeFull => 'Always full';
+
+  @override
+  String durationSeconds(int n) {
+    return '$n s';
+  }
+
+  @override
+  String durationMinutes(int n) {
+    return '$n min';
+  }
+
+  @override
+  String durationHours(int n) {
+    return '$n h';
+  }
+
+  @override
+  String get badgeSymbols => 'Badge symbols';
+
+  @override
+  String get badgeSymbolsByGrade => 'By grade';
+
+  @override
+  String get badgeSymbolsOneShape => 'One shape';
+
+  @override
+  String get badgeSymbolsHelp =>
+      'By grade gives each privacy grade its own shape. One shape uses the shape you pick for P0 to P3; P4 and P5 always keep their own.';
 
   @override
   String get sectionQr => 'QR codes';
@@ -1312,6 +1361,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get contactEmailSave => 'Save';
 
   @override
+  String get contactAliasEdit => 'Rename';
+
+  @override
+  String get contactAliasTitle => 'Name for this contact';
+
+  @override
+  String get contactAliasHelp =>
+      'Only you see this name; your contact is not told. Leave it empty to show the name they chose.';
+
+  @override
+  String contactTheirName(String name) {
+    return 'Their own name: $name';
+  }
+
+  @override
+  String get contactTheirNameNone => 'They chose no name';
+
+  @override
   String get reason_invalid_email_account =>
       'Check the mail account: address, servers, ports, login and app password are all needed.';
 
@@ -1390,10 +1457,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get soundPairHint =>
-      'Hold both phones close, with this screen open on both. They play their codes and listen for each other; it takes about a minute.';
-
-  @override
-  String get soundPairListening => 'Playing my code and listening…';
+      'Hold the phones close. On one phone tap Listen, on the other Play my code. The phones then take turns by themselves; at the end both show the same symbols. Compare them and tap Connect on both phones.';
 
   @override
   String soundPairProgress(int received, int needed) {
@@ -1401,8 +1465,61 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get soundPairGot =>
-      'Their code arrived. Keep this screen open until the other phone has it too.';
+  String get soundListen => 'Listen';
+
+  @override
+  String get soundPlay => 'Play my code';
+
+  @override
+  String get soundStop => 'Stop';
+
+  @override
+  String get soundIdle =>
+      'Choose what this phone does: listen, or play its code.';
+
+  @override
+  String get soundListening => 'Listening for the other phone…';
+
+  @override
+  String soundPlaying(int round, int rounds) {
+    return 'Playing my code, round $round of $rounds…';
+  }
+
+  @override
+  String get soundListenTimeout =>
+      'Nothing heard for two minutes. Bring the phones closer or make the room quieter, then listen again.';
+
+  @override
+  String get soundPlayDone =>
+      'My code was played three times. If the other phone did not get it, play it again.';
+
+  @override
+  String get soundTurnWait =>
+      'Their code arrived. Waiting for a quiet moment to play mine…';
+
+  @override
+  String get soundNoAnswer =>
+      'The other phone did not answer. Bring the phones closer or make the room quieter, then start again.';
+
+  @override
+  String get soundDecline => 'Decline';
+
+  @override
+  String get soundConnect => 'Connect';
+
+  @override
+  String get soundPaired => 'Connected. You can write to each other now.';
+
+  @override
+  String get soundDeclined =>
+      'Declined. A contact this exchange added was removed.';
+
+  @override
+  String get soundDeclinedKept =>
+      'Declined. The contact you already had stays as it was.';
+
+  @override
+  String get soundPairGot => 'Their code arrived.';
 
   @override
   String get soundPairNoMicrophone =>
@@ -1429,13 +1546,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get channelAudio => 'Sound';
 
   @override
-  String get soundPairStopped =>
-      'Stopped after three rounds without hearing the other phone. Bring the phones closer or make the room quieter, then try again.';
-
-  @override
-  String get soundPairTryAgain => 'Try again';
-
-  @override
   String get nearbyTitle => 'Nearby';
 
   @override
@@ -1450,7 +1560,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get connectSoundHint =>
-      'Hold both phones close, with this screen open on both. Each plays where it can be reached on this Wi-Fi; one exchange takes about 6 seconds.';
+      'Hold the phones close. On one phone tap Listen, on the other Play my code. The listening phone connects to the playing one over this Wi-Fi; one code takes about 6 seconds.';
 
   @override
   String get connectSoundExposure =>

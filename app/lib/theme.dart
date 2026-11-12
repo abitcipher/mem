@@ -52,6 +52,25 @@ abstract final class MemColors {
     };
   }
 
+  /// The grade colour for something drawn on [background] (a message bubble): the light shade
+  /// on a dark background and the dark shade on a light one, so the grade keeps its contrast on
+  /// both bubble colours in both themes.
+  static Color gradeOn(BuildContext context, Color background, String grade) {
+    final darkBg = background.computeLuminance() < 0.4;
+    return switch (grade) {
+      'P0' || 'P1' => darkBg ? Colors.green.shade300 : Colors.green.shade800,
+      'P2' ||
+      'P3' => darkBg ? Colors.blueGrey.shade200 : Colors.blueGrey.shade700,
+      'P4' => darkBg ? Colors.orange.shade300 : Colors.orange.shade900,
+      _ => darkBg ? Colors.red.shade300 : Colors.red.shade800,
+    };
+  }
+
+  /// Muted text on [background] (a message bubble).
+  static Color onBubble(Color background) => background.computeLuminance() < 0.4
+      ? Colors.white.withValues(alpha: 0.75)
+      : Colors.black.withValues(alpha: 0.65);
+
   /// "They will learn" marker in disclosures.
   static Color exposed(BuildContext context) =>
       _dark(context) ? Colors.orange.shade300 : Colors.orange.shade800;

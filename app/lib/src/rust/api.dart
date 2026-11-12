@@ -641,6 +641,14 @@ abstract class MemNode implements RustOpaqueInterface {
   /// A storage error.
   Future<void> setBleEnabled({required bool enabled});
 
+  /// Sets or clears the name the user gives a contact (local only; `None` shows the
+  /// contact's own name again).
+  ///
+  /// # Errors
+  ///
+  /// `"invalid_name"` (over 64 bytes), `"unknown_contact"`.
+  Future<void> setContactAlias({required String contactId, String? alias});
+
   /// Sets or clears a contact's email address.
   ///
   /// # Errors
@@ -1384,6 +1392,9 @@ class ContactItem {
   /// Their email address, typed by the user.
   final String? email;
 
+  /// The name the user gave them (local), shown instead of `display_name`.
+  final String? alias;
+
   const ContactItem({
     required this.id,
     this.displayName,
@@ -1395,6 +1406,7 @@ class ContactItem {
     this.lastText,
     required this.lastUnixMs,
     this.email,
+    this.alias,
   });
 
   @override
@@ -1408,7 +1420,8 @@ class ContactItem {
       floor.hashCode ^
       lastText.hashCode ^
       lastUnixMs.hashCode ^
-      email.hashCode;
+      email.hashCode ^
+      alias.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -1424,7 +1437,8 @@ class ContactItem {
           floor == other.floor &&
           lastText == other.lastText &&
           lastUnixMs == other.lastUnixMs &&
-          email == other.email;
+          email == other.email &&
+          alias == other.alias;
 }
 
 /// Courier mode: what this device carries for other people.
@@ -1625,6 +1639,9 @@ class GroupMemberItem {
   /// Name from their card (unverified).
   final String? displayName;
 
+  /// The name the user gave them, if they are a contact.
+  final String? alias;
+
   /// Grouped fingerprint.
   final String fingerprint;
 
@@ -1640,6 +1657,7 @@ class GroupMemberItem {
   const GroupMemberItem({
     required this.contactId,
     this.displayName,
+    this.alias,
     required this.fingerprint,
     required this.isContact,
     required this.isMe,
@@ -1650,6 +1668,7 @@ class GroupMemberItem {
   int get hashCode =>
       contactId.hashCode ^
       displayName.hashCode ^
+      alias.hashCode ^
       fingerprint.hashCode ^
       isContact.hashCode ^
       isMe.hashCode ^
@@ -1662,6 +1681,7 @@ class GroupMemberItem {
           runtimeType == other.runtimeType &&
           contactId == other.contactId &&
           displayName == other.displayName &&
+          alias == other.alias &&
           fingerprint == other.fingerprint &&
           isContact == other.isContact &&
           isMe == other.isMe &&

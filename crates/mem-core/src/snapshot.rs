@@ -266,6 +266,9 @@ struct ContactDto {
     /// The address the user typed.
     #[serde(default)]
     email: Option<String>,
+    /// The name the user gave the contact.
+    #[serde(default)]
+    alias: Option<String>,
     /// The contact's X-Wing key (re-validated at load) and what they confirmed.
     #[serde(default)]
     xwing: Option<Vec<u8>>,
@@ -1172,6 +1175,7 @@ fn contact_dto(id: ContactId, c: &Contact) -> ContactDto {
         requested: c.requested,
         group_only: c.group_only,
         email: c.email.clone(),
+        alias: c.alias.clone(),
         xwing: c.xwing.as_ref().map(|x| x.as_bytes().to_vec()),
         told_xwing: c.told_xwing,
         devices: c
@@ -1223,6 +1227,7 @@ fn contact_from_dto(
             requested: c.requested,
             group_only: c.group_only,
             email: c.email.clone(),
+            alias: c.alias.clone(),
             xwing: c
                 .xwing
                 .as_deref()

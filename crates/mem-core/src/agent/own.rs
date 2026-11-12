@@ -370,6 +370,7 @@ impl Agent {
                 requested: false,
                 group_only: false,
                 email: None,
+                alias: None,
                 xwing: None,
                 told_xwing: u32::MAX,
                 devices: Vec::new(),

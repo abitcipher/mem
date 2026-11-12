@@ -217,6 +217,9 @@ void main() {
     await a.setLanEnabled(enabled: false);
     await b.setLanEnabled(enabled: false);
     final state = AppState(a);
+    // This test reads the full channel badges; they stay full instead of collapsing to symbols
+    // after a delay (the collapsing itself has its own tests).
+    state.settings.badgeMode = UiSettings.maxBadgeMode;
 
     await tester.pumpWidget(
       RepaintBoundary(

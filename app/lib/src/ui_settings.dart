@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import '../widgets/grade_symbol.dart';
 import 'rust/api.dart';
 
 /// Interface language: the phone's, or a fixed one.
@@ -8,7 +9,7 @@ enum AppLanguage { system, en, uk }
 /// Which sound pairing by sound uses.
 enum SoundTone { audible, inaudible }
 
-/// How much the provenance badge under each message says. It is never hidden.
+/// How much a message's full channel badges say.
 enum BadgeDetail { compact, detailed }
 
 /// App settings that live only in the UI: stored as `key=value` lines in a small file next to
@@ -35,6 +36,42 @@ class UiSettings {
   bool blockScreenshots = false;
 
   BadgeDetail badgeDetail = BadgeDetail.compact;
+
+  /// Positions of the message badges slider, left to right.
+  static const minBadgeMode = 1;
+  static const maxBadgeMode = 14;
+
+  /// Message badges: 1 shows only the symbols of P4, P5 and grades below the contact's floor;
+  /// 2 shows symbols only; 3 to 13 show the full badges, then collapse them to symbols after
+  /// [badgeDelay]; 14 always shows the full badges.
+  int badgeMode = 5;
+
+  /// Collapse delays for slider positions 3 to 13.
+  static const _badgeDelays = [
+    3,
+    7,
+    15,
+    37,
+    60,
+    180,
+    300,
+    420,
+    1020,
+    1800,
+    3600,
+  ];
+
+  /// How long full badges stay before collapsing, for [mode]; `null` when they never show full by
+  /// themselves (1, 2) or never collapse (14).
+  static Duration? badgeDelay(int mode) => mode >= 3 && mode <= 13
+      ? Duration(seconds: _badgeDelays[mode - 3])
+      : null;
+
+  /// How grades map to symbol shapes.
+  SymbolStyle symbolStyle = SymbolStyle.byGrade;
+
+  /// The shape for P0 to P3 when [symbolStyle] is [SymbolStyle.oneShape].
+  SymbolShape symbolShape = SymbolShape.fisheye;
 
   /// Time under each message bubble.
   bool showMessageTimes = true;
@@ -87,6 +124,16 @@ class UiSettings {
             s.blockScreenshots = v == 'true';
           case 'badge_detail':
             s.badgeDetail = pick(BadgeDetail.values, v, BadgeDetail.compact);
+          case 'badge_mode':
+            final m = int.tryParse(v);
+            if (m != null) s.badgeMode = m.clamp(minBadgeMode, maxBadgeMode);
+          case 'symbol_style':
+            s.symbolStyle = pick(SymbolStyle.values, v, SymbolStyle.byGrade);
+          case 'symbol_shape':
+            final shape = pick(SymbolShape.values, v, SymbolShape.fisheye);
+            s.symbolShape = oneShapeChoices.contains(shape)
+                ? shape
+                : SymbolShape.fisheye;
           case 'message_times':
             s.showMessageTimes = v != 'false';
           case 'network_status':
@@ -124,6 +171,9 @@ class UiSettings {
           'language=${language.name}',
           'block_screenshots=$blockScreenshots',
           'badge_detail=${badgeDetail.name}',
+          'badge_mode=$badgeMode',
+          'symbol_style=${symbolStyle.name}',
+          'symbol_shape=${symbolShape.name}',
           'message_times=$showMessageTimes',
           'network_status=$showNetworkStatus',
           'stay_reachable=$stayReachable',

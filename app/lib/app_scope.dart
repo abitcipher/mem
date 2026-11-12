@@ -263,8 +263,10 @@ IconData channelIcon(Channel c) => switch (c) {
   Channel.audio => Icons.graphic_eq,
 };
 
+/// A contact's name as shown: the name the user gave them, else the one they chose, else the
+/// start of their fingerprint.
 String contactTitle(ContactItem c) =>
-    c.displayName ?? c.fingerprint.split(' ').take(2).join(' ');
+    c.alias ?? c.displayName ?? c.fingerprint.split(' ').take(2).join(' ');
 
 /// An alert as text, with an optional coloured icon and an optional action (never a modal
 /// window for something that needs no decision).

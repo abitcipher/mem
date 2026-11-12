@@ -678,7 +678,56 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get badgeDetailHelp =>
-      'Кожне повідомлення завжди показує, яким каналом воно пройшло, і його рівень приватності. Докладно — ще й коли та чи доставлено.';
+      'Докладні повні позначки показують ще й коли кожен канал переніс повідомлення та чи його доставлено.';
+
+  @override
+  String get messageBadges => 'Позначки повідомлень';
+
+  @override
+  String get messageBadgesHelp =>
+      'Позначки каналів стоять унизу ліворуч у кожному повідомленні, у рядку з його часом. Згодом вони можуть зменшуватися до символу; торкніться області позначок, щоб побачити їх повністю. Інші застосунки (P4), відкритий текст (P5) і канали нижче за поріг приватності контакту завжди лишають свій символ.';
+
+  @override
+  String get badgeModeMinimal => 'Символи лише для P4, P5 і нижче порогу';
+
+  @override
+  String get badgeModeSymbols => 'Лише символи';
+
+  @override
+  String badgeModeCollapse(String delay) {
+    return 'Повністю, потім символи через $delay';
+  }
+
+  @override
+  String get badgeModeFull => 'Завжди повністю';
+
+  @override
+  String durationSeconds(int n) {
+    return '$n с';
+  }
+
+  @override
+  String durationMinutes(int n) {
+    return '$n хв';
+  }
+
+  @override
+  String durationHours(int n) {
+    return '$n год';
+  }
+
+  @override
+  String get badgeSymbols => 'Символи позначок';
+
+  @override
+  String get badgeSymbolsByGrade => 'За рівнем';
+
+  @override
+  String get badgeSymbolsOneShape => 'Одна форма';
+
+  @override
+  String get badgeSymbolsHelp =>
+      '«За рівнем» дає кожному рівню приватності власну форму. «Одна форма» використовує обрану вами форму для P0–P3; P4 і P5 завжди мають свої.';
 
   @override
   String get sectionQr => 'QR-коди';
@@ -1327,6 +1376,24 @@ class AppLocalizationsUk extends AppLocalizations {
   String get contactEmailSave => 'Зберегти';
 
   @override
+  String get contactAliasEdit => 'Перейменувати';
+
+  @override
+  String get contactAliasTitle => 'Ім\'я для цього контакту';
+
+  @override
+  String get contactAliasHelp =>
+      'Це ім\'я бачите лише ви; контакт про нього не дізнається. Залиште порожнім, щоб показувати ім\'я, яке обрав контакт.';
+
+  @override
+  String contactTheirName(String name) {
+    return 'Власне ім\'я: $name';
+  }
+
+  @override
+  String get contactTheirNameNone => 'Контакт не обрав імені';
+
+  @override
   String get reason_invalid_email_account =>
       'Перевірте поштовий акаунт: потрібні адреса, сервери, порти, логін і пароль застосунку.';
 
@@ -1404,10 +1471,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get soundPairHint =>
-      'Тримайте телефони поруч, з цим екраном на обох. Вони відтворюють свої коди й слухають один одного; це триває близько хвилини.';
-
-  @override
-  String get soundPairListening => 'Відтворюю свій код і слухаю…';
+      'Тримайте телефони поруч. На одному натисніть «Слухати», на іншому «Відтворити мій код». Далі телефони обмінюються по черзі самі; наприкінці обидва покажуть однакові символи. Порівняйте їх і натисніть «З\'єднати» на обох.';
 
   @override
   String soundPairProgress(int received, int needed) {
@@ -1415,8 +1479,61 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
-  String get soundPairGot =>
-      'Їхній код отримано. Не закривайте цей екран, доки інший телефон теж його не отримає.';
+  String get soundListen => 'Слухати';
+
+  @override
+  String get soundPlay => 'Відтворити мій код';
+
+  @override
+  String get soundStop => 'Зупинити';
+
+  @override
+  String get soundIdle =>
+      'Оберіть, що робить цей телефон: слухає чи відтворює свій код.';
+
+  @override
+  String get soundListening => 'Слухаю інший телефон…';
+
+  @override
+  String soundPlaying(int round, int rounds) {
+    return 'Відтворюю свій код, раунд $round з $rounds…';
+  }
+
+  @override
+  String get soundListenTimeout =>
+      'Дві хвилини нічого не почуто. Наблизьте телефони або зробіть тихіше, і слухайте знову.';
+
+  @override
+  String get soundPlayDone =>
+      'Мій код відтворено тричі. Якщо інший телефон його не отримав, відтворіть ще раз.';
+
+  @override
+  String get soundTurnWait =>
+      'Їхній код отримано. Чекаю тиші, щоб відтворити свій…';
+
+  @override
+  String get soundNoAnswer =>
+      'Інший телефон не відповів. Наблизьте телефони або зробіть тихіше, і почніть знову.';
+
+  @override
+  String get soundDecline => 'Відхилити';
+
+  @override
+  String get soundConnect => 'З\'єднати';
+
+  @override
+  String get soundPaired => 'З\'єднано. Тепер ви можете писати одне одному.';
+
+  @override
+  String get soundDeclined =>
+      'Відхилено. Контакт, доданий цим обміном, вилучено.';
+
+  @override
+  String get soundDeclinedKept =>
+      'Відхилено. Контакт, який уже був, залишився без змін.';
+
+  @override
+  String get soundPairGot => 'Їхній код отримано.';
 
   @override
   String get soundPairNoMicrophone =>
@@ -1443,13 +1560,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get channelAudio => 'Звук';
 
   @override
-  String get soundPairStopped =>
-      'Зупинено після трьох спроб: інший телефон не почуто. Наблизьте телефони або зробіть тихіше, і спробуйте ще раз.';
-
-  @override
-  String get soundPairTryAgain => 'Спробувати ще раз';
-
-  @override
   String get nearbyTitle => 'Поруч';
 
   @override
@@ -1464,7 +1574,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get connectSoundHint =>
-      'Тримайте телефони поруч, з цим екраном на обох. Кожен відтворює, де його знайти в цій Wi-Fi; один обмін триває близько 6 секунд.';
+      'Тримайте телефони поруч. На одному натисніть «Слухати», на іншому «Відтворити мій код». Телефон, що слухає, з\'єднається з тим, що відтворює, через цю Wi-Fi; один код триває близько 6 секунд.';
 
   @override
   String get connectSoundExposure =>

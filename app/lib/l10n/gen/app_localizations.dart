@@ -1265,8 +1265,86 @@ abstract class AppLocalizations {
   /// No description provided for @badgeDetailHelp.
   ///
   /// In en, this message translates to:
-  /// **'Every message always shows which channel carried it and its privacy grade. Detailed also shows when, and whether it was delivered.'**
+  /// **'Detailed full badges also show when each channel carried the message, and whether it was delivered.'**
   String get badgeDetailHelp;
+
+  /// No description provided for @messageBadges.
+  ///
+  /// In en, this message translates to:
+  /// **'Message badges'**
+  String get messageBadges;
+
+  /// No description provided for @messageBadgesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel badges sit at the bottom left of each message, on the line of its time. They can shrink to a symbol after a while; tap the badge area to see them in full. Other apps (P4), plain text (P5) and channels below the contact\'s privacy floor always keep their symbol.'**
+  String get messageBadgesHelp;
+
+  /// No description provided for @badgeModeMinimal.
+  ///
+  /// In en, this message translates to:
+  /// **'Symbols only for P4, P5 and below the floor'**
+  String get badgeModeMinimal;
+
+  /// No description provided for @badgeModeSymbols.
+  ///
+  /// In en, this message translates to:
+  /// **'Symbols only'**
+  String get badgeModeSymbols;
+
+  /// No description provided for @badgeModeCollapse.
+  ///
+  /// In en, this message translates to:
+  /// **'Full, then symbols after {delay}'**
+  String badgeModeCollapse(String delay);
+
+  /// No description provided for @badgeModeFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Always full'**
+  String get badgeModeFull;
+
+  /// No description provided for @durationSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} s'**
+  String durationSeconds(int n);
+
+  /// No description provided for @durationMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} min'**
+  String durationMinutes(int n);
+
+  /// No description provided for @durationHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} h'**
+  String durationHours(int n);
+
+  /// No description provided for @badgeSymbols.
+  ///
+  /// In en, this message translates to:
+  /// **'Badge symbols'**
+  String get badgeSymbols;
+
+  /// No description provided for @badgeSymbolsByGrade.
+  ///
+  /// In en, this message translates to:
+  /// **'By grade'**
+  String get badgeSymbolsByGrade;
+
+  /// No description provided for @badgeSymbolsOneShape.
+  ///
+  /// In en, this message translates to:
+  /// **'One shape'**
+  String get badgeSymbolsOneShape;
+
+  /// No description provided for @badgeSymbolsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'By grade gives each privacy grade its own shape. One shape uses the shape you pick for P0 to P3; P4 and P5 always keep their own.'**
+  String get badgeSymbolsHelp;
 
   /// No description provided for @sectionQr.
   ///
@@ -2366,6 +2444,36 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get contactEmailSave;
 
+  /// No description provided for @contactAliasEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get contactAliasEdit;
+
+  /// No description provided for @contactAliasTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Name for this contact'**
+  String get contactAliasTitle;
+
+  /// No description provided for @contactAliasHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Only you see this name; your contact is not told. Leave it empty to show the name they chose.'**
+  String get contactAliasHelp;
+
+  /// No description provided for @contactTheirName.
+  ///
+  /// In en, this message translates to:
+  /// **'Their own name: {name}'**
+  String contactTheirName(String name);
+
+  /// No description provided for @contactTheirNameNone.
+  ///
+  /// In en, this message translates to:
+  /// **'They chose no name'**
+  String get contactTheirNameNone;
+
   /// No description provided for @reason_invalid_email_account.
   ///
   /// In en, this message translates to:
@@ -2507,14 +2615,8 @@ abstract class AppLocalizations {
   /// No description provided for @soundPairHint.
   ///
   /// In en, this message translates to:
-  /// **'Hold both phones close, with this screen open on both. They play their codes and listen for each other; it takes about a minute.'**
+  /// **'Hold the phones close. On one phone tap Listen, on the other Play my code. The phones then take turns by themselves; at the end both show the same symbols. Compare them and tap Connect on both phones.'**
   String get soundPairHint;
-
-  /// No description provided for @soundPairListening.
-  ///
-  /// In en, this message translates to:
-  /// **'Playing my code and listening…'**
-  String get soundPairListening;
 
   /// No description provided for @soundPairProgress.
   ///
@@ -2522,10 +2624,100 @@ abstract class AppLocalizations {
   /// **'Heard {received} of {needed} parts'**
   String soundPairProgress(int received, int needed);
 
+  /// No description provided for @soundListen.
+  ///
+  /// In en, this message translates to:
+  /// **'Listen'**
+  String get soundListen;
+
+  /// No description provided for @soundPlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Play my code'**
+  String get soundPlay;
+
+  /// No description provided for @soundStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get soundStop;
+
+  /// No description provided for @soundIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what this phone does: listen, or play its code.'**
+  String get soundIdle;
+
+  /// No description provided for @soundListening.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening for the other phone…'**
+  String get soundListening;
+
+  /// No description provided for @soundPlaying.
+  ///
+  /// In en, this message translates to:
+  /// **'Playing my code, round {round} of {rounds}…'**
+  String soundPlaying(int round, int rounds);
+
+  /// No description provided for @soundListenTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing heard for two minutes. Bring the phones closer or make the room quieter, then listen again.'**
+  String get soundListenTimeout;
+
+  /// No description provided for @soundPlayDone.
+  ///
+  /// In en, this message translates to:
+  /// **'My code was played three times. If the other phone did not get it, play it again.'**
+  String get soundPlayDone;
+
+  /// No description provided for @soundTurnWait.
+  ///
+  /// In en, this message translates to:
+  /// **'Their code arrived. Waiting for a quiet moment to play mine…'**
+  String get soundTurnWait;
+
+  /// No description provided for @soundNoAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'The other phone did not answer. Bring the phones closer or make the room quieter, then start again.'**
+  String get soundNoAnswer;
+
+  /// No description provided for @soundDecline.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get soundDecline;
+
+  /// No description provided for @soundConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get soundConnect;
+
+  /// No description provided for @soundPaired.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected. You can write to each other now.'**
+  String get soundPaired;
+
+  /// No description provided for @soundDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined. A contact this exchange added was removed.'**
+  String get soundDeclined;
+
+  /// No description provided for @soundDeclinedKept.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined. The contact you already had stays as it was.'**
+  String get soundDeclinedKept;
+
   /// No description provided for @soundPairGot.
   ///
   /// In en, this message translates to:
-  /// **'Their code arrived. Keep this screen open until the other phone has it too.'**
+  /// **'Their code arrived.'**
   String get soundPairGot;
 
   /// No description provided for @soundPairNoMicrophone.
@@ -2570,18 +2762,6 @@ abstract class AppLocalizations {
   /// **'Sound'**
   String get channelAudio;
 
-  /// No description provided for @soundPairStopped.
-  ///
-  /// In en, this message translates to:
-  /// **'Stopped after three rounds without hearing the other phone. Bring the phones closer or make the room quieter, then try again.'**
-  String get soundPairStopped;
-
-  /// No description provided for @soundPairTryAgain.
-  ///
-  /// In en, this message translates to:
-  /// **'Try again'**
-  String get soundPairTryAgain;
-
   /// No description provided for @nearbyTitle.
   ///
   /// In en, this message translates to:
@@ -2609,7 +2789,7 @@ abstract class AppLocalizations {
   /// No description provided for @connectSoundHint.
   ///
   /// In en, this message translates to:
-  /// **'Hold both phones close, with this screen open on both. Each plays where it can be reached on this Wi-Fi; one exchange takes about 6 seconds.'**
+  /// **'Hold the phones close. On one phone tap Listen, on the other Play my code. The listening phone connects to the playing one over this Wi-Fi; one code takes about 6 seconds.'**
   String get connectSoundHint;
 
   /// No description provided for @connectSoundExposure.

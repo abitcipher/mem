@@ -9,6 +9,7 @@ class GradeBadge extends StatelessWidget {
     required this.label,
     required this.grade,
     this.detail,
+    this.background,
     super.key,
   });
 
@@ -18,9 +19,16 @@ class GradeBadge extends StatelessWidget {
   /// Extra text after the grade, e.g. the time the channel carried the message.
   final String? detail;
 
+  /// What the badge is drawn on, when not the screen's surface (a message bubble): the colour
+  /// then follows it so the grade stays readable.
+  final Color? background;
+
   @override
   Widget build(BuildContext context) {
-    final color = MemColors.grade(context, grade);
+    final bg = background;
+    final color = bg == null
+        ? MemColors.grade(context, grade)
+        : MemColors.gradeOn(context, bg, grade);
     final plaintext = grade == 'P5';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
@@ -33,7 +41,9 @@ class GradeBadge extends StatelessWidget {
         detail == null ? '$label · $grade' : '$label · $grade · $detail',
         style: TextStyle(
           fontSize: 11,
-          color: plaintext ? Theme.of(context).colorScheme.onError : color,
+          color: plaintext
+              ? (color.computeLuminance() < 0.4 ? Colors.white : Colors.black)
+              : color,
           fontWeight: FontWeight.w600,
         ),
       ),

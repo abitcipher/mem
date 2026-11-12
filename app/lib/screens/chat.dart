@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_core/flutter_chat_core.dart' as fc;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
-import 'package:intl/intl.dart';
 // flutter_chat_ui builds on the standalone material_ui package, whose Material type differs
 // from package:flutter/material.dart's; its composer needs this ancestor.
 import 'package:material_ui/material_ui.dart' as mui;
@@ -9,9 +8,8 @@ import 'package:material_ui/material_ui.dart' as mui;
 import '../app_scope.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../src/rust/api.dart';
-import '../src/ui_settings.dart';
 import '../widgets/chat_sync.dart';
-import '../widgets/grade_badge.dart';
+import '../widgets/message_bubble.dart';
 import 'contact.dart';
 import 'receive.dart';
 import 'send_flow.dart';
@@ -30,6 +28,9 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _controller = fc.InMemoryChatController();
   Map<String, MessageItem> _items = {};
+
+  /// The contact's privacy floor, for which symbols the bubbles keep.
+  int? _floor;
   AppState? _state;
 
   @override
@@ -56,6 +57,11 @@ class _ChatScreenState extends State<ChatScreen> {
     if (mounted) _noNote = AppLocalizations.of(context).requestNoNote;
     final items = _state!.node.messages(contactId: widget.contactId);
     _items = {for (final m in items) m.id: m};
+    _floor = _state!.node
+        .contacts()
+        .where((c) => c.id == widget.contactId)
+        .firstOrNull
+        ?.floor;
     final next = [
       for (final m in items)
         fc.Message.text(
@@ -193,16 +199,14 @@ class _ChatScreenState extends State<ChatScreen> {
                         style: Theme.of(context).textTheme.labelSmall,
                       ),
                     ),
-                  SimpleTextMessage(
+                  MessageBubble(
                     message: message,
-                    index: index,
-                    showTime: settings.showMessageTimes,
+                    isSentByMe: isSentByMe,
+                    item: item,
+                    settings: settings,
+                    floor: _floor,
                   ),
-                  if (item != null)
-                    Provenance(
-                      item: item,
-                      detailed: settings.badgeDetail == BadgeDetail.detailed,
-                    ),
+                  if (item != null) Provenance(item: item),
                 ],
               );
             },
@@ -211,13 +215,12 @@ class _ChatScreenState extends State<ChatScreen> {
   );
 }
 
-/// Which channels carried the message, with their grades. Always shown; the detailed form
-/// adds when each channel carried it and the delivery status.
+/// The lines under a bubble that ask for action or report group progress. Which channels
+/// carried the message is shown inside the bubble ([Indication]).
 class Provenance extends StatelessWidget {
-  const Provenance({required this.item, required this.detailed, super.key});
+  const Provenance({required this.item, super.key});
 
   final MessageItem item;
-  final bool detailed;
 
   @override
   Widget build(BuildContext context) {
@@ -228,105 +231,45 @@ class Provenance extends StatelessWidget {
     );
     // Our group message: copies go out by themselves; show how many confirmed.
     final total = item.sentTo;
-    final groupLine = total == null
-        ? null
-        : Text(l.deliveredToCount(item.deliveredTo ?? 0, total), style: muted);
-    if (item.channels.isEmpty && groupLine != null) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 2, bottom: 4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(l.groupSentAutomatically, style: muted),
-            groupLine,
-          ],
-        ),
-      );
-    }
-    if (item.channels.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 2, bottom: 4),
-        child: Text(
+    final lines = <Widget>[
+      if (item.channels.isEmpty && total != null)
+        Text(l.groupSentAutomatically, style: muted),
+      if (item.channels.isEmpty && total == null)
+        Text(
           l.tapToSend,
           style: TextStyle(
             fontSize: 11,
             color: Theme.of(context).colorScheme.error,
           ),
         ),
-      );
-    }
-    final time = DateFormat.Hm(Localizations.localeOf(context).toString());
-    final badges = Wrap(
-      spacing: 4,
-      runSpacing: 2,
-      children: [
-        for (final u in item.channels)
-          GradeBadge(
-            label: usedChannelLabel(l, u.channel, u.grade),
-            grade: u.grade,
-            detail: detailed
-                ? time.format(
-                    DateTime.fromMillisecondsSinceEpoch(u.atUnixMs.toInt()),
-                  )
-                : null,
-          ),
-        // Unconfirmed sent messages get their own line below instead.
-        if (detailed &&
-            (item.status == MessageStatus.delivered ||
-                item.status == MessageStatus.received))
-          Text(
-            item.status == MessageStatus.delivered
-                ? l.statusDelivered
-                : l.statusReceived,
-            style: TextStyle(
-              fontSize: 11,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-      ],
-    );
-    if (groupLine != null) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 2, bottom: 4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
-          children: [badges, const SizedBox(height: 2), groupLine],
+      if (total != null)
+        Text(l.deliveredToCount(item.deliveredTo ?? 0, total), style: muted),
+      // Sent but not confirmed: Wi-Fi, Bluetooth and the hub carry on by themselves; QR and
+      // share need the user.
+      if (total == null &&
+          item.channels.isNotEmpty &&
+          item.outgoing &&
+          item.status == MessageStatus.sent)
+        Text(
+          item.channels.any(
+                (u) =>
+                    u.channel == Channel.lan ||
+                    u.channel == Channel.ble ||
+                    u.channel == Channel.wifiDirect ||
+                    u.channel == Channel.hub,
+              )
+              ? l.awaitingConfirmation
+              : l.notConfirmed,
+          style: muted,
         ),
-      );
-    }
-    if (!item.outgoing || item.status != MessageStatus.sent) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 2, bottom: 4),
-        child: badges,
-      );
-    }
-    // Sent but not confirmed: Wi-Fi, Bluetooth and the hub carry on by themselves; QR and share
-    // need the user.
-    final automatic = item.channels.any(
-      (u) =>
-          u.channel == Channel.lan ||
-          u.channel == Channel.ble ||
-          u.channel == Channel.wifiDirect ||
-          u.channel == Channel.hub,
-    );
+    ];
+    if (lines.isEmpty) return const SizedBox(height: 4);
     return Padding(
       padding: const EdgeInsets.only(top: 2, bottom: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisSize: MainAxisSize.min,
-        children: [
-          badges,
-          const SizedBox(height: 2),
-          Text(
-            automatic ? l.awaitingConfirmation : l.notConfirmed,
-            style: TextStyle(
-              fontSize: 11,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
+        children: lines,
       ),
     );
   }

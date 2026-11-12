@@ -1626,6 +1626,68 @@ mod tests {
         let _ = std::fs::remove_dir_all(db);
     }
 
+    /// The name the user gives a contact: stored with the state, kept when the contact pairs
+    /// again, cleared by an empty name, refused when too long or for an unknown contact.
+    #[test]
+    fn contact_alias_is_kept_and_persisted() {
+        let (da, db) = (tmp("alias-a"), tmp("alias-b"));
+        let b_id;
+        {
+            let a = Node::open(&da, direct()).unwrap();
+            let b = Node::open(&db, direct()).unwrap();
+            let card_b = b.read(Runtime::own_card_text);
+            a.receive_text(&card_b, ClaId::Qr).unwrap();
+            b_id = a.read(|r| r.agent().contacts()[0].id);
+            let out = a
+                .handle(Input::SetContactAlias {
+                    contact: b_id,
+                    alias: Some("  Bo from work ".into()),
+                })
+                .unwrap();
+            assert!(!out.iter().any(|o| matches!(o, Output::Rejected(_))));
+            // Pairing again keeps the user's name.
+            a.receive_text(&card_b, ClaId::Qr).unwrap();
+            assert_eq!(
+                a.read(|r| r.agent().contacts()[0].alias.clone()).as_deref(),
+                Some("Bo from work")
+            );
+            let long = a
+                .handle(Input::SetContactAlias {
+                    contact: b_id,
+                    alias: Some("x".repeat(65)),
+                })
+                .unwrap();
+            assert!(long.iter().any(|o| matches!(
+                o,
+                Output::Rejected(mem_core::model::RejectReason::InvalidName)
+            )));
+            let unknown = a
+                .handle(Input::SetContactAlias {
+                    contact: ContactId::from_bytes([7; 32]),
+                    alias: Some("me".into()),
+                })
+                .unwrap();
+            assert!(unknown.iter().any(|o| matches!(
+                o,
+                Output::Rejected(mem_core::model::RejectReason::UnknownContact)
+            )));
+        }
+        let a = Node::open(&da, direct()).unwrap();
+        assert_eq!(
+            a.read(|r| r.agent().contacts()[0].alias.clone()).as_deref(),
+            Some("Bo from work")
+        );
+        a.handle(Input::SetContactAlias {
+            contact: b_id,
+            alias: Some("   ".into()),
+        })
+        .unwrap();
+        assert_eq!(a.read(|r| r.agent().contacts()[0].alias.clone()), None);
+        drop(a);
+        let _ = std::fs::remove_dir_all(da);
+        let _ = std::fs::remove_dir_all(db);
+    }
+
     /// The email bridge end to end through a real mail server on this machine (`GreenMail` with users
     /// ana@example.org and bo@example.net, password `pw`; set `MEM_TEST_MAIL=127.0.0.1`).
     #[test]

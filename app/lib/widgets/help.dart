@@ -94,3 +94,66 @@ class _HelpActionState extends State<HelpAction> {
     );
   }
 }
+
+/// A setting whose explanation stays hidden until its "?" is tapped; a second tap hides it
+/// again. [builder] places the "?" button next to the setting's title; the explanation appears
+/// under the setting.
+class Explained extends StatefulWidget {
+  const Explained({required this.help, required this.builder, super.key});
+
+  final String help;
+  final Widget Function(BuildContext context, Widget helpButton) builder;
+
+  @override
+  State<Explained> createState() => _ExplainedState();
+}
+
+class _ExplainedState extends State<Explained> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final reduced = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    final button = IconButton(
+      tooltip: l.helpTooltip,
+      isSelected: _open,
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+      iconSize: 20,
+      icon: const Icon(Icons.help_outline),
+      selectedIcon: const Icon(Icons.help),
+      onPressed: () => setState(() => _open = !_open),
+    );
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        widget.builder(context, button),
+        AnimatedSize(
+          duration: reduced ? Duration.zero : const Duration(milliseconds: 150),
+          alignment: Alignment.topCenter,
+          child: _open
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 2, bottom: 8),
+                  child: Text(
+                    widget.help,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                )
+              : const SizedBox(width: double.infinity),
+        ),
+      ],
+    );
+  }
+}
+
+/// A setting's title followed by its "?" button.
+Widget titleWithHelp(String title, Widget helpButton, {TextStyle? style}) =>
+    Row(
+      children: [
+        Flexible(child: Text(title, style: style)),
+        helpButton,
+      ],
+    );
