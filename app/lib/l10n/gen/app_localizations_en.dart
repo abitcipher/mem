@@ -367,6 +367,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get attachmentOpenElsewhereAction => 'Choose app';
 
   @override
+  String get playerPlay => 'Play';
+
+  @override
+  String get playerPause => 'Pause';
+
+  @override
+  String get playerCannotPlay =>
+      'This file cannot be played here. Open it in another app with the share button.';
+
+  @override
+  String get mediaPlayer => 'Built-in media player';
+
+  @override
+  String get mediaPlayerHelp =>
+      'Video and audio files play inside MEM: they are decrypted into a private temporary file that is deleted when the player closes. Off, they open in another app, which then gets the file.';
+
+  @override
   String get reason_invalid_name => 'The name is too long.';
 
   @override

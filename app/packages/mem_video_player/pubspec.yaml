@@ -1,0 +1,19 @@
+name: mem_video_player
+description: "Plays local video and audio files for MEM: a full-screen video player and a compact audio player, on the platform's own media engine."
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: ^3.13.5
+  flutter: ">=3.47.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  material_ui: ^1.7.0
+  video_player: ^2.14.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0

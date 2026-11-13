@@ -161,6 +161,7 @@ jobs:
           flutter pub get
           flutter analyze
           flutter test
+          (cd packages/mem_video_player && flutter pub get && flutter analyze && flutter test)
           # The Wi-Fi part needs multicast between two nodes on the runner; hosted runners do not
           # guarantee it, so it runs locally and on device instead.
           MEM_IT_SKIP_LAN=1 xvfb-run -a flutter test integration_test -d linux

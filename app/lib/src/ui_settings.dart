@@ -76,6 +76,10 @@ class UiSettings {
   /// Time under each message bubble.
   bool showMessageTimes = true;
 
+  /// Video and audio attachments play inside MEM (where the platform can); off, they open in
+  /// another app.
+  bool builtInPlayer = true;
+
   /// The local network status button in the Home toolbar.
   bool showNetworkStatus = true;
 
@@ -136,6 +140,8 @@ class UiSettings {
                 : SymbolShape.fisheye;
           case 'message_times':
             s.showMessageTimes = v != 'false';
+          case 'media_player':
+            s.builtInPlayer = v != 'false';
           case 'network_status':
             s.showNetworkStatus = v != 'false';
           case 'stay_reachable':
@@ -175,6 +181,7 @@ class UiSettings {
           'symbol_style=${symbolStyle.name}',
           'symbol_shape=${symbolShape.name}',
           'message_times=$showMessageTimes',
+          'media_player=$builtInPlayer',
           'network_status=$showNetworkStatus',
           'stay_reachable=$stayReachable',
           'push=$push',

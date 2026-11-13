@@ -368,6 +368,23 @@ class AppLocalizationsUk extends AppLocalizations {
   String get attachmentOpenElsewhereAction => 'Обрати застосунок';
 
   @override
+  String get playerPlay => 'Відтворити';
+
+  @override
+  String get playerPause => 'Пауза';
+
+  @override
+  String get playerCannotPlay =>
+      'Цей файл не відтворюється тут. Відкрийте його в іншому застосунку кнопкою «Поділитися».';
+
+  @override
+  String get mediaPlayer => 'Вбудований медіаплеєр';
+
+  @override
+  String get mediaPlayerHelp =>
+      'Відео й аудіо відтворюються всередині MEM: їх розшифровано в приватний тимчасовий файл, який видаляється, коли плеєр закривається. Якщо вимкнено, вони відкриваються в іншому застосунку, який тоді отримує файл.';
+
+  @override
   String get reason_invalid_name => 'Ім\'я задовге.';
 
   @override

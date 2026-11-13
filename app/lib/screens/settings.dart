@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:material_ui/material_ui.dart';
+import 'package:mem_video_player/mem_video_player.dart';
 
 import '../app_scope.dart';
 import '../l10n/gen/app_localizations.dart';
@@ -95,6 +96,18 @@ class SettingsScreen extends StatelessWidget {
                 state.updateSettings((s) => s.showMessageTimes = v),
           ),
           const _BadgeSettings(),
+          // Only where the platform has an engine; elsewhere files always open in another app.
+          if (MemVideoPlayer.isSupported)
+            Explained(
+              help: l.mediaPlayerHelp,
+              builder: (context, help) => SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: titleWithHelp(l.mediaPlayer, help),
+                value: s.builtInPlayer,
+                onChanged: (v) =>
+                    state.updateSettings((s) => s.builtInPlayer = v),
+              ),
+            ),
 
           _Section(l.sectionQr),
           Explained(

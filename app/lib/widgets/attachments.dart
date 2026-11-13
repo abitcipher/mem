@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:file_selector/file_selector.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mem_video_player/mem_video_player.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -199,10 +200,12 @@ class _AttachmentTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
           children: [
-            Icon(
-              _image ? Icons.image_outlined : Icons.insert_drive_file_outlined,
-              color: ink,
-            ),
+            Icon(switch (MemMediaKind.of(attachment.mediaType)) {
+              MemMediaKind.video => Icons.play_circle_outline,
+              MemMediaKind.audio => Icons.audiotrack_outlined,
+              null when _image => Icons.image_outlined,
+              null => Icons.insert_drive_file_outlined,
+            }, color: ink),
             const SizedBox(width: 8),
             Flexible(
               child: Column(
@@ -235,6 +238,13 @@ class _AttachmentTile extends StatelessWidget {
 
   Future<void> _open(BuildContext context) async {
     final l = AppLocalizations.of(context);
+    final kind = MemMediaKind.of(attachment.mediaType);
+    if (kind != null &&
+        MemVideoPlayer.isSupported &&
+        AppScope.read(context).settings.builtInPlayer) {
+      await playAttachment(context, messageId, index, attachment, kind);
+      return;
+    }
     if (!_inline) {
       await exportAttachment(context, messageId, index, attachment);
       return;
@@ -322,6 +332,74 @@ Future<void> exportAttachment(
     );
   } on Object catch (e) {
     if (context.mounted) showSnack(context, reasonText(context, e));
+  }
+}
+
+/// Private folder for files being played; cleared after each playback and at start-up, so no
+/// decrypted copy outlives its use.
+Future<Directory> _playingDir() async =>
+    Directory('${(await getTemporaryDirectory()).path}/playing');
+
+/// Removes decrypted copies left by an earlier run (playing, or opened in another app).
+Future<void> clearDecryptedCopies() async {
+  final tmp = (await getTemporaryDirectory()).path;
+  for (final name in ['playing', 'opened']) {
+    final dir = Directory('$tmp/$name');
+    if (await dir.exists()) await dir.delete(recursive: true);
+  }
+}
+
+/// Plays a video or audio attachment inside MEM: decrypted into a private temporary file that
+/// is deleted when the player closes. Nothing leaves the app.
+Future<void> playAttachment(
+  BuildContext context,
+  String messageId,
+  int index,
+  AttachmentItem attachment,
+  MemMediaKind kind,
+) async {
+  final l = AppLocalizations.of(context);
+  final node = AppScope.read(context).node;
+  final dir = await _playingDir();
+  await dir.create(recursive: true);
+  final file = File('${dir.path}/$messageId-$index');
+  try {
+    final done = await node.exportAttachment(
+      messageId: messageId,
+      index: index,
+      path: file.path,
+    );
+    if (!context.mounted) return;
+    if (!done) {
+      showSnack(context, l.attachmentMissing);
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => MemVideoPlayer(
+          file: file,
+          kind: kind,
+          title: attachment.name,
+          texts: MemPlayerTexts(
+            play: l.playerPlay,
+            pause: l.playerPause,
+            cannotPlay: l.playerCannotPlay,
+          ),
+          actions: [
+            IconButton(
+              tooltip: l.attachmentOpenElsewhere,
+              icon: const Icon(Icons.share),
+              onPressed: () =>
+                  exportAttachment(context, messageId, index, attachment),
+            ),
+          ],
+        ),
+      ),
+    );
+  } on Object catch (e) {
+    if (context.mounted) showSnack(context, reasonText(context, e));
+  } finally {
+    if (await file.exists()) await file.delete();
   }
 }
 

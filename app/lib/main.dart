@@ -13,12 +13,15 @@ import 'screens/home.dart';
 import 'src/rust/api.dart';
 import 'src/rust/frb_generated.dart';
 import 'src/ui_settings.dart';
+import 'widgets/attachments.dart';
 import 'widgets/reachable.dart';
 import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await RustLib.init();
+  // Decrypted copies never outlive the run that made them.
+  await clearDecryptedCopies();
   final dir = await getApplicationSupportDirectory();
   final node = await openNode(
     dir: '${dir.path}${Platform.pathSeparator}profile',

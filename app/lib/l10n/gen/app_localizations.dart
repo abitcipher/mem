@@ -752,6 +752,36 @@ abstract class AppLocalizations {
   /// **'Choose app'**
   String get attachmentOpenElsewhereAction;
 
+  /// No description provided for @playerPlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get playerPlay;
+
+  /// No description provided for @playerPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get playerPause;
+
+  /// No description provided for @playerCannotPlay.
+  ///
+  /// In en, this message translates to:
+  /// **'This file cannot be played here. Open it in another app with the share button.'**
+  String get playerCannotPlay;
+
+  /// No description provided for @mediaPlayer.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in media player'**
+  String get mediaPlayer;
+
+  /// No description provided for @mediaPlayerHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Video and audio files play inside MEM: they are decrypted into a private temporary file that is deleted when the player closes. Off, they open in another app, which then gets the file.'**
+  String get mediaPlayerHelp;
+
   /// No description provided for @reason_invalid_name.
   ///
   /// In en, this message translates to:
