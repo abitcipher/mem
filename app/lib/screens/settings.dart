@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mem_video_player/mem_video_player.dart';
 
 import '../app_scope.dart';
+import '../calls/call_controller.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../src/platform.dart';
 import '../src/rust/api.dart';
@@ -96,6 +97,16 @@ class SettingsScreen extends StatelessWidget {
                 state.updateSettings((s) => s.showMessageTimes = v),
           ),
           const _BadgeSettings(),
+          if (CallController.supported)
+            Explained(
+              help: l.voiceCallsHelp,
+              builder: (context, help) => SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: titleWithHelp(l.voiceCalls, help),
+                value: s.voiceCalls,
+                onChanged: (v) => state.updateSettings((s) => s.voiceCalls = v),
+              ),
+            ),
           // Only where the platform has an engine; elsewhere files always open in another app.
           if (MemVideoPlayer.isSupported)
             Explained(

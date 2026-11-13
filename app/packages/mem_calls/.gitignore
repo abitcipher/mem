@@ -1,0 +1,5 @@
+# Build output and tool caches.
+/build/
+.dart_tool/
+# A package: the app's lockfile pins its dependencies.
+pubspec.lock

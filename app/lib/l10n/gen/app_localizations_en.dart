@@ -384,6 +384,62 @@ class AppLocalizationsEn extends AppLocalizations {
       'Video and audio files play inside MEM: they are decrypted into a private temporary file that is deleted when the player closes. Off, they open in another app, which then gets the file.';
 
   @override
+  String get voiceCalls => 'Voice calls (test)';
+
+  @override
+  String get voiceCallsHelp =>
+      'Call contacts over Wi-Fi Direct or the local network. Call setup travels end to end through MEM; the voice is encrypted. The contact learns your address on that network. Being tested: off by default.';
+
+  @override
+  String get callStart => 'Call';
+
+  @override
+  String get callCalling => 'Calling…';
+
+  @override
+  String get callIncoming => 'Incoming call';
+
+  @override
+  String get callConnecting => 'Connecting…';
+
+  @override
+  String get callAccept => 'Accept';
+
+  @override
+  String get callDecline => 'Decline';
+
+  @override
+  String get callMute => 'Mute';
+
+  @override
+  String get callUnmute => 'Unmute';
+
+  @override
+  String get callSpeaker => 'Speaker';
+
+  @override
+  String get callHangUp => 'Hang up';
+
+  @override
+  String get callEnded => 'Call ended';
+
+  @override
+  String get callDeclined => 'Declined';
+
+  @override
+  String get callBusy => 'Busy in another call';
+
+  @override
+  String get callFailed => 'The call could not connect';
+
+  @override
+  String get callUnanswered => 'No answer';
+
+  @override
+  String get callNoMicrophone =>
+      'Calls need the microphone. Allow it in the phone\'s settings.';
+
+  @override
   String get reason_invalid_name => 'The name is too long.';
 
   @override

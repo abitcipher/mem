@@ -80,6 +80,9 @@ class UiSettings {
   /// another app.
   bool builtInPlayer = true;
 
+  /// Voice calls with contacts (being tested; off by default).
+  bool voiceCalls = false;
+
   /// The local network status button in the Home toolbar.
   bool showNetworkStatus = true;
 
@@ -142,6 +145,8 @@ class UiSettings {
             s.showMessageTimes = v != 'false';
           case 'media_player':
             s.builtInPlayer = v != 'false';
+          case 'voice_calls':
+            s.voiceCalls = v == 'true';
           case 'network_status':
             s.showNetworkStatus = v != 'false';
           case 'stay_reachable':
@@ -182,6 +187,7 @@ class UiSettings {
           'symbol_shape=${symbolShape.name}',
           'message_times=$showMessageTimes',
           'media_player=$builtInPlayer',
+          'voice_calls=$voiceCalls',
           'network_status=$showNetworkStatus',
           'stay_reachable=$stayReachable',
           'push=$push',

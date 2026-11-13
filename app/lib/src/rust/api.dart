@@ -9,8 +9,8 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'api.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `attest_error`, `consent_request`, `contact_name`, `contact`, `dial_hint`, `grade_from`, `grade_u8`, `group_call`, `group_item`, `handle`, `message_item`, `ms`, `msg`, `new`, `outcome`, `own_hint`, `parse_group`, `parse_locale`, `qr`, `reason_key`, `receive_outcome`, `rejected`, `sent_text`, `single`, `with`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`
+// These functions are ignored because they are not marked as `pub`: `attest_error`, `call_id_bytes`, `call_id_hex`, `consent_request`, `contact_name`, `contact`, `dial_hint`, `from_core`, `grade_from`, `grade_u8`, `group_call`, `group_item`, `handle`, `into_core`, `message_item`, `ms`, `msg`, `new`, `outcome`, `own_hint`, `parse_group`, `parse_locale`, `qr`, `reason_key`, `receive_outcome`, `rejected`, `sent_text`, `single`, `with`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`
 
 /// Creates a scanner.
 QrScanner newQrScanner() => RustLib.instance.api.crateApiNewQrScanner();
@@ -192,6 +192,14 @@ abstract class MemNode implements RustOpaqueInterface {
   ///
   /// Never.
   Future<void> bleStopped();
+
+  /// The media paths a call with this contact may use; `None` for anyone who is not an
+  /// approved contact.
+  ///
+  /// # Errors
+  ///
+  /// `"unknown_contact"` for a bad id.
+  CallPolicyItem? callPolicy({required String contactId});
 
   /// Stops waiting to be added as a device.
   void cancelDeviceJoin();
@@ -625,6 +633,18 @@ abstract class MemNode implements RustOpaqueInterface {
     required int rowStride,
   });
 
+  /// Sends a call setup message to a contact now. Candidates its floor does not allow are
+  /// removed first.
+  ///
+  /// # Errors
+  ///
+  /// `"unreachable"` when no automatic channel to the contact is open, `"not_a_contact"`,
+  /// `"quota"`, `"malformed"`, or a storage error.
+  Future<void> sendCallSignal({
+    required String contactId,
+    required CallSignalItem signal,
+  });
+
   /// Asks the owner of a card (`memcard1:` text, pasted or scanned) to become a contact,
   /// without meeting. Returns the new contact's hex id; the request is sealed after
   /// a few seconds of proof of work and then sent like a message.
@@ -838,6 +858,9 @@ abstract class MemNode implements RustOpaqueInterface {
   ///
   /// `"sound_failed"` if the sound engine cannot start, or a storage error.
   Future<SoundSession> startSoundPairing({required SoundProfile profile});
+
+  /// The call setup messages that arrived since the last call, oldest first.
+  List<IncomingCallItem> takeCallSignals();
 
   /// Asks to send a queued message over `channel`. Below-floor channels return
   /// [`TransmitOutcome::ConsentRequired`] instead of data.
@@ -1116,6 +1139,96 @@ sealed class BleCommandItem with _$BleCommandItem {
     /// Plugin link id.
     required BigInt link,
   }) = BleCommandItem_Close;
+}
+
+/// Why a call ended.
+enum CallEndReason {
+  /// Hung up after talking.
+  hungUp,
+
+  /// The callee declined.
+  declined,
+
+  /// The callee is in another call.
+  busy,
+
+  /// Media could not connect.
+  failed,
+
+  /// Nobody answered in time.
+  unanswered,
+}
+
+/// The media paths a call with a contact may use (its floor and standing rules).
+class CallPolicyItem {
+  /// Face to face over Wi-Fi Direct (P0).
+  final bool wifiDirect;
+
+  /// Directly over the local network (P1).
+  final bool localNetwork;
+
+  /// Through the operator's own STUN/TURN servers (P2).
+  final bool ownServers;
+
+  const CallPolicyItem({
+    required this.wifiDirect,
+    required this.localNetwork,
+    required this.ownServers,
+  });
+
+  @override
+  int get hashCode =>
+      wifiDirect.hashCode ^ localNetwork.hashCode ^ ownServers.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CallPolicyItem &&
+          runtimeType == other.runtimeType &&
+          wifiDirect == other.wifiDirect &&
+          localNetwork == other.localNetwork &&
+          ownServers == other.ownServers;
+}
+
+@freezed
+sealed class CallSignalItem with _$CallSignalItem {
+  const CallSignalItem._();
+
+  /// The caller's session description.
+  const factory CallSignalItem.offer({
+    /// Hex call id.
+    required String callId,
+
+    /// SDP.
+    required String sdp,
+  }) = CallSignalItem_Offer;
+
+  /// The callee's session description.
+  const factory CallSignalItem.answer({
+    /// Hex call id.
+    required String callId,
+
+    /// SDP.
+    required String sdp,
+  }) = CallSignalItem_Answer;
+
+  /// ICE candidates found later.
+  const factory CallSignalItem.candidates({
+    /// Hex call id.
+    required String callId,
+
+    /// Candidate lines.
+    required List<String> candidates,
+  }) = CallSignalItem_Candidates;
+
+  /// The call is over.
+  const factory CallSignalItem.end({
+    /// Hex call id.
+    required String callId,
+
+    /// Why.
+    required CallEndReason reason,
+  }) = CallSignalItem_End;
 }
 
 /// A contact code before import.
@@ -1851,6 +1964,36 @@ enum GroupStatusItem {
   removed,
 }
 
+/// A call setup message from a contact.
+class IncomingCallItem {
+  /// Contact hex id.
+  final String contactId;
+
+  /// The message.
+  final CallSignalItem signal;
+
+  /// The channel it came over.
+  final ChannelUseItem via;
+
+  const IncomingCallItem({
+    required this.contactId,
+    required this.signal,
+    required this.via,
+  });
+
+  @override
+  int get hashCode => contactId.hashCode ^ signal.hashCode ^ via.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is IncomingCallItem &&
+          runtimeType == other.runtimeType &&
+          contactId == other.contactId &&
+          signal == other.signal &&
+          via == other.via;
+}
+
 /// A member's place in a group.
 enum MemberRoleItem {
   /// The admin.
@@ -1999,6 +2142,12 @@ sealed class NodeEventItem with _$NodeEventItem {
   /// Our main device removed this device: tell the user, then
   /// [`MemNode::forget_this_device`].
   const factory NodeEventItem.deviceRetired() = NodeEventItem_DeviceRetired;
+
+  /// Call setup arrived: collect it with [`MemNode::take_call_signals`].
+  const factory NodeEventItem.call({
+    /// Contact hex id.
+    required String contactId,
+  }) = NodeEventItem_Call;
 }
 
 /// An attached file, decrypted.

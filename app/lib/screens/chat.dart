@@ -127,6 +127,17 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
         actions: [
+          if (_state!.calls.enabled)
+            IconButton(
+              tooltip: l.callStart,
+              icon: const Icon(Icons.call_outlined),
+              onPressed: () async {
+                final error = await _state!.calls.start(widget.contactId);
+                if (error != null && context.mounted) {
+                  showSnack(context, reasonText(context, error));
+                }
+              },
+            ),
           IconButton(
             tooltip: l.receive,
             icon: const Icon(Icons.qr_code_scanner),

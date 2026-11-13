@@ -4,6 +4,8 @@ import 'dart:ui' as ui;
 
 import 'package:material_ui/material_ui.dart';
 
+import 'calls/call_controller.dart';
+import 'calls/call_screen.dart';
 import 'l10n/gen/app_localizations.dart';
 import 'src/rust/api.dart';
 import 'src/backup_schedule.dart';
@@ -17,6 +19,9 @@ import 'theme.dart';
 /// Holds the Rust node and notifies listeners after every mutation and every node event
 /// (messages arriving over Wi-Fi, status changes, contacts coming into range), so screens
 /// re-query.
+/// The app's navigator, for screens opened from outside a widget (an incoming call).
+final appNavigator = GlobalKey<NavigatorState>();
+
 class AppState extends ChangeNotifier {
   AppState(this.node, {this.themeFile, File? backupFile, File? settingsFile})
     : settings = UiSettings.read(settingsFile) {
@@ -28,8 +33,15 @@ class AppState extends ChangeNotifier {
       ..attach();
     push = PushBridge(node, settings, texts: _pushTexts);
     unawaited(push.attach());
+    calls = CallController(
+      node,
+      settings,
+      appNavigator,
+      () => MaterialPageRoute<void>(builder: (_) => const CallScreen()),
+    );
     var contacts = node.contacts().length;
     _events = node.events().listen((e) {
+      if (e is NodeEventItem_Call) unawaited(calls.onSignals());
       if (e is NodeEventItem_MessageReceived) {
         _fresh.add(e.contactId);
         _received.add(e.contactId);
@@ -49,6 +61,9 @@ class AppState extends ChangeNotifier {
       notifyListeners();
     });
   }
+
+  /// Voice calls, one at a time.
+  late final CallController calls;
 
   /// UI-only settings; core settings live on [node].
   final UiSettings settings;
@@ -145,6 +160,7 @@ class AppState extends ChangeNotifier {
 
   @override
   void dispose() {
+    calls.dispose();
     backups.dispose();
     ble.dispose();
     wifi.dispose();
@@ -188,6 +204,8 @@ String reasonText(BuildContext context, Object error) {
     'too_large_for_channel' => l.reason_too_large_for_channel,
     'consent_mismatch' => l.reason_consent_mismatch,
     'invalid_text' => l.reason_invalid_text,
+    'no_microphone' => l.callNoMicrophone,
+    'busy' => l.callBusy,
     'file_too_large' => l.reason_file_too_large,
     'invalid_attachment' => l.reason_invalid_attachment,
     'invalid_name' => l.reason_invalid_name,

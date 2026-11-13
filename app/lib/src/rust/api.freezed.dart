@@ -696,6 +696,510 @@ as BigInt,
 }
 
 /// @nodoc
+mixin _$CallSignalItem {
+
+/// Hex call id.
+ String get callId;
+/// Create a copy of CallSignalItem
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$CallSignalItemCopyWith<CallSignalItem> get copyWith => _$CallSignalItemCopyWithImpl<CallSignalItem>(this as CallSignalItem, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as CallSignalItem;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CallSignalItem&&(identical(other.callId, _this.callId) || other.callId == _this.callId));
+}
+
+
+@override
+int get hashCode {
+  final _this = this as CallSignalItem;
+  return Object.hash(runtimeType,_this.callId);
+}
+
+@override
+String toString() {
+  final _this = this as CallSignalItem;
+  return 'CallSignalItem(callId: ${_this.callId})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $CallSignalItemCopyWith<$Res>  {
+  factory $CallSignalItemCopyWith(CallSignalItem value, $Res Function(CallSignalItem) _then) = _$CallSignalItemCopyWithImpl;
+@useResult
+$Res call({
+ String callId
+});
+
+
+
+
+}
+/// @nodoc
+class _$CallSignalItemCopyWithImpl<$Res>
+    implements $CallSignalItemCopyWith<$Res> {
+  _$CallSignalItemCopyWithImpl(this._self, this._then);
+
+  final CallSignalItem _self;
+  final $Res Function(CallSignalItem) _then;
+
+/// Create a copy of CallSignalItem
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? callId = null,}) {
+  return _then(_self.copyWith(
+callId: null == callId ? _self.callId : callId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [CallSignalItem].
+extension CallSignalItemPatterns on CallSignalItem {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( CallSignalItem_Offer value)?  offer,TResult Function( CallSignalItem_Answer value)?  answer,TResult Function( CallSignalItem_Candidates value)?  candidates,TResult Function( CallSignalItem_End value)?  end,required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case CallSignalItem_Offer() when offer != null:
+return offer(_that);case CallSignalItem_Answer() when answer != null:
+return answer(_that);case CallSignalItem_Candidates() when candidates != null:
+return candidates(_that);case CallSignalItem_End() when end != null:
+return end(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( CallSignalItem_Offer value)  offer,required TResult Function( CallSignalItem_Answer value)  answer,required TResult Function( CallSignalItem_Candidates value)  candidates,required TResult Function( CallSignalItem_End value)  end,}){
+final _that = this;
+switch (_that) {
+case CallSignalItem_Offer():
+return offer(_that);case CallSignalItem_Answer():
+return answer(_that);case CallSignalItem_Candidates():
+return candidates(_that);case CallSignalItem_End():
+return end(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( CallSignalItem_Offer value)?  offer,TResult? Function( CallSignalItem_Answer value)?  answer,TResult? Function( CallSignalItem_Candidates value)?  candidates,TResult? Function( CallSignalItem_End value)?  end,}){
+final _that = this;
+switch (_that) {
+case CallSignalItem_Offer() when offer != null:
+return offer(_that);case CallSignalItem_Answer() when answer != null:
+return answer(_that);case CallSignalItem_Candidates() when candidates != null:
+return candidates(_that);case CallSignalItem_End() when end != null:
+return end(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String callId,  String sdp)?  offer,TResult Function( String callId,  String sdp)?  answer,TResult Function( String callId,  List<String> candidates)?  candidates,TResult Function( String callId,  CallEndReason reason)?  end,required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case CallSignalItem_Offer() when offer != null:
+return offer(_that.callId,_that.sdp);case CallSignalItem_Answer() when answer != null:
+return answer(_that.callId,_that.sdp);case CallSignalItem_Candidates() when candidates != null:
+return candidates(_that.callId,_that.candidates);case CallSignalItem_End() when end != null:
+return end(_that.callId,_that.reason);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String callId,  String sdp)  offer,required TResult Function( String callId,  String sdp)  answer,required TResult Function( String callId,  List<String> candidates)  candidates,required TResult Function( String callId,  CallEndReason reason)  end,}) {final _that = this;
+switch (_that) {
+case CallSignalItem_Offer():
+return offer(_that.callId,_that.sdp);case CallSignalItem_Answer():
+return answer(_that.callId,_that.sdp);case CallSignalItem_Candidates():
+return candidates(_that.callId,_that.candidates);case CallSignalItem_End():
+return end(_that.callId,_that.reason);}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String callId,  String sdp)?  offer,TResult? Function( String callId,  String sdp)?  answer,TResult? Function( String callId,  List<String> candidates)?  candidates,TResult? Function( String callId,  CallEndReason reason)?  end,}) {final _that = this;
+switch (_that) {
+case CallSignalItem_Offer() when offer != null:
+return offer(_that.callId,_that.sdp);case CallSignalItem_Answer() when answer != null:
+return answer(_that.callId,_that.sdp);case CallSignalItem_Candidates() when candidates != null:
+return candidates(_that.callId,_that.candidates);case CallSignalItem_End() when end != null:
+return end(_that.callId,_that.reason);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class CallSignalItem_Offer extends CallSignalItem {
+  const CallSignalItem_Offer({required this.callId, required this.sdp}): super._();
+  
+
+/// Hex call id.
+@override final  String callId;
+/// SDP.
+ final  String sdp;
+
+/// Create a copy of CallSignalItem
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$CallSignalItem_OfferCopyWith<CallSignalItem_Offer> get copyWith => _$CallSignalItem_OfferCopyWithImpl<CallSignalItem_Offer>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CallSignalItem_Offer&&(identical(other.callId, callId) || other.callId == callId)&&(identical(other.sdp, sdp) || other.sdp == sdp));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,callId,sdp);
+}
+
+@override
+String toString() {
+    return 'CallSignalItem.offer(callId: $callId, sdp: $sdp)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $CallSignalItem_OfferCopyWith<$Res> implements $CallSignalItemCopyWith<$Res> {
+  factory $CallSignalItem_OfferCopyWith(CallSignalItem_Offer value, $Res Function(CallSignalItem_Offer) _then) = _$CallSignalItem_OfferCopyWithImpl;
+@override @useResult
+$Res call({
+ String callId, String sdp
+});
+
+
+
+
+}
+/// @nodoc
+class _$CallSignalItem_OfferCopyWithImpl<$Res>
+    implements $CallSignalItem_OfferCopyWith<$Res> {
+  _$CallSignalItem_OfferCopyWithImpl(this._self, this._then);
+
+  final CallSignalItem_Offer _self;
+  final $Res Function(CallSignalItem_Offer) _then;
+
+/// Create a copy of CallSignalItem
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? callId = null,Object? sdp = null,}) {
+  return _then(CallSignalItem_Offer(
+callId: null == callId ? _self.callId : callId // ignore: cast_nullable_to_non_nullable
+as String,sdp: null == sdp ? _self.sdp : sdp // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class CallSignalItem_Answer extends CallSignalItem {
+  const CallSignalItem_Answer({required this.callId, required this.sdp}): super._();
+  
+
+/// Hex call id.
+@override final  String callId;
+/// SDP.
+ final  String sdp;
+
+/// Create a copy of CallSignalItem
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$CallSignalItem_AnswerCopyWith<CallSignalItem_Answer> get copyWith => _$CallSignalItem_AnswerCopyWithImpl<CallSignalItem_Answer>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CallSignalItem_Answer&&(identical(other.callId, callId) || other.callId == callId)&&(identical(other.sdp, sdp) || other.sdp == sdp));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,callId,sdp);
+}
+
+@override
+String toString() {
+    return 'CallSignalItem.answer(callId: $callId, sdp: $sdp)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $CallSignalItem_AnswerCopyWith<$Res> implements $CallSignalItemCopyWith<$Res> {
+  factory $CallSignalItem_AnswerCopyWith(CallSignalItem_Answer value, $Res Function(CallSignalItem_Answer) _then) = _$CallSignalItem_AnswerCopyWithImpl;
+@override @useResult
+$Res call({
+ String callId, String sdp
+});
+
+
+
+
+}
+/// @nodoc
+class _$CallSignalItem_AnswerCopyWithImpl<$Res>
+    implements $CallSignalItem_AnswerCopyWith<$Res> {
+  _$CallSignalItem_AnswerCopyWithImpl(this._self, this._then);
+
+  final CallSignalItem_Answer _self;
+  final $Res Function(CallSignalItem_Answer) _then;
+
+/// Create a copy of CallSignalItem
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? callId = null,Object? sdp = null,}) {
+  return _then(CallSignalItem_Answer(
+callId: null == callId ? _self.callId : callId // ignore: cast_nullable_to_non_nullable
+as String,sdp: null == sdp ? _self.sdp : sdp // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class CallSignalItem_Candidates extends CallSignalItem {
+  const CallSignalItem_Candidates({required this.callId, required  List<String> candidates}): _candidates = candidates,super._();
+  
+
+/// Hex call id.
+@override final  String callId;
+/// Candidate lines.
+ final  List<String> _candidates;
+/// Candidate lines.
+ List<String> get candidates {
+  if (_candidates is EqualUnmodifiableListView) return _candidates;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_candidates);
+}
+
+
+/// Create a copy of CallSignalItem
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$CallSignalItem_CandidatesCopyWith<CallSignalItem_Candidates> get copyWith => _$CallSignalItem_CandidatesCopyWithImpl<CallSignalItem_Candidates>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CallSignalItem_Candidates&&(identical(other.callId, callId) || other.callId == callId)&&const DeepCollectionEquality().equals(other.candidates, _candidates));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,callId,const DeepCollectionEquality().hash(_candidates));
+}
+
+@override
+String toString() {
+    return 'CallSignalItem.candidates(callId: $callId, candidates: $candidates)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $CallSignalItem_CandidatesCopyWith<$Res> implements $CallSignalItemCopyWith<$Res> {
+  factory $CallSignalItem_CandidatesCopyWith(CallSignalItem_Candidates value, $Res Function(CallSignalItem_Candidates) _then) = _$CallSignalItem_CandidatesCopyWithImpl;
+@override @useResult
+$Res call({
+ String callId, List<String> candidates
+});
+
+
+
+
+}
+/// @nodoc
+class _$CallSignalItem_CandidatesCopyWithImpl<$Res>
+    implements $CallSignalItem_CandidatesCopyWith<$Res> {
+  _$CallSignalItem_CandidatesCopyWithImpl(this._self, this._then);
+
+  final CallSignalItem_Candidates _self;
+  final $Res Function(CallSignalItem_Candidates) _then;
+
+/// Create a copy of CallSignalItem
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? callId = null,Object? candidates = null,}) {
+  return _then(CallSignalItem_Candidates(
+callId: null == callId ? _self.callId : callId // ignore: cast_nullable_to_non_nullable
+as String,candidates: null == candidates ? _self._candidates : candidates // ignore: cast_nullable_to_non_nullable
+as List<String>,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class CallSignalItem_End extends CallSignalItem {
+  const CallSignalItem_End({required this.callId, required this.reason}): super._();
+  
+
+/// Hex call id.
+@override final  String callId;
+/// Why.
+ final  CallEndReason reason;
+
+/// Create a copy of CallSignalItem
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$CallSignalItem_EndCopyWith<CallSignalItem_End> get copyWith => _$CallSignalItem_EndCopyWithImpl<CallSignalItem_End>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CallSignalItem_End&&(identical(other.callId, callId) || other.callId == callId)&&(identical(other.reason, reason) || other.reason == reason));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,callId,reason);
+}
+
+@override
+String toString() {
+    return 'CallSignalItem.end(callId: $callId, reason: $reason)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $CallSignalItem_EndCopyWith<$Res> implements $CallSignalItemCopyWith<$Res> {
+  factory $CallSignalItem_EndCopyWith(CallSignalItem_End value, $Res Function(CallSignalItem_End) _then) = _$CallSignalItem_EndCopyWithImpl;
+@override @useResult
+$Res call({
+ String callId, CallEndReason reason
+});
+
+
+
+
+}
+/// @nodoc
+class _$CallSignalItem_EndCopyWithImpl<$Res>
+    implements $CallSignalItem_EndCopyWith<$Res> {
+  _$CallSignalItem_EndCopyWithImpl(this._self, this._then);
+
+  final CallSignalItem_End _self;
+  final $Res Function(CallSignalItem_End) _then;
+
+/// Create a copy of CallSignalItem
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? callId = null,Object? reason = null,}) {
+  return _then(CallSignalItem_End(
+callId: null == callId ? _self.callId : callId // ignore: cast_nullable_to_non_nullable
+as String,reason: null == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
+as CallEndReason,
+  ));
+}
+
+
+}
+
+/// @nodoc
 mixin _$NodeEventItem {
 
 
@@ -739,7 +1243,7 @@ extension NodeEventItemPatterns on NodeEventItem {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( NodeEventItem_MessageReceived value)?  messageReceived,TResult Function( NodeEventItem_MessageStatus value)?  messageStatus,TResult Function( NodeEventItem_Reachability value)?  reachability,TResult Function( NodeEventItem_Contacts value)?  contacts,TResult Function( NodeEventItem_Requests value)?  requests,TResult Function( NodeEventItem_Groups value)?  groups,TResult Function( NodeEventItem_GroupMessage value)?  groupMessage,TResult Function( NodeEventItem_DeviceRetired value)?  deviceRetired,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( NodeEventItem_MessageReceived value)?  messageReceived,TResult Function( NodeEventItem_MessageStatus value)?  messageStatus,TResult Function( NodeEventItem_Reachability value)?  reachability,TResult Function( NodeEventItem_Contacts value)?  contacts,TResult Function( NodeEventItem_Requests value)?  requests,TResult Function( NodeEventItem_Groups value)?  groups,TResult Function( NodeEventItem_GroupMessage value)?  groupMessage,TResult Function( NodeEventItem_DeviceRetired value)?  deviceRetired,TResult Function( NodeEventItem_Call value)?  call,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case NodeEventItem_MessageReceived() when messageReceived != null:
@@ -750,7 +1254,8 @@ return contacts(_that);case NodeEventItem_Requests() when requests != null:
 return requests(_that);case NodeEventItem_Groups() when groups != null:
 return groups(_that);case NodeEventItem_GroupMessage() when groupMessage != null:
 return groupMessage(_that);case NodeEventItem_DeviceRetired() when deviceRetired != null:
-return deviceRetired(_that);case _:
+return deviceRetired(_that);case NodeEventItem_Call() when call != null:
+return call(_that);case _:
   return orElse();
 
 }
@@ -768,7 +1273,7 @@ return deviceRetired(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( NodeEventItem_MessageReceived value)  messageReceived,required TResult Function( NodeEventItem_MessageStatus value)  messageStatus,required TResult Function( NodeEventItem_Reachability value)  reachability,required TResult Function( NodeEventItem_Contacts value)  contacts,required TResult Function( NodeEventItem_Requests value)  requests,required TResult Function( NodeEventItem_Groups value)  groups,required TResult Function( NodeEventItem_GroupMessage value)  groupMessage,required TResult Function( NodeEventItem_DeviceRetired value)  deviceRetired,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( NodeEventItem_MessageReceived value)  messageReceived,required TResult Function( NodeEventItem_MessageStatus value)  messageStatus,required TResult Function( NodeEventItem_Reachability value)  reachability,required TResult Function( NodeEventItem_Contacts value)  contacts,required TResult Function( NodeEventItem_Requests value)  requests,required TResult Function( NodeEventItem_Groups value)  groups,required TResult Function( NodeEventItem_GroupMessage value)  groupMessage,required TResult Function( NodeEventItem_DeviceRetired value)  deviceRetired,required TResult Function( NodeEventItem_Call value)  call,}){
 final _that = this;
 switch (_that) {
 case NodeEventItem_MessageReceived():
@@ -779,7 +1284,8 @@ return contacts(_that);case NodeEventItem_Requests():
 return requests(_that);case NodeEventItem_Groups():
 return groups(_that);case NodeEventItem_GroupMessage():
 return groupMessage(_that);case NodeEventItem_DeviceRetired():
-return deviceRetired(_that);}
+return deviceRetired(_that);case NodeEventItem_Call():
+return call(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -793,7 +1299,7 @@ return deviceRetired(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( NodeEventItem_MessageReceived value)?  messageReceived,TResult? Function( NodeEventItem_MessageStatus value)?  messageStatus,TResult? Function( NodeEventItem_Reachability value)?  reachability,TResult? Function( NodeEventItem_Contacts value)?  contacts,TResult? Function( NodeEventItem_Requests value)?  requests,TResult? Function( NodeEventItem_Groups value)?  groups,TResult? Function( NodeEventItem_GroupMessage value)?  groupMessage,TResult? Function( NodeEventItem_DeviceRetired value)?  deviceRetired,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( NodeEventItem_MessageReceived value)?  messageReceived,TResult? Function( NodeEventItem_MessageStatus value)?  messageStatus,TResult? Function( NodeEventItem_Reachability value)?  reachability,TResult? Function( NodeEventItem_Contacts value)?  contacts,TResult? Function( NodeEventItem_Requests value)?  requests,TResult? Function( NodeEventItem_Groups value)?  groups,TResult? Function( NodeEventItem_GroupMessage value)?  groupMessage,TResult? Function( NodeEventItem_DeviceRetired value)?  deviceRetired,TResult? Function( NodeEventItem_Call value)?  call,}){
 final _that = this;
 switch (_that) {
 case NodeEventItem_MessageReceived() when messageReceived != null:
@@ -804,7 +1310,8 @@ return contacts(_that);case NodeEventItem_Requests() when requests != null:
 return requests(_that);case NodeEventItem_Groups() when groups != null:
 return groups(_that);case NodeEventItem_GroupMessage() when groupMessage != null:
 return groupMessage(_that);case NodeEventItem_DeviceRetired() when deviceRetired != null:
-return deviceRetired(_that);case _:
+return deviceRetired(_that);case NodeEventItem_Call() when call != null:
+return call(_that);case _:
   return null;
 
 }
@@ -821,7 +1328,7 @@ return deviceRetired(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String contactId)?  messageReceived,TResult Function( String messageId)?  messageStatus,TResult Function()?  reachability,TResult Function()?  contacts,TResult Function()?  requests,TResult Function()?  groups,TResult Function( String groupId)?  groupMessage,TResult Function()?  deviceRetired,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String contactId)?  messageReceived,TResult Function( String messageId)?  messageStatus,TResult Function()?  reachability,TResult Function()?  contacts,TResult Function()?  requests,TResult Function()?  groups,TResult Function( String groupId)?  groupMessage,TResult Function()?  deviceRetired,TResult Function( String contactId)?  call,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case NodeEventItem_MessageReceived() when messageReceived != null:
 return messageReceived(_that.contactId);case NodeEventItem_MessageStatus() when messageStatus != null:
@@ -831,7 +1338,8 @@ return contacts();case NodeEventItem_Requests() when requests != null:
 return requests();case NodeEventItem_Groups() when groups != null:
 return groups();case NodeEventItem_GroupMessage() when groupMessage != null:
 return groupMessage(_that.groupId);case NodeEventItem_DeviceRetired() when deviceRetired != null:
-return deviceRetired();case _:
+return deviceRetired();case NodeEventItem_Call() when call != null:
+return call(_that.contactId);case _:
   return orElse();
 
 }
@@ -849,7 +1357,7 @@ return deviceRetired();case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String contactId)  messageReceived,required TResult Function( String messageId)  messageStatus,required TResult Function()  reachability,required TResult Function()  contacts,required TResult Function()  requests,required TResult Function()  groups,required TResult Function( String groupId)  groupMessage,required TResult Function()  deviceRetired,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String contactId)  messageReceived,required TResult Function( String messageId)  messageStatus,required TResult Function()  reachability,required TResult Function()  contacts,required TResult Function()  requests,required TResult Function()  groups,required TResult Function( String groupId)  groupMessage,required TResult Function()  deviceRetired,required TResult Function( String contactId)  call,}) {final _that = this;
 switch (_that) {
 case NodeEventItem_MessageReceived():
 return messageReceived(_that.contactId);case NodeEventItem_MessageStatus():
@@ -859,7 +1367,8 @@ return contacts();case NodeEventItem_Requests():
 return requests();case NodeEventItem_Groups():
 return groups();case NodeEventItem_GroupMessage():
 return groupMessage(_that.groupId);case NodeEventItem_DeviceRetired():
-return deviceRetired();}
+return deviceRetired();case NodeEventItem_Call():
+return call(_that.contactId);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -873,7 +1382,7 @@ return deviceRetired();}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String contactId)?  messageReceived,TResult? Function( String messageId)?  messageStatus,TResult? Function()?  reachability,TResult? Function()?  contacts,TResult? Function()?  requests,TResult? Function()?  groups,TResult? Function( String groupId)?  groupMessage,TResult? Function()?  deviceRetired,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String contactId)?  messageReceived,TResult? Function( String messageId)?  messageStatus,TResult? Function()?  reachability,TResult? Function()?  contacts,TResult? Function()?  requests,TResult? Function()?  groups,TResult? Function( String groupId)?  groupMessage,TResult? Function()?  deviceRetired,TResult? Function( String contactId)?  call,}) {final _that = this;
 switch (_that) {
 case NodeEventItem_MessageReceived() when messageReceived != null:
 return messageReceived(_that.contactId);case NodeEventItem_MessageStatus() when messageStatus != null:
@@ -883,7 +1392,8 @@ return contacts();case NodeEventItem_Requests() when requests != null:
 return requests();case NodeEventItem_Groups() when groups != null:
 return groups();case NodeEventItem_GroupMessage() when groupMessage != null:
 return groupMessage(_that.groupId);case NodeEventItem_DeviceRetired() when deviceRetired != null:
-return deviceRetired();case _:
+return deviceRetired();case NodeEventItem_Call() when call != null:
+return call(_that.contactId);case _:
   return null;
 
 }
@@ -1257,6 +1767,75 @@ String toString() {
 
 
 
+
+/// @nodoc
+
+
+class NodeEventItem_Call extends NodeEventItem {
+  const NodeEventItem_Call({required this.contactId}): super._();
+  
+
+/// Contact hex id.
+ final  String contactId;
+
+/// Create a copy of NodeEventItem
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$NodeEventItem_CallCopyWith<NodeEventItem_Call> get copyWith => _$NodeEventItem_CallCopyWithImpl<NodeEventItem_Call>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is NodeEventItem_Call&&(identical(other.contactId, contactId) || other.contactId == contactId));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,contactId);
+}
+
+@override
+String toString() {
+    return 'NodeEventItem.call(contactId: $contactId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $NodeEventItem_CallCopyWith<$Res> implements $NodeEventItemCopyWith<$Res> {
+  factory $NodeEventItem_CallCopyWith(NodeEventItem_Call value, $Res Function(NodeEventItem_Call) _then) = _$NodeEventItem_CallCopyWithImpl;
+@useResult
+$Res call({
+ String contactId
+});
+
+
+
+
+}
+/// @nodoc
+class _$NodeEventItem_CallCopyWithImpl<$Res>
+    implements $NodeEventItem_CallCopyWith<$Res> {
+  _$NodeEventItem_CallCopyWithImpl(this._self, this._then);
+
+  final NodeEventItem_Call _self;
+  final $Res Function(NodeEventItem_Call) _then;
+
+/// Create a copy of NodeEventItem
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? contactId = null,}) {
+  return _then(NodeEventItem_Call(
+contactId: null == contactId ? _self.contactId : contactId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
 
 /// @nodoc
 mixin _$ReceiveOutcome {

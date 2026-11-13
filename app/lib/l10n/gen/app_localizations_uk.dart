@@ -385,6 +385,62 @@ class AppLocalizationsUk extends AppLocalizations {
       'Відео й аудіо відтворюються всередині MEM: їх розшифровано в приватний тимчасовий файл, який видаляється, коли плеєр закривається. Якщо вимкнено, вони відкриваються в іншому застосунку, який тоді отримує файл.';
 
   @override
+  String get voiceCalls => 'Голосові дзвінки (тест)';
+
+  @override
+  String get voiceCallsHelp =>
+      'Дзвінки контактам через Wi-Fi Direct або локальну мережу. Налаштування дзвінка йде наскрізно через MEM; голос зашифровано. Контакт дізнається вашу адресу в цій мережі. Тестується: типово вимкнено.';
+
+  @override
+  String get callStart => 'Подзвонити';
+
+  @override
+  String get callCalling => 'Дзвоню…';
+
+  @override
+  String get callIncoming => 'Вхідний дзвінок';
+
+  @override
+  String get callConnecting => 'З\'єднання…';
+
+  @override
+  String get callAccept => 'Прийняти';
+
+  @override
+  String get callDecline => 'Відхилити';
+
+  @override
+  String get callMute => 'Вимкнути мікрофон';
+
+  @override
+  String get callUnmute => 'Увімкнути мікрофон';
+
+  @override
+  String get callSpeaker => 'Гучномовець';
+
+  @override
+  String get callHangUp => 'Завершити';
+
+  @override
+  String get callEnded => 'Дзвінок завершено';
+
+  @override
+  String get callDeclined => 'Відхилено';
+
+  @override
+  String get callBusy => 'Зайнято іншим дзвінком';
+
+  @override
+  String get callFailed => 'Не вдалося з\'єднатися';
+
+  @override
+  String get callUnanswered => 'Немає відповіді';
+
+  @override
+  String get callNoMicrophone =>
+      'Для дзвінків потрібен мікрофон. Дозвольте його в налаштуваннях телефона.';
+
+  @override
   String get reason_invalid_name => 'Ім\'я задовге.';
 
   @override

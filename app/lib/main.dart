@@ -50,6 +50,7 @@ class MemApp extends StatelessWidget {
       child: ListenableBuilder(
         listenable: state,
         builder: (context, _) => MaterialApp(
+          navigatorKey: appNavigator,
           onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
           theme: memTheme(AppTheme.white),
           darkTheme: memTheme(

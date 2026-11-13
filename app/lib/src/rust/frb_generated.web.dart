@@ -183,6 +183,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  CallPolicyItem dco_decode_box_autoadd_call_policy_item(dynamic raw);
+
+  @protected
+  CallSignalItem dco_decode_box_autoadd_call_signal_item(dynamic raw);
+
+  @protected
   CardPreviewItem dco_decode_box_autoadd_card_preview_item(dynamic raw);
 
   @protected
@@ -214,6 +220,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   WifiEndpoint dco_decode_box_autoadd_wifi_endpoint(dynamic raw);
+
+  @protected
+  CallEndReason dco_decode_call_end_reason(dynamic raw);
+
+  @protected
+  CallPolicyItem dco_decode_call_policy_item(dynamic raw);
+
+  @protected
+  CallSignalItem dco_decode_call_signal_item(dynamic raw);
 
   @protected
   CardPreviewItem dco_decode_card_preview_item(dynamic raw);
@@ -276,6 +291,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PlatformInt64 dco_decode_i_64(dynamic raw);
 
   @protected
+  IncomingCallItem dco_decode_incoming_call_item(dynamic raw);
+
+  @protected
   List<String> dco_decode_list_String(dynamic raw);
 
   @protected
@@ -307,6 +325,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<GroupMemberItem> dco_decode_list_group_member_item(dynamic raw);
+
+  @protected
+  List<IncomingCallItem> dco_decode_list_incoming_call_item(dynamic raw);
 
   @protected
   List<MessageItem> dco_decode_list_message_item(dynamic raw);
@@ -355,6 +376,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   dco_decode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerQrAnimation(
     dynamic raw,
   );
+
+  @protected
+  CallPolicyItem? dco_decode_opt_box_autoadd_call_policy_item(dynamic raw);
 
   @protected
   CardPreviewItem? dco_decode_opt_box_autoadd_card_preview_item(dynamic raw);
@@ -591,6 +615,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  CallPolicyItem sse_decode_box_autoadd_call_policy_item(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  CallSignalItem sse_decode_box_autoadd_call_signal_item(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   CardPreviewItem sse_decode_box_autoadd_card_preview_item(
     SseDeserializer deserializer,
   );
@@ -634,6 +668,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   WifiEndpoint sse_decode_box_autoadd_wifi_endpoint(
     SseDeserializer deserializer,
   );
+
+  @protected
+  CallEndReason sse_decode_call_end_reason(SseDeserializer deserializer);
+
+  @protected
+  CallPolicyItem sse_decode_call_policy_item(SseDeserializer deserializer);
+
+  @protected
+  CallSignalItem sse_decode_call_signal_item(SseDeserializer deserializer);
 
   @protected
   CardPreviewItem sse_decode_card_preview_item(SseDeserializer deserializer);
@@ -700,6 +743,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PlatformInt64 sse_decode_i_64(SseDeserializer deserializer);
 
   @protected
+  IncomingCallItem sse_decode_incoming_call_item(SseDeserializer deserializer);
+
+  @protected
   List<String> sse_decode_list_String(SseDeserializer deserializer);
 
   @protected
@@ -739,6 +785,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<GroupMemberItem> sse_decode_list_group_member_item(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<IncomingCallItem> sse_decode_list_incoming_call_item(
     SseDeserializer deserializer,
   );
 
@@ -789,6 +840,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   QrAnimation?
   sse_decode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerQrAnimation(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  CallPolicyItem? sse_decode_opt_box_autoadd_call_policy_item(
     SseDeserializer deserializer,
   );
 
@@ -1067,6 +1123,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_box_autoadd_call_policy_item(
+    CallPolicyItem self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_call_signal_item(
+    CallSignalItem self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_card_preview_item(
     CardPreviewItem self,
     SseSerializer serializer,
@@ -1117,6 +1185,21 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_box_autoadd_wifi_endpoint(
     WifiEndpoint self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_call_end_reason(CallEndReason self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_call_policy_item(
+    CallPolicyItem self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_call_signal_item(
+    CallSignalItem self,
     SseSerializer serializer,
   );
 
@@ -1205,6 +1288,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer);
 
   @protected
+  void sse_encode_incoming_call_item(
+    IncomingCallItem self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
 
   @protected
@@ -1264,6 +1353,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_list_group_member_item(
     List<GroupMemberItem> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_incoming_call_item(
+    List<IncomingCallItem> self,
     SseSerializer serializer,
   );
 
@@ -1334,6 +1429,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_opt_box_autoadd_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerQrAnimation(
     QrAnimation? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_call_policy_item(
+    CallPolicyItem? self,
     SseSerializer serializer,
   );
 

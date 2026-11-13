@@ -1,0 +1,18 @@
+name: mem_calls
+description: "Voice calls for MEM on WebRTC: microphone, Opus, echo cancellation and encrypted media. Setup travels through the caller's own channel; this package knows nothing of it."
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: ^3.13.5
+  flutter: ">=3.47.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_webrtc: ^1.6.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0

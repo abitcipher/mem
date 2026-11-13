@@ -20,7 +20,7 @@ use mem_proto::armor::{Armored, armor_bundle, armor_card, dearmor};
 use rand_chacha::ChaCha20Rng;
 use rand_core::{SeedableRng, TryRng};
 
-pub use node::{BleCommand, Node, NodeConfig, NodeEvent, OPERATOR_KEYS};
+pub use node::{BleCommand, IncomingCallSignal, Node, NodeConfig, NodeEvent, OPERATOR_KEYS};
 pub use store::{KeyGuard, KeyGuardError, StoreError};
 
 /// A decrypted attachment, ready to show or hand to the system.

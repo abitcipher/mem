@@ -38,7 +38,24 @@ pub enum NodeEvent {
     GroupMessage(mem_core::model::GroupId),
     /// Our main device retired this device.
     DeviceRetired,
+    /// Call setup from this contact is waiting: [`Node::take_call_signals`].
+    Call(ContactId),
 }
+
+/// A call setup message from a contact, as it arrived.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct IncomingCallSignal {
+    /// Who sent it.
+    pub contact: ContactId,
+    /// The message.
+    pub signal: mem_core::CallSignal,
+    /// The channel it came over, and its grade.
+    pub via: mem_core::model::ChannelUse,
+}
+
+/// Call setup messages kept for the app; older ones are dropped beyond this (a call needs only
+/// the latest few).
+const CALL_INBOX: usize = 64;
 
 /// A command for the Bluetooth LE radio plugin. Link ids are the plugin's own.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -138,6 +155,8 @@ struct Shared {
     hub_urls: Mutex<Vec<String>>,
     email: Mutex<Option<cla_email::EmailClient>>,
     events: broadcast::Sender<NodeEvent>,
+    /// Call setup waiting for the app (events carry ids only, never content).
+    calls: Mutex<std::collections::VecDeque<IncomingCallSignal>>,
     config: NodeConfig,
 }
 
@@ -181,6 +200,7 @@ impl Node {
                 hub_urls: Mutex::new(Vec::new()),
                 email: Mutex::new(None),
                 events: broadcast::channel(64).0,
+                calls: Mutex::new(std::collections::VecDeque::new()),
                 config,
             }),
         };
@@ -1141,6 +1161,7 @@ impl Node {
                     self.emit(NodeEvent::Contacts);
                 }
                 Output::DeviceRetired => self.emit(NodeEvent::DeviceRetired),
+                o @ Output::CallSignal { .. } => self.keep_call(o),
                 Output::ContactRequest { .. } => self.emit(NodeEvent::Requests),
                 Output::GroupInvitation { .. } | Output::GroupChanged { .. } => {
                     self.emit(NodeEvent::Groups);
@@ -1247,6 +1268,49 @@ impl Node {
             })
             .await;
         });
+    }
+
+    /// Keeps a call setup message for the app (bounded by [`CALL_INBOX`]) and says so.
+    fn keep_call(&self, o: &Output) {
+        let Output::CallSignal {
+            contact,
+            signal,
+            via,
+        } = o
+        else {
+            return;
+        };
+        let (contact, signal) = (
+            *contact,
+            IncomingCallSignal {
+                contact: *contact,
+                signal: signal.clone(),
+                via: *via,
+            },
+        );
+        {
+            let mut calls = self
+                .shared
+                .calls
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner);
+            if calls.len() >= CALL_INBOX {
+                calls.pop_front();
+            }
+            calls.push_back(signal);
+        }
+        self.emit(NodeEvent::Call(contact));
+    }
+
+    /// Takes the call setup messages that arrived since the last call, oldest first.
+    #[must_use]
+    pub fn take_call_signals(&self) -> Vec<IncomingCallSignal> {
+        self.shared
+            .calls
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .drain(..)
+            .collect()
     }
 
     fn emit(&self, event: NodeEvent) {

@@ -426,6 +426,153 @@ pub enum NodeEventItem {
     /// Our main device removed this device: tell the user, then
     /// [`MemNode::forget_this_device`].
     DeviceRetired,
+    /// Call setup arrived: collect it with [`MemNode::take_call_signals`].
+    Call {
+        /// Contact hex id.
+        contact_id: String,
+    },
+}
+
+/// One call setup message.
+pub enum CallSignalItem {
+    /// The caller's session description.
+    Offer {
+        /// Hex call id.
+        call_id: String,
+        /// SDP.
+        sdp: String,
+    },
+    /// The callee's session description.
+    Answer {
+        /// Hex call id.
+        call_id: String,
+        /// SDP.
+        sdp: String,
+    },
+    /// ICE candidates found later.
+    Candidates {
+        /// Hex call id.
+        call_id: String,
+        /// Candidate lines.
+        candidates: Vec<String>,
+    },
+    /// The call is over.
+    End {
+        /// Hex call id.
+        call_id: String,
+        /// Why.
+        reason: CallEndReason,
+    },
+}
+
+/// Why a call ended.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CallEndReason {
+    /// Hung up after talking.
+    HungUp,
+    /// The callee declined.
+    Declined,
+    /// The callee is in another call.
+    Busy,
+    /// Media could not connect.
+    Failed,
+    /// Nobody answered in time.
+    Unanswered,
+}
+
+/// A call setup message from a contact.
+pub struct IncomingCallItem {
+    /// Contact hex id.
+    pub contact_id: String,
+    /// The message.
+    pub signal: CallSignalItem,
+    /// The channel it came over.
+    pub via: ChannelUseItem,
+}
+
+/// The media paths a call with a contact may use (its floor and standing rules).
+pub struct CallPolicyItem {
+    /// Face to face over Wi-Fi Direct (P0).
+    pub wifi_direct: bool,
+    /// Directly over the local network (P1).
+    pub local_network: bool,
+    /// Through the operator's own STUN/TURN servers (P2).
+    pub own_servers: bool,
+}
+
+fn call_id_hex(id: &[u8; 16]) -> String {
+    hex::encode(id)
+}
+
+fn call_id_bytes(id: &str) -> Result<[u8; 16], String> {
+    hex::decode(id)
+        .ok()
+        .and_then(|b| <[u8; 16]>::try_from(b).ok())
+        .ok_or_else(|| String::from("malformed"))
+}
+
+impl CallSignalItem {
+    fn into_core(self) -> Result<mem_core::CallSignal, String> {
+        use mem_core::{CallSignal as S, EndReason as R};
+        Ok(match self {
+            Self::Offer { call_id, sdp } => S::Offer {
+                call_id: call_id_bytes(&call_id)?,
+                sdp,
+            },
+            Self::Answer { call_id, sdp } => S::Answer {
+                call_id: call_id_bytes(&call_id)?,
+                sdp,
+            },
+            Self::Candidates {
+                call_id,
+                candidates,
+            } => S::Candidates {
+                call_id: call_id_bytes(&call_id)?,
+                candidates,
+            },
+            Self::End { call_id, reason } => S::End {
+                call_id: call_id_bytes(&call_id)?,
+                reason: match reason {
+                    CallEndReason::HungUp => R::HungUp,
+                    CallEndReason::Declined => R::Declined,
+                    CallEndReason::Busy => R::Busy,
+                    CallEndReason::Failed => R::Failed,
+                    CallEndReason::Unanswered => R::Unanswered,
+                },
+            },
+        })
+    }
+
+    fn from_core(s: mem_core::CallSignal) -> Self {
+        use mem_core::{CallSignal as S, EndReason as R};
+        match s {
+            S::Offer { call_id, sdp } => Self::Offer {
+                call_id: call_id_hex(&call_id),
+                sdp,
+            },
+            S::Answer { call_id, sdp } => Self::Answer {
+                call_id: call_id_hex(&call_id),
+                sdp,
+            },
+            S::Candidates {
+                call_id,
+                candidates,
+            } => Self::Candidates {
+                call_id: call_id_hex(&call_id),
+                candidates,
+            },
+            S::End { call_id, reason } => Self::End {
+                call_id: call_id_hex(&call_id),
+                reason: match reason {
+                    R::HungUp => CallEndReason::HungUp,
+                    R::Declined => CallEndReason::Declined,
+                    R::Busy => CallEndReason::Busy,
+                    R::Failed => CallEndReason::Failed,
+                    R::Unanswered => CallEndReason::Unanswered,
+                },
+            },
+        }
+    }
 }
 
 /// A command for the Bluetooth radio plugin. Link ids are the plugin's own.
@@ -1100,6 +1247,9 @@ impl MemNode {
                     group_id: hex::encode(g.as_bytes()),
                 },
                 NodeEvent::DeviceRetired => NodeEventItem::DeviceRetired,
+                NodeEvent::Call(c) => NodeEventItem::Call {
+                    contact_id: hex::encode(c.as_bytes()),
+                },
             };
             sink.add(item).is_ok()
         });
@@ -2616,6 +2766,66 @@ impl MemNode {
         let index = usize::try_from(index).map_err(|_| String::from("unknown_message"))?;
         self.with(|rt| rt.export_attachment(message, index, std::path::Path::new(&path)))?
             .map_err(|e| e.to_string())
+    }
+
+    /// Sends a call setup message to a contact now. Candidates its floor does not allow are
+    /// removed first.
+    ///
+    /// # Errors
+    ///
+    /// `"unreachable"` when no automatic channel to the contact is open, `"not_a_contact"`,
+    /// `"quota"`, `"malformed"`, or a storage error.
+    pub fn send_call_signal(
+        &self,
+        contact_id: String,
+        signal: CallSignalItem,
+    ) -> Result<(), String> {
+        let contact = contact(&contact_id)?;
+        let out = self.handle(Input::SendCallSignal {
+            contact,
+            signal: signal.into_core()?,
+        })?;
+        match rejected(&out) {
+            Some(r) => Err(reason_key(r)),
+            None => Ok(()),
+        }
+    }
+
+    /// The call setup messages that arrived since the last call, oldest first.
+    #[frb(sync)]
+    #[must_use]
+    pub fn take_call_signals(&self) -> Vec<IncomingCallItem> {
+        self.node
+            .take_call_signals()
+            .into_iter()
+            .map(|s| IncomingCallItem {
+                contact_id: hex::encode(s.contact.as_bytes()),
+                signal: CallSignalItem::from_core(s.signal),
+                via: ChannelUseItem {
+                    channel: s.via.cla.into(),
+                    grade: s.via.grade.label().into(),
+                    at_unix_ms: ms(s.via.at_unix_ms),
+                },
+            })
+            .collect()
+    }
+
+    /// The media paths a call with this contact may use; `None` for anyone who is not an
+    /// approved contact.
+    ///
+    /// # Errors
+    ///
+    /// `"unknown_contact"` for a bad id.
+    #[frb(sync)]
+    pub fn call_policy(&self, contact_id: String) -> Result<Option<CallPolicyItem>, String> {
+        let contact = contact(&contact_id)?;
+        self.with(|rt| {
+            rt.agent().call_policy(contact).map(|p| CallPolicyItem {
+                wifi_direct: p.wifi_direct,
+                local_network: p.local_network,
+                own_servers: p.own_servers,
+            })
+        })
     }
 
     /// Attachment `index` of a message, decrypted; `None` while its file is not here yet.

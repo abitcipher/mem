@@ -782,6 +782,114 @@ abstract class AppLocalizations {
   /// **'Video and audio files play inside MEM: they are decrypted into a private temporary file that is deleted when the player closes. Off, they open in another app, which then gets the file.'**
   String get mediaPlayerHelp;
 
+  /// No description provided for @voiceCalls.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice calls (test)'**
+  String get voiceCalls;
+
+  /// No description provided for @voiceCallsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Call contacts over Wi-Fi Direct or the local network. Call setup travels end to end through MEM; the voice is encrypted. The contact learns your address on that network. Being tested: off by default.'**
+  String get voiceCallsHelp;
+
+  /// No description provided for @callStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get callStart;
+
+  /// No description provided for @callCalling.
+  ///
+  /// In en, this message translates to:
+  /// **'Calling…'**
+  String get callCalling;
+
+  /// No description provided for @callIncoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming call'**
+  String get callIncoming;
+
+  /// No description provided for @callConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting…'**
+  String get callConnecting;
+
+  /// No description provided for @callAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get callAccept;
+
+  /// No description provided for @callDecline.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get callDecline;
+
+  /// No description provided for @callMute.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute'**
+  String get callMute;
+
+  /// No description provided for @callUnmute.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmute'**
+  String get callUnmute;
+
+  /// No description provided for @callSpeaker.
+  ///
+  /// In en, this message translates to:
+  /// **'Speaker'**
+  String get callSpeaker;
+
+  /// No description provided for @callHangUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Hang up'**
+  String get callHangUp;
+
+  /// No description provided for @callEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'Call ended'**
+  String get callEnded;
+
+  /// No description provided for @callDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get callDeclined;
+
+  /// No description provided for @callBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'Busy in another call'**
+  String get callBusy;
+
+  /// No description provided for @callFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The call could not connect'**
+  String get callFailed;
+
+  /// No description provided for @callUnanswered.
+  ///
+  /// In en, this message translates to:
+  /// **'No answer'**
+  String get callUnanswered;
+
+  /// No description provided for @callNoMicrophone.
+  ///
+  /// In en, this message translates to:
+  /// **'Calls need the microphone. Allow it in the phone\'s settings.'**
+  String get callNoMicrophone;
+
   /// No description provided for @reason_invalid_name.
   ///
   /// In en, this message translates to:
