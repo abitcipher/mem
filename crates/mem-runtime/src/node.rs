@@ -1715,6 +1715,11 @@ mod tests {
                 a.read(|r| r.agent().contacts()[0].alias.clone()).as_deref(),
                 Some("Bo from work")
             );
+            a.handle(Input::SetContactRingtone {
+                contact: b_id,
+                ringtone: Some("pulse".into()),
+            })
+            .unwrap();
             let long = a
                 .handle(Input::SetContactAlias {
                     contact: b_id,
@@ -1740,6 +1745,11 @@ mod tests {
         assert_eq!(
             a.read(|r| r.agent().contacts()[0].alias.clone()).as_deref(),
             Some("Bo from work")
+        );
+        assert_eq!(
+            a.read(|r| r.agent().contacts()[0].ringtone.clone())
+                .as_deref(),
+            Some("pulse")
         );
         a.handle(Input::SetContactAlias {
             contact: b_id,

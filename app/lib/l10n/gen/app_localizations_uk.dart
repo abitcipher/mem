@@ -441,6 +441,58 @@ class AppLocalizationsUk extends AppLocalizations {
       'Для дзвінків потрібен мікрофон. Дозвольте його в налаштуваннях телефона.';
 
   @override
+  String get toneIncoming => 'Сигнал вхідного дзвінка';
+
+  @override
+  String get toneOutgoing => 'Сигнал під час дзвінка';
+
+  @override
+  String get tonePreview => 'Прослухати';
+
+  @override
+  String get toneOff => 'Вимкнено';
+
+  @override
+  String get toneDefault => 'Типовий';
+
+  @override
+  String get contactRingtone => 'Мелодія дзвінка';
+
+  @override
+  String get toneChime => 'Дзвіночок';
+
+  @override
+  String get toneClassic => 'Класичний';
+
+  @override
+  String get tonePulse => 'Пульс';
+
+  @override
+  String get toneSoft => 'М\'який';
+
+  @override
+  String get toneRingback => 'Стандартний';
+
+  @override
+  String get toneBeep => 'Короткий сигнал';
+
+  @override
+  String get callHistory => 'Зберігати історію дзвінків у чатах';
+
+  @override
+  String get callHistoryHelp =>
+      'Кожен дзвінок з\'являється в чаті з тривалістю та шляхом. Зберігається лише на цьому пристрої.';
+
+  @override
+  String get callLineOutgoing => 'Вихідний дзвінок';
+
+  @override
+  String get callLineIncoming => 'Вхідний дзвінок';
+
+  @override
+  String get callLineMissed => 'Пропущений дзвінок';
+
+  @override
   String get reason_invalid_name => 'Ім\'я задовге.';
 
   @override

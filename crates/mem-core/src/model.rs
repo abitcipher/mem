@@ -211,6 +211,8 @@ pub struct ContactView {
     pub email: Option<String>,
     /// The name the user gave this contact, shown instead of `display_name`.
     pub alias: Option<String>,
+    /// The incoming-call tone chosen for this contact (an app tone id).
+    pub ringtone: Option<String>,
 }
 
 /// A contact request waiting in quarantine. Never shown as a message.
@@ -237,6 +239,59 @@ pub enum MessageKind {
     Text,
     /// Our contact request to someone (its text is the note, possibly empty).
     ContactRequest,
+    /// A voice call, kept as a line in the chat (local only; never sent).
+    Call(CallInfo),
+}
+
+/// What happened in a voice call.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CallInfo {
+    /// How long the two talked, in seconds (0 when they never did).
+    pub duration_s: u32,
+    /// How it went.
+    pub outcome: CallOutcome,
+}
+
+/// How a call went.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CallOutcome {
+    /// They talked.
+    Answered,
+    /// Their call rang here and nobody answered.
+    Missed,
+    /// Declined (by us or by them).
+    Declined,
+    /// The other side was in another call.
+    Busy,
+    /// The media could not connect.
+    Failed,
+    /// Our call rang there and nobody answered.
+    Unanswered,
+}
+
+impl CallOutcome {
+    pub(crate) const fn code(self) -> u8 {
+        match self {
+            Self::Answered => 0,
+            Self::Missed => 1,
+            Self::Declined => 2,
+            Self::Busy => 3,
+            Self::Failed => 4,
+            Self::Unanswered => 5,
+        }
+    }
+
+    pub(crate) const fn from_code(c: u8) -> Option<Self> {
+        Some(match c {
+            0 => Self::Answered,
+            1 => Self::Missed,
+            2 => Self::Declined,
+            3 => Self::Busy,
+            4 => Self::Failed,
+            5 => Self::Unanswered,
+            _ => return None,
+        })
+    }
 }
 
 /// Direction of a message relative to this device.

@@ -183,6 +183,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  CallItem dco_decode_box_autoadd_call_item(dynamic raw);
+
+  @protected
   CallPolicyItem dco_decode_box_autoadd_call_policy_item(dynamic raw);
 
   @protected
@@ -190,6 +193,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   CardPreviewItem dco_decode_box_autoadd_card_preview_item(dynamic raw);
+
+  @protected
+  Channel dco_decode_box_autoadd_channel(dynamic raw);
 
   @protected
   ConsentRequest dco_decode_box_autoadd_consent_request(dynamic raw);
@@ -223,6 +229,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   CallEndReason dco_decode_call_end_reason(dynamic raw);
+
+  @protected
+  CallItem dco_decode_call_item(dynamic raw);
+
+  @protected
+  CallOutcomeItem dco_decode_call_outcome_item(dynamic raw);
 
   @protected
   CallPolicyItem dco_decode_call_policy_item(dynamic raw);
@@ -378,10 +390,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  CallItem? dco_decode_opt_box_autoadd_call_item(dynamic raw);
+
+  @protected
   CallPolicyItem? dco_decode_opt_box_autoadd_call_policy_item(dynamic raw);
 
   @protected
   CardPreviewItem? dco_decode_opt_box_autoadd_card_preview_item(dynamic raw);
+
+  @protected
+  Channel? dco_decode_opt_box_autoadd_channel(dynamic raw);
 
   @protected
   EmailAccountItem? dco_decode_opt_box_autoadd_email_account_item(dynamic raw);
@@ -615,6 +633,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  CallItem sse_decode_box_autoadd_call_item(SseDeserializer deserializer);
+
+  @protected
   CallPolicyItem sse_decode_box_autoadd_call_policy_item(
     SseDeserializer deserializer,
   );
@@ -628,6 +649,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   CardPreviewItem sse_decode_box_autoadd_card_preview_item(
     SseDeserializer deserializer,
   );
+
+  @protected
+  Channel sse_decode_box_autoadd_channel(SseDeserializer deserializer);
 
   @protected
   ConsentRequest sse_decode_box_autoadd_consent_request(
@@ -671,6 +695,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   CallEndReason sse_decode_call_end_reason(SseDeserializer deserializer);
+
+  @protected
+  CallItem sse_decode_call_item(SseDeserializer deserializer);
+
+  @protected
+  CallOutcomeItem sse_decode_call_outcome_item(SseDeserializer deserializer);
 
   @protected
   CallPolicyItem sse_decode_call_policy_item(SseDeserializer deserializer);
@@ -844,6 +874,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  CallItem? sse_decode_opt_box_autoadd_call_item(SseDeserializer deserializer);
+
+  @protected
   CallPolicyItem? sse_decode_opt_box_autoadd_call_policy_item(
     SseDeserializer deserializer,
   );
@@ -852,6 +885,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   CardPreviewItem? sse_decode_opt_box_autoadd_card_preview_item(
     SseDeserializer deserializer,
   );
+
+  @protected
+  Channel? sse_decode_opt_box_autoadd_channel(SseDeserializer deserializer);
 
   @protected
   EmailAccountItem? sse_decode_opt_box_autoadd_email_account_item(
@@ -1123,6 +1159,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_box_autoadd_call_item(
+    CallItem self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_call_policy_item(
     CallPolicyItem self,
     SseSerializer serializer,
@@ -1139,6 +1181,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     CardPreviewItem self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_box_autoadd_channel(Channel self, SseSerializer serializer);
 
   @protected
   void sse_encode_box_autoadd_consent_request(
@@ -1190,6 +1235,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_call_end_reason(CallEndReason self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_call_item(CallItem self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_call_outcome_item(
+    CallOutcomeItem self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_call_policy_item(
@@ -1433,6 +1487,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_opt_box_autoadd_call_item(
+    CallItem? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_box_autoadd_call_policy_item(
     CallPolicyItem? self,
     SseSerializer serializer,
@@ -1441,6 +1501,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_opt_box_autoadd_card_preview_item(
     CardPreviewItem? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_channel(
+    Channel? self,
     SseSerializer serializer,
   );
 

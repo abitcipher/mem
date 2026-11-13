@@ -5,6 +5,7 @@ import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import '../app_scope.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../src/rust/api.dart';
+import '../calls/call_line.dart';
 import '../widgets/attachments.dart';
 import '../widgets/chat_sync.dart';
 import '../widgets/message_bubble.dart';
@@ -199,6 +200,10 @@ class _ChatScreenState extends State<ChatScreen> {
             (context, message, index, {required isSentByMe, groupStatus}) {
               final item = _items[message.id];
               final settings = AppScope.read(context).settings;
+              final call = item?.call;
+              if (item != null && call != null) {
+                return CallLine(item: item, call: call);
+              }
               return Column(
                 crossAxisAlignment: isSentByMe
                     ? CrossAxisAlignment.end

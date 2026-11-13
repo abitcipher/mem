@@ -11,9 +11,10 @@ use cla_qr::{Animation, Pace, ScanEvent, Scanner};
 use flutter_rust_bridge::frb;
 use mem_core::disclosure::{self, Locale};
 use mem_core::model::{
-    AttachmentState, ChannelOffer, ConsentBasis, ConsentRecord, ConsentScope, ContactId,
-    DeliveryStatus, GroupId, GroupStatus, GroupView, MemberRole, MessageKind, MessageView,
-    MsgDirection, MsgId, OfferId, OpId, RejectReason, RequestId, RuleId, TrustLevel, sas_emoji,
+    AttachmentState, CallOutcome, ChannelOffer, ConsentBasis, ConsentRecord, ConsentScope,
+    ContactId, DeliveryStatus, GroupId, GroupStatus, GroupView, MemberRole, MessageKind,
+    MessageView, MsgDirection, MsgId, OfferId, OpId, RejectReason, RequestId, RuleId, TrustLevel,
+    sas_emoji,
 };
 use mem_core::{ClaError, ClaId, Input, Output, PrivacyGrade};
 use mem_proto::frame::ObjectKind;
@@ -674,6 +675,8 @@ pub struct ContactItem {
     pub email: Option<String>,
     /// The name the user gave them (local), shown instead of `display_name`.
     pub alias: Option<String>,
+    /// Their incoming-call tone (an app tone id); `None` for the default.
+    pub ringtone: Option<String>,
 }
 
 /// The mail account for the email bridge. The password goes in, never out.
@@ -771,6 +774,33 @@ pub struct MessageItem {
     pub sent_to: Option<u16>,
     /// Attached files, in order (their index is the position here).
     pub attachments: Vec<AttachmentItem>,
+    /// A voice call line instead of a message.
+    pub call: Option<CallItem>,
+}
+
+/// A voice call, as a line in the chat.
+pub struct CallItem {
+    /// Seconds talked (0 when they never did).
+    pub duration_s: u32,
+    /// How it went.
+    pub outcome: CallOutcomeItem,
+}
+
+/// How a call went.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CallOutcomeItem {
+    /// They talked.
+    Answered,
+    /// Their call rang here and nobody answered.
+    Missed,
+    /// Declined.
+    Declined,
+    /// The other side was busy.
+    Busy,
+    /// The media could not connect.
+    Failed,
+    /// Our call rang there and nobody answered.
+    Unanswered,
 }
 
 /// An attached file as shown.
@@ -1626,6 +1656,26 @@ impl MemNode {
         let out = self.handle(Input::SetContactAlias {
             contact: contact(&contact_id)?,
             alias,
+        })?;
+        match rejected(&out) {
+            Some(r) => Err(reason_key(r)),
+            None => Ok(()),
+        }
+    }
+
+    /// Sets or clears a contact's incoming-call tone (an app tone id; `None` for the default).
+    ///
+    /// # Errors
+    ///
+    /// `"invalid_name"` (empty or over 32 bytes), `"unknown_contact"`.
+    pub fn set_contact_ringtone(
+        &self,
+        contact_id: String,
+        ringtone: Option<String>,
+    ) -> Result<(), String> {
+        let out = self.handle(Input::SetContactRingtone {
+            contact: contact(&contact_id)?,
+            ringtone,
         })?;
         match rejected(&out) {
             Some(r) => Err(reason_key(r)),
@@ -2526,12 +2576,14 @@ impl MemNode {
                             .as_ref()
                             .map_or(c.added_unix_ms, |m| m.created_unix_ms)),
                         // A message of files only shows its first file's name.
-                        last_text: last.map(|m| match m.attachments.first() {
-                            Some(a) if m.text.is_empty() => format!("📎 {}", a.name),
+                        last_text: last.map(|m| match (m.kind, m.attachments.first()) {
+                            (MessageKind::Call(_), _) => String::from("📞"),
+                            (_, Some(a)) if m.text.is_empty() => format!("📎 {}", a.name),
                             _ => m.text,
                         }),
                         email: c.email.clone(),
                         alias: c.alias.clone(),
+                        ringtone: c.ringtone.clone(),
                     }
                 })
                 .collect();
@@ -2784,6 +2836,61 @@ impl MemNode {
         let out = self.handle(Input::SendCallSignal {
             contact,
             signal: signal.into_core()?,
+        })?;
+        match rejected(&out) {
+            Some(r) => Err(reason_key(r)),
+            None => Ok(()),
+        }
+    }
+
+    /// Records a call as a line in the contact's chat (only when the user keeps call history).
+    ///
+    /// # Errors
+    ///
+    /// `"unknown_contact"`, or a storage error.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "one call record: who, which way, when, how long, how it went, which path"
+    )]
+    pub fn record_call(
+        &self,
+        contact_id: String,
+        outgoing: bool,
+        started_unix_ms: i64,
+        duration_s: u32,
+        outcome: CallOutcomeItem,
+        via: Option<Channel>,
+    ) -> Result<(), String> {
+        let contact = contact(&contact_id)?;
+        let started_unix_ms = u64::try_from(started_unix_ms).unwrap_or(0);
+        let via = via.map(|c| {
+            let cla = ClaId::from(c);
+            mem_core::model::ChannelUse {
+                cla,
+                grade: cla.grade(),
+                at_unix_ms: started_unix_ms,
+            }
+        });
+        let out = self.handle(Input::RecordCall {
+            contact,
+            direction: if outgoing {
+                MsgDirection::Outgoing
+            } else {
+                MsgDirection::Incoming
+            },
+            started_unix_ms,
+            info: mem_core::model::CallInfo {
+                duration_s,
+                outcome: match outcome {
+                    CallOutcomeItem::Answered => CallOutcome::Answered,
+                    CallOutcomeItem::Missed => CallOutcome::Missed,
+                    CallOutcomeItem::Declined => CallOutcome::Declined,
+                    CallOutcomeItem::Busy => CallOutcome::Busy,
+                    CallOutcomeItem::Failed => CallOutcome::Failed,
+                    CallOutcomeItem::Unanswered => CallOutcome::Unanswered,
+                },
+            },
+            via,
         })?;
         match rejected(&out) {
             Some(r) => Err(reason_key(r)),
@@ -3217,6 +3324,20 @@ fn message_item(m: MessageView) -> MessageItem {
         id: hex::encode(m.id.as_bytes()),
         outgoing: m.direction == MsgDirection::Outgoing,
         is_request: m.kind == MessageKind::ContactRequest,
+        call: match m.kind {
+            MessageKind::Call(c) => Some(CallItem {
+                duration_s: c.duration_s,
+                outcome: match c.outcome {
+                    CallOutcome::Answered => CallOutcomeItem::Answered,
+                    CallOutcome::Missed => CallOutcomeItem::Missed,
+                    CallOutcome::Declined => CallOutcomeItem::Declined,
+                    CallOutcome::Busy => CallOutcomeItem::Busy,
+                    CallOutcome::Failed => CallOutcomeItem::Failed,
+                    CallOutcome::Unanswered => CallOutcomeItem::Unanswered,
+                },
+            }),
+            _ => None,
+        },
         text: m.text,
         created_unix_ms: ms(m.created_unix_ms),
         status: match m.status {

@@ -10,7 +10,7 @@ import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'api.freezed.dart';
 
 // These functions are ignored because they are not marked as `pub`: `attest_error`, `call_id_bytes`, `call_id_hex`, `consent_request`, `contact_name`, `contact`, `dial_hint`, `from_core`, `grade_from`, `grade_u8`, `group_call`, `group_item`, `handle`, `into_core`, `message_item`, `ms`, `msg`, `new`, `outcome`, `own_hint`, `parse_group`, `parse_locale`, `qr`, `reason_key`, `receive_outcome`, `rejected`, `sent_text`, `single`, `with`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`
 
 /// Creates a scanner.
 QrScanner newQrScanner() => RustLib.instance.api.crateApiNewQrScanner();
@@ -551,6 +551,20 @@ abstract class MemNode implements RustOpaqueInterface {
     required bool sent,
   });
 
+  /// Records a call as a line in the contact's chat (only when the user keeps call history).
+  ///
+  /// # Errors
+  ///
+  /// `"unknown_contact"`, or a storage error.
+  Future<void> recordCall({
+    required String contactId,
+    required bool outgoing,
+    required PlatformInt64 startedUnixMs,
+    required int durationS,
+    required CallOutcomeItem outcome,
+    Channel? via,
+  });
+
   /// Removes a contact: its conversation, queued messages and rules; a fellow group member
   /// stays only in its groups.
   ///
@@ -712,6 +726,16 @@ abstract class MemNode implements RustOpaqueInterface {
   ///
   /// `"invalid_email_address"`, `"unknown_contact"`.
   Future<void> setContactEmail({required String contactId, String? address});
+
+  /// Sets or clears a contact's incoming-call tone (an app tone id; `None` for the default).
+  ///
+  /// # Errors
+  ///
+  /// `"invalid_name"` (empty or over 32 bytes), `"unknown_contact"`.
+  Future<void> setContactRingtone({
+    required String contactId,
+    String? ringtone,
+  });
 
   /// Sets the courier storage limit; 0 turns courier mode off. Carried bundles beyond a lower
   /// limit are dropped.
@@ -1156,6 +1180,49 @@ enum CallEndReason {
   failed,
 
   /// Nobody answered in time.
+  unanswered,
+}
+
+/// A voice call, as a line in the chat.
+class CallItem {
+  /// Seconds talked (0 when they never did).
+  final int durationS;
+
+  /// How it went.
+  final CallOutcomeItem outcome;
+
+  const CallItem({required this.durationS, required this.outcome});
+
+  @override
+  int get hashCode => durationS.hashCode ^ outcome.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CallItem &&
+          runtimeType == other.runtimeType &&
+          durationS == other.durationS &&
+          outcome == other.outcome;
+}
+
+/// How a call went.
+enum CallOutcomeItem {
+  /// They talked.
+  answered,
+
+  /// Their call rang here and nobody answered.
+  missed,
+
+  /// Declined.
+  declined,
+
+  /// The other side was busy.
+  busy,
+
+  /// The media could not connect.
+  failed,
+
+  /// Our call rang there and nobody answered.
   unanswered,
 }
 
@@ -1616,6 +1683,9 @@ class ContactItem {
   /// The name the user gave them (local), shown instead of `display_name`.
   final String? alias;
 
+  /// Their incoming-call tone (an app tone id); `None` for the default.
+  final String? ringtone;
+
   const ContactItem({
     required this.id,
     this.displayName,
@@ -1628,6 +1698,7 @@ class ContactItem {
     required this.lastUnixMs,
     this.email,
     this.alias,
+    this.ringtone,
   });
 
   @override
@@ -1642,7 +1713,8 @@ class ContactItem {
       lastText.hashCode ^
       lastUnixMs.hashCode ^
       email.hashCode ^
-      alias.hashCode;
+      alias.hashCode ^
+      ringtone.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -1659,7 +1731,8 @@ class ContactItem {
           lastText == other.lastText &&
           lastUnixMs == other.lastUnixMs &&
           email == other.email &&
-          alias == other.alias;
+          alias == other.alias &&
+          ringtone == other.ringtone;
 }
 
 /// Courier mode: what this device carries for other people.
@@ -2041,6 +2114,9 @@ class MessageItem {
   /// Attached files, in order (their index is the position here).
   final List<AttachmentItem> attachments;
 
+  /// A voice call line instead of a message.
+  final CallItem? call;
+
   const MessageItem({
     required this.id,
     required this.outgoing,
@@ -2053,6 +2129,7 @@ class MessageItem {
     this.deliveredTo,
     this.sentTo,
     required this.attachments,
+    this.call,
   });
 
   @override
@@ -2067,7 +2144,8 @@ class MessageItem {
       senderId.hashCode ^
       deliveredTo.hashCode ^
       sentTo.hashCode ^
-      attachments.hashCode;
+      attachments.hashCode ^
+      call.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -2084,7 +2162,8 @@ class MessageItem {
           senderId == other.senderId &&
           deliveredTo == other.deliveredTo &&
           sentTo == other.sentTo &&
-          attachments == other.attachments;
+          attachments == other.attachments &&
+          call == other.call;
 }
 
 /// Message status.

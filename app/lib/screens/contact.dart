@@ -1,8 +1,10 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:intl/intl.dart';
+import 'package:mem_calls/mem_calls.dart';
 
 import '../app_scope.dart';
 import '../l10n/gen/app_localizations.dart';
+import 'settings.dart' show toneName;
 import '../src/rust/api.dart';
 
 class ContactScreen extends StatelessWidget {
@@ -94,6 +96,10 @@ class ContactScreen extends StatelessWidget {
           ),
           const Divider(height: 32),
           _ContactEmail(contactId: contactId, email: c.email),
+          if (state.calls.enabled) ...[
+            const Divider(height: 32),
+            _ContactRingtone(contactId: contactId, ringtone: c.ringtone),
+          ],
           const Divider(height: 32),
           Text(
             l.standingRules,
@@ -281,6 +287,48 @@ class _ContactEmailState extends State<_ContactEmail> {
           ],
         ),
         Text(l.contactEmailHelp, style: Theme.of(context).textTheme.bodySmall),
+      ],
+    );
+  }
+}
+
+/// The incoming-call tone for this contact: the default, one of the tones, or off. Kept in the
+/// encrypted state (which tone a contact has would show who the contacts are).
+class _ContactRingtone extends StatelessWidget {
+  const _ContactRingtone({required this.contactId, required this.ringtone});
+
+  final String contactId;
+  final String? ringtone;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final state = AppScope.read(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l.contactRingtone,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        DropdownButton<String>(
+          isExpanded: true,
+          value: ringtone ?? '',
+          items: [
+            DropdownMenuItem(value: '', child: Text(l.toneDefault)),
+            for (final t in MemTone.forIncoming)
+              DropdownMenuItem(value: t.id, child: Text(toneName(l, t))),
+            DropdownMenuItem(value: 'off', child: Text(l.toneOff)),
+          ],
+          onChanged: (v) async {
+            if (v == null) return;
+            await state.node.setContactRingtone(
+              contactId: contactId,
+              ringtone: v.isEmpty ? null : v,
+            );
+            state.changed();
+          },
+        ),
       ],
     );
   }

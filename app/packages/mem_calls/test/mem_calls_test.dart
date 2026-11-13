@@ -9,4 +9,11 @@ void main() {
     expect(pathOf('srflx', null), MemCallPath.servers);
     expect(pathOf('unknown', '10.0.0.5'), isNull);
   });
+
+  test('tones are split into incoming and outgoing, by stable id', () {
+    expect(MemTone.forIncoming, isNot(contains(MemTone.ringback)));
+    expect(MemTone.forOutgoing, [MemTone.ringback, MemTone.beep]);
+    expect(MemTone.byId('chime'), MemTone.chime);
+    expect(MemTone.byId('off'), isNull);
+  });
 }

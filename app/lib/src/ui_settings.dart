@@ -83,6 +83,17 @@ class UiSettings {
   /// Voice calls with contacts (being tested; off by default).
   bool voiceCalls = false;
 
+  /// Calls are kept as lines in the chat.
+  bool callHistory = true;
+
+  /// Tone for incoming calls (a `MemTone` id, or `off`) and its volume (0..1).
+  String incomingTone = 'chime';
+  double incomingVolume = 0.8;
+
+  /// Ringback while our call rings (a `MemTone` id, or `off`) and its volume (0..1).
+  String outgoingTone = 'ringback';
+  double outgoingVolume = 0.6;
+
   /// The local network status button in the Home toolbar.
   bool showNetworkStatus = true;
 
@@ -147,6 +158,16 @@ class UiSettings {
             s.builtInPlayer = v != 'false';
           case 'voice_calls':
             s.voiceCalls = v == 'true';
+          case 'call_history':
+            s.callHistory = v != 'false';
+          case 'incoming_tone':
+            s.incomingTone = v;
+          case 'incoming_volume':
+            s.incomingVolume = (double.tryParse(v) ?? 0.8).clamp(0, 1);
+          case 'outgoing_tone':
+            s.outgoingTone = v;
+          case 'outgoing_volume':
+            s.outgoingVolume = (double.tryParse(v) ?? 0.6).clamp(0, 1);
           case 'network_status':
             s.showNetworkStatus = v != 'false';
           case 'stay_reachable':
@@ -188,6 +209,11 @@ class UiSettings {
           'message_times=$showMessageTimes',
           'media_player=$builtInPlayer',
           'voice_calls=$voiceCalls',
+          'call_history=$callHistory',
+          'incoming_tone=$incomingTone',
+          'incoming_volume=$incomingVolume',
+          'outgoing_tone=$outgoingTone',
+          'outgoing_volume=$outgoingVolume',
           'network_status=$showNetworkStatus',
           'stay_reachable=$stayReachable',
           'push=$push',

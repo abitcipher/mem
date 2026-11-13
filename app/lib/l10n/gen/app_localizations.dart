@@ -890,6 +890,108 @@ abstract class AppLocalizations {
   /// **'Calls need the microphone. Allow it in the phone\'s settings.'**
   String get callNoMicrophone;
 
+  /// No description provided for @toneIncoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming call tone'**
+  String get toneIncoming;
+
+  /// No description provided for @toneOutgoing.
+  ///
+  /// In en, this message translates to:
+  /// **'Ringback while calling'**
+  String get toneOutgoing;
+
+  /// No description provided for @tonePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Listen'**
+  String get tonePreview;
+
+  /// No description provided for @toneOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get toneOff;
+
+  /// No description provided for @toneDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get toneDefault;
+
+  /// No description provided for @contactRingtone.
+  ///
+  /// In en, this message translates to:
+  /// **'Ringtone'**
+  String get contactRingtone;
+
+  /// No description provided for @toneChime.
+  ///
+  /// In en, this message translates to:
+  /// **'Chime'**
+  String get toneChime;
+
+  /// No description provided for @toneClassic.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic'**
+  String get toneClassic;
+
+  /// No description provided for @tonePulse.
+  ///
+  /// In en, this message translates to:
+  /// **'Pulse'**
+  String get tonePulse;
+
+  /// No description provided for @toneSoft.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft'**
+  String get toneSoft;
+
+  /// No description provided for @toneRingback.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard'**
+  String get toneRingback;
+
+  /// No description provided for @toneBeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Short beep'**
+  String get toneBeep;
+
+  /// No description provided for @callHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep call history in chats'**
+  String get callHistory;
+
+  /// No description provided for @callHistoryHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Each call appears in the chat with its length and path. Stored only on this device.'**
+  String get callHistoryHelp;
+
+  /// No description provided for @callLineOutgoing.
+  ///
+  /// In en, this message translates to:
+  /// **'Outgoing call'**
+  String get callLineOutgoing;
+
+  /// No description provided for @callLineIncoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming call'**
+  String get callLineIncoming;
+
+  /// No description provided for @callLineMissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Missed call'**
+  String get callLineMissed;
+
   /// No description provided for @reason_invalid_name.
   ///
   /// In en, this message translates to:

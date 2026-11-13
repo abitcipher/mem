@@ -371,6 +371,7 @@ impl Agent {
                 group_only: false,
                 email: None,
                 alias: None,
+                ringtone: None,
                 xwing: None,
                 told_xwing: u32::MAX,
                 devices: Vec::new(),

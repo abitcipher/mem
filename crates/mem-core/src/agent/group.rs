@@ -719,6 +719,7 @@ impl Agent {
                     group_only: true,
                     email: None,
                     alias: None,
+                    ringtone: None,
                     xwing: None,
                     told_xwing: 0,
                     devices: Vec::new(),

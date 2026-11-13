@@ -23,9 +23,9 @@ use crate::agent::{
     Message, OutboxItem, PartialBlob, PendingIntro, Pull, Tombstone,
 };
 use crate::model::{
-    AttestLogEntry, AttestReturn, ChannelUse, ConsentBasis, ConsentRule, ContactId, DeliveryStatus,
-    GroupId, GroupStatus, MessageKind, MsgDirection, MsgId, PrivacyLogEntry, RequestId, RuleId,
-    TrustLevel,
+    AttestLogEntry, AttestReturn, CallInfo, CallOutcome, ChannelUse, ConsentBasis, ConsentRule,
+    ContactId, DeliveryStatus, GroupId, GroupStatus, MessageKind, MsgDirection, MsgId,
+    PrivacyLogEntry, RequestId, RuleId, TrustLevel,
 };
 
 /// Snapshot format version.
@@ -284,6 +284,9 @@ struct ContactDto {
     /// The name the user gave the contact.
     #[serde(default)]
     alias: Option<String>,
+    /// Its incoming-call tone (an app tone id).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    ringtone: Option<String>,
     /// The contact's X-Wing key (re-validated at load) and what they confirmed.
     #[serde(default)]
     xwing: Option<Vec<u8>>,
@@ -332,6 +335,9 @@ struct MessageDto {
     fanout: Option<[u8; 16]>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     attachments: Vec<AttachmentDto>,
+    /// A call line: its duration in seconds and outcome code.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    call: Option<(u32, u8)>,
 }
 
 /// An attached file of a message, with the file key (the snapshot is encrypted).
@@ -610,6 +616,11 @@ impl Agent {
                     kind: match m.kind {
                         MessageKind::Text => 0,
                         MessageKind::ContactRequest => 1,
+                        MessageKind::Call(_) => 2,
+                    },
+                    call: match m.kind {
+                        MessageKind::Call(c) => Some((c.duration_s, c.outcome.code())),
+                        _ => None,
                     },
                     text: m.text.clone(),
                     created_unix_ms: m.created_unix_ms,
@@ -928,10 +939,13 @@ impl Agent {
                 } else {
                     MsgDirection::Incoming
                 },
-                kind: if m.kind == 1 {
-                    MessageKind::ContactRequest
-                } else {
-                    MessageKind::Text
+                kind: match (m.kind, m.call) {
+                    (1, _) => MessageKind::ContactRequest,
+                    (2, Some((duration_s, outcome))) => MessageKind::Call(CallInfo {
+                        duration_s,
+                        outcome: CallOutcome::from_code(outcome).ok_or(SnapshotError::Corrupt)?,
+                    }),
+                    _ => MessageKind::Text,
                 },
                 text: m.text.clone(),
                 created_unix_ms: m.created_unix_ms,
@@ -1315,6 +1329,7 @@ fn contact_dto(id: ContactId, c: &Contact) -> ContactDto {
         group_only: c.group_only,
         email: c.email.clone(),
         alias: c.alias.clone(),
+        ringtone: c.ringtone.clone(),
         xwing: c.xwing.as_ref().map(|x| x.as_bytes().to_vec()),
         told_xwing: c.told_xwing,
         devices: c
@@ -1367,6 +1382,7 @@ fn contact_from_dto(
             group_only: c.group_only,
             email: c.email.clone(),
             alias: c.alias.clone(),
+            ringtone: c.ringtone.clone(),
             xwing: c
                 .xwing
                 .as_deref()

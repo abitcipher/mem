@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:material_ui/material_ui.dart';
+import 'package:mem_calls/mem_calls.dart';
 import 'package:mem_video_player/mem_video_player.dart';
 
 import '../app_scope.dart';
@@ -107,6 +108,16 @@ class SettingsScreen extends StatelessWidget {
                 onChanged: (v) => state.updateSettings((s) => s.voiceCalls = v),
               ),
             ),
+          if (CallController.supported && s.voiceCalls) ...[
+            const _CallTones(),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l.callHistory),
+              subtitle: Text(l.callHistoryHelp),
+              value: s.callHistory,
+              onChanged: (v) => state.updateSettings((s) => s.callHistory = v),
+            ),
+          ],
           // Only where the platform has an engine; elsewhere files always open in another app.
           if (MemVideoPlayer.isSupported)
             Explained(
@@ -680,3 +691,125 @@ class _BadgeSettingsState extends State<_BadgeSettings> {
     );
   }
 }
+
+/// The incoming tone and the ringback, each with its volume and a preview.
+class _CallTones extends StatefulWidget {
+  const _CallTones();
+
+  @override
+  State<_CallTones> createState() => _CallTonesState();
+}
+
+class _CallTonesState extends State<_CallTones> {
+  final _preview = MemTonePlayer();
+
+  @override
+  void dispose() {
+    _preview.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final state = AppScope.of(context);
+    final s = state.settings;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _toneRow(
+          context,
+          title: l.toneIncoming,
+          tones: MemTone.forIncoming,
+          value: s.incomingTone,
+          volume: s.incomingVolume,
+          onTone: (v) => state.updateSettings((s) => s.incomingTone = v),
+          onVolume: (v) => state.updateSettings((s) => s.incomingVolume = v),
+        ),
+        _toneRow(
+          context,
+          title: l.toneOutgoing,
+          tones: MemTone.forOutgoing,
+          value: s.outgoingTone,
+          volume: s.outgoingVolume,
+          onTone: (v) => state.updateSettings((s) => s.outgoingTone = v),
+          onVolume: (v) => state.updateSettings((s) => s.outgoingVolume = v),
+        ),
+      ],
+    );
+  }
+
+  Widget _toneRow(
+    BuildContext context, {
+    required String title,
+    required List<MemTone> tones,
+    required String value,
+    required double volume,
+    required void Function(String) onTone,
+    required void Function(double) onVolume,
+  }) {
+    final l = AppLocalizations.of(context);
+    final tone = MemTone.byId(value);
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(title),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButton<String>(
+                  isExpanded: true,
+                  value: tone?.id ?? 'off',
+                  items: [
+                    for (final t in tones)
+                      DropdownMenuItem(
+                        value: t.id,
+                        child: Text(toneName(l, t)),
+                      ),
+                    DropdownMenuItem(value: 'off', child: Text(l.toneOff)),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) onTone(v);
+                  },
+                ),
+              ),
+              IconButton(
+                tooltip: l.tonePreview,
+                icon: const Icon(Icons.play_arrow),
+                onPressed: tone == null
+                    ? null
+                    : () => _preview.play(tone, volume: volume, loop: false),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              const Icon(Icons.volume_down, size: 20),
+              Expanded(
+                child: Slider(
+                  value: volume,
+                  label: '${(volume * 100).round()}%',
+                  divisions: 10,
+                  onChanged: tone == null ? null : onVolume,
+                ),
+              ),
+              const Icon(Icons.volume_up, size: 20),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A tone's name in the app's language.
+String toneName(AppLocalizations l, MemTone t) => switch (t) {
+  MemTone.chime => l.toneChime,
+  MemTone.classic => l.toneClassic,
+  MemTone.pulse => l.tonePulse,
+  MemTone.soft => l.toneSoft,
+  MemTone.ringback => l.toneRingback,
+  MemTone.beep => l.toneBeep,
+};

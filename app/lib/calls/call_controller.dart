@@ -42,6 +42,9 @@ class ActiveCall {
   final bool outgoing;
   CallPhase phase;
 
+  /// When it started ringing.
+  final DateTime started = DateTime.now();
+
   /// How the media goes, once connected.
   MemCallPath? path;
   bool muted = false;
@@ -75,6 +78,7 @@ class CallController extends ChangeNotifier {
 
   ActiveCall? call;
   MemCallSession? _session;
+  final _tones = MemTonePlayer();
   Timer? _ring;
   final _random = Random.secure();
 
@@ -115,8 +119,46 @@ class CallController extends ChangeNotifier {
       return e.toString();
     }
     _startRinging();
+    unawaited(_playTone(incoming: false, contactId: contactId));
     unawaited(navigator.currentState?.push(openScreen()));
     return null;
+  }
+
+  /// The tone for an incoming call from [contactId] (its own choice, else the default), or
+  /// the ringback for our call. "off" or zero volume plays nothing.
+  Future<void> _playTone({
+    required bool incoming,
+    required String contactId,
+  }) async {
+    final String id;
+    final double volume;
+    if (incoming) {
+      final own = node
+          .contacts()
+          .where((c) => c.id == contactId)
+          .firstOrNull
+          ?.ringtone;
+      id = own ?? settings.incomingTone;
+      volume = settings.incomingVolume;
+    } else {
+      id = settings.outgoingTone;
+      volume = settings.outgoingVolume;
+    }
+    final tone = MemTone.byId(id);
+    if (tone == null) return;
+    try {
+      await _tones.play(tone, volume: volume);
+    } on Object {
+      // A tone that cannot play must not stop the call.
+    }
+  }
+
+  Future<void> _stopTone() async {
+    try {
+      await _tones.stop();
+    } on Object {
+      // Nothing playing.
+    }
   }
 
   /// Accepts the ringing call.
@@ -128,6 +170,7 @@ class CallController extends ChangeNotifier {
       return;
     }
     _ring?.cancel();
+    await _stopTone();
     c.phase = CallPhase.connecting;
     notifyListeners();
     try {
@@ -199,11 +242,13 @@ class CallController extends ChangeNotifier {
           phase: CallPhase.ringing,
         )..offerSdp = sdp;
         _startRinging();
+        unawaited(_playTone(incoming: true, contactId: s.contactId));
         notifyListeners();
         unawaited(navigator.currentState?.push(openScreen()));
       case CallSignalItem_Answer(:final callId, :final sdp):
         if (c == null || c.callId != callId || !c.outgoing) return;
         _ring?.cancel();
+        await _stopTone();
         c.phase = CallPhase.connecting;
         notifyListeners();
         await _session?.answered(sdp);
@@ -271,6 +316,7 @@ class CallController extends ChangeNotifier {
     final c = call;
     if (c == null || c.phase == CallPhase.ended) return;
     _ring?.cancel();
+    await _stopTone();
     if (tell) {
       await _send(
         c.contactId,
@@ -283,6 +329,7 @@ class CallController extends ChangeNotifier {
     final session = _session;
     _session = null;
     await session?.close();
+    await _record(c, reason);
     notifyListeners();
     // The screen shows the ending for a moment, then the call is gone.
     await Future<void>.delayed(const Duration(seconds: 2));
@@ -292,9 +339,47 @@ class CallController extends ChangeNotifier {
     }
   }
 
+  /// Keeps the call as a line in the chat, when the user keeps call history.
+  Future<void> _record(ActiveCall c, CallEndReason reason) async {
+    if (!settings.callHistory) return;
+    final talked = c.talkingSince;
+    final outcome = talked != null
+        ? CallOutcomeItem.answered
+        : switch (reason) {
+            CallEndReason.declined => CallOutcomeItem.declined,
+            CallEndReason.busy => CallOutcomeItem.busy,
+            CallEndReason.failed => CallOutcomeItem.failed,
+            // Rang out, or stopped before an answer.
+            CallEndReason.unanswered || CallEndReason.hungUp =>
+              c.outgoing ? CallOutcomeItem.unanswered : CallOutcomeItem.missed,
+          };
+    try {
+      await node.recordCall(
+        contactId: c.contactId,
+        outgoing: c.outgoing,
+        startedUnixMs: c.started.millisecondsSinceEpoch,
+        durationS: talked == null
+            ? 0
+            : DateTime.now().difference(talked).inSeconds,
+        outcome: outcome,
+        via: talked == null
+            ? null
+            : switch (c.path) {
+                MemCallPath.wifiDirect => Channel.wifiDirect,
+                MemCallPath.localNetwork => Channel.lan,
+                MemCallPath.servers => Channel.hub,
+                null => null,
+              },
+      );
+    } on Object {
+      // History is a convenience; a failure must not disturb the call.
+    }
+  }
+
   @override
   void dispose() {
     _ring?.cancel();
+    unawaited(_tones.dispose());
     unawaited(_session?.close());
     super.dispose();
   }

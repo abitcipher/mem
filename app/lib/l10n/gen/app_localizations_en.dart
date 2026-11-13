@@ -440,6 +440,58 @@ class AppLocalizationsEn extends AppLocalizations {
       'Calls need the microphone. Allow it in the phone\'s settings.';
 
   @override
+  String get toneIncoming => 'Incoming call tone';
+
+  @override
+  String get toneOutgoing => 'Ringback while calling';
+
+  @override
+  String get tonePreview => 'Listen';
+
+  @override
+  String get toneOff => 'Off';
+
+  @override
+  String get toneDefault => 'Default';
+
+  @override
+  String get contactRingtone => 'Ringtone';
+
+  @override
+  String get toneChime => 'Chime';
+
+  @override
+  String get toneClassic => 'Classic';
+
+  @override
+  String get tonePulse => 'Pulse';
+
+  @override
+  String get toneSoft => 'Soft';
+
+  @override
+  String get toneRingback => 'Standard';
+
+  @override
+  String get toneBeep => 'Short beep';
+
+  @override
+  String get callHistory => 'Keep call history in chats';
+
+  @override
+  String get callHistoryHelp =>
+      'Each call appears in the chat with its length and path. Stored only on this device.';
+
+  @override
+  String get callLineOutgoing => 'Outgoing call';
+
+  @override
+  String get callLineIncoming => 'Incoming call';
+
+  @override
+  String get callLineMissed => 'Missed call';
+
+  @override
   String get reason_invalid_name => 'The name is too long.';
 
   @override

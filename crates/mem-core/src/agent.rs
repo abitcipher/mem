@@ -150,6 +150,20 @@ pub enum Input {
         /// The message.
         signal: CallSignal,
     },
+    /// Records a voice call as a line in the contact's chat (the app records only when the user
+    /// keeps call history). Local only.
+    RecordCall {
+        /// Contact.
+        contact: ContactId,
+        /// Who called.
+        direction: MsgDirection,
+        /// When it started ringing, Unix ms.
+        started_unix_ms: u64,
+        /// How it went.
+        info: crate::model::CallInfo,
+        /// The channel and grade the media took, if it connected.
+        via: Option<ChannelUse>,
+    },
     /// The user sends files, with optional text.
     UserSendFiles {
         /// Recipient.
@@ -362,6 +376,14 @@ pub enum Input {
     /// Remove a contact: its pairing secret, conversation, queued messages and rules go. If it is
     /// in a group with us it stays only a fellow group member (its 1:1 messages are refused).
     RemoveContact(ContactId),
+    /// Set or clear the incoming-call tone for a contact (an app tone id, at most 32 bytes;
+    /// `None` uses the default). Stays local.
+    SetContactRingtone {
+        /// Contact.
+        contact: ContactId,
+        /// Tone id, or `None`.
+        ringtone: Option<String>,
+    },
     /// Set or clear the name the user gives a contact (stays local; shown instead of the name
     /// the contact chose).
     SetContactAlias {
@@ -671,6 +693,8 @@ pub(crate) struct Contact {
     pub(crate) display_name: Option<String>,
     /// The name the user gave this contact; local only.
     pub(crate) alias: Option<String>,
+    /// The incoming-call tone the user chose for this contact (an app tone id); local only.
+    pub(crate) ringtone: Option<String>,
     pub(crate) trust: TrustLevel,
     pub(crate) floor: PrivacyGrade,
     pub(crate) added_unix_ms: u64,
@@ -1227,6 +1251,13 @@ impl Agent {
             }
             Input::BlobChecked { address, ok } => self.blob_checked(address, ok),
             Input::SendCallSignal { contact, signal } => self.send_call(contact, signal, rng),
+            Input::RecordCall {
+                contact,
+                direction,
+                started_unix_ms,
+                info,
+                via,
+            } => self.record_call(contact, direction, started_unix_ms, info, via, rng),
             Input::UserSendFiles {
                 contact,
                 text,
@@ -1244,6 +1275,9 @@ impl Agent {
             }
             Input::SetDisplayName(name) => self.set_display_name(name),
             Input::SetContactAlias { contact, alias } => self.set_contact_alias(contact, alias),
+            Input::SetContactRingtone { contact, ringtone } => {
+                self.set_contact_ringtone(contact, ringtone)
+            }
             Input::AttestationReturned(entry) => self.record_attestation(entry),
             Input::SetFloor { floor, .. } | Input::SetDefaultFloor { floor }
                 if !floor.allowed_as_floor() =>
@@ -4583,6 +4617,7 @@ impl Agent {
                 // A re-pairing keeps the address the user typed.
                 let kept_email = self.contacts.get(&id).and_then(|c| c.email.clone());
                 let kept_alias = self.contacts.get(&id).and_then(|c| c.alias.clone());
+                let kept_ringtone = self.contacts.get(&id).and_then(|c| c.ringtone.clone());
                 let (floor, added, trust) = self
                     .contacts
                     .get(&id)
@@ -4609,6 +4644,7 @@ impl Agent {
                         group_only: false,
                         email: kept_email,
                         alias: kept_alias,
+                        ringtone: kept_ringtone,
                         xwing: None,
                         told_xwing: 0,
                         devices: Vec::new(),
@@ -4644,6 +4680,26 @@ impl Agent {
         }
         self.display_name = name;
         alloc::vec![Output::Persist(StorageOp::SaveSnapshot)]
+    }
+
+    fn set_contact_ringtone(
+        &mut self,
+        contact: ContactId,
+        ringtone: Option<String>,
+    ) -> Vec<Output> {
+        if ringtone
+            .as_ref()
+            .is_some_and(|t| t.is_empty() || t.len() > 32)
+        {
+            return alloc::vec![Output::Rejected(RejectReason::InvalidName)];
+        }
+        match self.contacts.get_mut(&contact) {
+            Some(c) if !c.group_only => {
+                c.ringtone = ringtone;
+                alloc::vec![Output::Persist(StorageOp::SaveSnapshot)]
+            }
+            _ => alloc::vec![Output::Rejected(RejectReason::UnknownContact)],
+        }
     }
 
     fn set_contact_alias(&mut self, contact: ContactId, alias: Option<String>) -> Vec<Output> {
@@ -4941,6 +4997,7 @@ fn view(id: ContactId, c: &Contact) -> ContactView {
         requested: c.requested,
         email: c.email.clone(),
         alias: c.alias.clone(),
+        ringtone: c.ringtone.clone(),
     }
 }
 

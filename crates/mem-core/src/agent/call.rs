@@ -174,6 +174,36 @@ impl Agent {
         }
     }
 
+    /// Keeps a call as a line in the contact's chat.
+    pub(super) fn record_call(
+        &mut self,
+        contact: ContactId,
+        direction: super::MsgDirection,
+        started_unix_ms: u64,
+        info: crate::model::CallInfo,
+        via: Option<ChannelUse>,
+        rng: &mut impl CryptoRng,
+    ) -> Vec<Output> {
+        if self.call_policy(contact).is_none() {
+            return alloc::vec![Output::Rejected(RejectReason::UnknownContact)];
+        }
+        let id = crate::model::MsgId(super::uuid_v7(started_unix_ms, rng));
+        self.messages.push(super::Message {
+            id,
+            contact,
+            direction,
+            kind: crate::model::MessageKind::Call(info),
+            text: String::new(),
+            created_unix_ms: started_unix_ms,
+            status: crate::model::DeliveryStatus::Received,
+            channels: via.into_iter().collect(),
+            group: None,
+            fanout: None,
+            attachments: Vec::new(),
+        });
+        alloc::vec![Output::Persist(super::StorageOp::SaveSnapshot)]
+    }
+
     /// A call setup message from `contact`, over `cla` at `grade`. Offers beyond
     /// [`MAX_OFFERS_PER_MINUTE`] are dropped.
     pub(super) fn received_call(

@@ -8,3 +8,4 @@ library;
 
 export 'src/path.dart';
 export 'src/session.dart';
+export 'src/tones.dart';
