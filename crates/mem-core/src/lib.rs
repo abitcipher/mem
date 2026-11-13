@@ -29,7 +29,7 @@ pub use agent::{
     RETRANSMIT_AFTER_MS, SEEN_CAPACITY, StorageOp, TOMBSTONE_CAPACITY, clamp_lifetime,
 };
 pub use agent::{
-    AttachmentSecret, DeviceJoin, JoinError, MAX_PENDING_PART_BYTES, SMALL_SEALED_MAX,
+    AttachmentSecret, DeviceJoin, JoinError, MAX_PENDING_PART_BYTES, PULL_WINDOW, SMALL_SEALED_MAX,
 };
 pub use backup::{BackupFailure, Restored};
 pub use mem_cla::{ClaId, PrivacyGrade};

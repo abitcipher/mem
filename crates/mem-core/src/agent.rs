@@ -58,8 +58,8 @@ use crate::model::{
     MsgDirection, MsgId, OfferId, OpId, PeerHandle, PrivacyLogEntry, RejectReason, RequestId,
     RuleId, TrustLevel,
 };
-pub(crate) use attach::{Attachment, PartialBlob};
-pub use attach::{AttachmentSecret, MAX_PENDING_PART_BYTES, SMALL_SEALED_MAX};
+pub(crate) use attach::{Attachment, PartialBlob, Pull};
+pub use attach::{AttachmentSecret, MAX_PENDING_PART_BYTES, PULL_WINDOW, SMALL_SEALED_MAX};
 pub use email::EmailAccount;
 pub(crate) use email::EmailState;
 pub(crate) use group::Group;
@@ -124,6 +124,14 @@ pub enum Input {
         contact: ContactId,
         /// Text.
         text: String,
+    },
+    /// The runtime checked a pulled blob ([`StorageOp::FinishBlob`]): `ok` if it matched its
+    /// address and is now stored.
+    BlobChecked {
+        /// Content address.
+        address: [u8; 32],
+        /// Whether it matched.
+        ok: bool,
     },
     /// The user sends files, with optional text.
     UserSendFiles {
@@ -396,6 +404,24 @@ pub enum StorageOp {
         /// The sealed blob.
         sealed: Vec<u8>,
     },
+    /// Write a piece of a blob being pulled into its partial file, at `offset`.
+    WriteBlob {
+        /// Content address of the whole blob.
+        address: [u8; 32],
+        /// Position of `bytes`.
+        offset: u64,
+        /// The piece.
+        bytes: Vec<u8>,
+    },
+    /// The partial file of `address` is complete (`total` bytes): check its BLAKE3 against the
+    /// address, keep it as the blob if it matches and delete it otherwise, then report with
+    /// [`Input::BlobChecked`].
+    FinishBlob {
+        /// Content address the file must have.
+        address: [u8; 32],
+        /// Its length.
+        total: u64,
+    },
 }
 
 /// Everything the agent asks the outside world to do.
@@ -444,6 +470,22 @@ pub enum Output {
         peer: PeerHandle,
         /// Message.
         msg: EncounterMsg,
+    },
+    /// Send `len` bytes of stored blob `address` from `offset` to `peer`, as
+    /// [`EncounterMsg::BlobPart`] pieces of at most [`mem_proto::encounter::MAX_BLOB_PART`].
+    /// Only produced for a request proven to come from the contact the file went to, over a
+    /// channel within that contact's floor.
+    SendBlob {
+        /// Peer.
+        peer: PeerHandle,
+        /// Content address.
+        address: [u8; 32],
+        /// First byte.
+        offset: u64,
+        /// Bytes to send.
+        len: u64,
+        /// Length of the whole blob.
+        total: u64,
     },
     /// Close the connection to a peer.
     EndEncounter {
@@ -971,6 +1013,8 @@ pub struct Agent {
     pub(crate) blobs: BTreeSet<[u8; 32]>,
     /// Incoming attachment blobs still missing parts.
     pub(crate) partials: BTreeMap<[u8; 32], PartialBlob>,
+    /// Incoming large blobs being pulled from their senders.
+    pub(crate) pulls: BTreeMap<[u8; 32], attach::Pull>,
     pub(crate) seen: VecDeque<MsgId>,
     pub(crate) rules: Vec<ConsentRule>,
     pub(crate) privacy_log: Vec<PrivacyLogEntry>,
@@ -1096,6 +1140,7 @@ impl Agent {
             ack_from: BTreeMap::new(),
             blobs: BTreeSet::new(),
             partials: BTreeMap::new(),
+            pulls: BTreeMap::new(),
             delivered: BTreeMap::new(),
             message_lifetime_s: MESSAGE_LIFETIME_S,
             default_floor: DEFAULT_FLOOR,
@@ -1149,6 +1194,7 @@ impl Agent {
             Input::UserSend { contact, text } => {
                 self.user_send_and_flush(contact, &text, Vec::new(), rng)
             }
+            Input::BlobChecked { address, ok } => self.blob_checked(address, ok),
             Input::UserSendFiles {
                 contact,
                 text,
@@ -2098,6 +2144,10 @@ impl Agent {
         // Send counts belong to one encounter; a later encounter starts afresh even if the
         // runtime reuses the handle.
         self.sends.retain(|_, st| st.peer != peer);
+        // A pull from this peer stops where it is; the next encounter resumes it.
+        for pull in self.pulls.values_mut().filter(|p| p.peer == Some(peer)) {
+            pull.peer = None;
+        }
     }
 
     // ------------------------------------------------------------- encounters
@@ -2188,8 +2238,20 @@ impl Agent {
                 p.tags = tags.into_iter().collect();
                 let mut out = alloc::vec![Output::ReachabilityChanged];
                 out.extend(self.flush_peer(peer));
+                out.extend(self.request_blobs(peer));
                 out
             }
+            EncounterMsg::BlobWant {
+                address,
+                offset,
+                proof,
+            } => self.blob_wanted(peer, address, offset, &proof),
+            EncounterMsg::BlobPart {
+                address,
+                offset,
+                total,
+                bytes,
+            } => self.blob_part(peer, address, offset, total, bytes),
             EncounterMsg::Bundles(bundles) => {
                 let mut out = Vec::new();
                 for entry in bundles {
@@ -4023,6 +4085,7 @@ impl Agent {
         if self.seen.contains(&id) || self.messages.iter().any(|m| m.id == id) {
             return alloc::vec![Output::Rejected(RejectReason::Duplicate)];
         }
+        let refs = attachments;
         if self.seen.len() >= SEEN_CAPACITY {
             self.seen.pop_front();
         }
@@ -4038,8 +4101,9 @@ impl Agent {
             channels: alloc::vec![channel],
             group: None,
             fanout: None,
-            attachments: attachments
-                .into_iter()
+            attachments: refs
+                .iter()
+                .cloned()
                 .map(|reference| Attachment {
                     reference,
                     parts: Vec::new(),
@@ -4048,10 +4112,12 @@ impl Agent {
         });
         // `Persist` comes first in `out`: the runtime stores the message before any ack for it can
         // be transmitted, since acks only leave on a later tick or with a later message.
-        alloc::vec![Output::Deliver {
+        let mut out = alloc::vec![Output::Deliver {
             contact,
             message: id,
-        }]
+        }];
+        out.extend(self.track_pulls(contact, &refs));
+        out
     }
 
     /// As [`Self::owe_ack`], for a message from `device` (one of the contact's other devices):

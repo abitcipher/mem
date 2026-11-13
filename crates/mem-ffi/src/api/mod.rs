@@ -660,14 +660,17 @@ pub enum AttachmentStatus {
     Ready,
 }
 
-/// A file to send.
+/// A file to send: its bytes (small files), or a path the node reads it from (large files,
+/// which then never cross the bridge).
 pub struct FileInput {
     /// File name shown to the recipient.
     pub name: String,
     /// Media type, e.g. `image/jpeg`.
     pub media_type: String,
-    /// The file.
+    /// The file, when `path` is not given.
     pub data: Vec<u8>,
+    /// Where to read the file from instead.
+    pub path: Option<String>,
 }
 
 /// An attached file, decrypted.
@@ -2562,7 +2565,7 @@ impl MemNode {
     ///
     /// # Errors
     ///
-    /// `"file_too_large"` (this version sends files up to 256 KiB, at most 16),
+    /// `"file_too_large"` (above 100 MiB, or more than 16 files),
     /// `"invalid_attachment"`, `"invalid_text"`, `"unknown_contact"`, or a storage error.
     pub fn send_files(
         &self,
@@ -2571,21 +2574,48 @@ impl MemNode {
         files: Vec<FileInput>,
     ) -> Result<SentText, String> {
         let contact = contact(&contact_id)?;
-        let files = files
-            .into_iter()
-            .map(|f| mem_core::model::NewAttachment {
+        let mut sealed = Vec::with_capacity(files.len());
+        for f in files {
+            let data = match f.path {
+                // Large files are sealed straight from disk into the blob store.
+                Some(path) => self
+                    .with(|rt| rt.seal_file(std::path::Path::new(&path)))?
+                    .map_err(|e| e.to_string())?,
+                None => mem_core::model::AttachmentData::Bytes(f.data),
+            };
+            sealed.push(mem_core::model::NewAttachment {
                 name: f.name,
                 media_type: f.media_type,
-                data: f.data,
+                data,
                 preview: None,
-            })
-            .collect();
+            });
+        }
+        let files = sealed;
         let out = self.handle(Input::UserSendFiles {
             contact,
             text,
             files,
         })?;
         sent_text(&out)
+    }
+
+    /// Decrypts attachment `index` of a message into the file at `path` (for opening large files
+    /// in another app). `false` while the file is not here yet.
+    ///
+    /// # Errors
+    ///
+    /// `"unknown_message"` for a bad id, or a storage error (also when the stored file does
+    /// not open with the message's key; nothing is left at `path` then).
+    pub fn export_attachment(
+        &self,
+        message_id: String,
+        index: u32,
+        path: String,
+    ) -> Result<bool, String> {
+        let message = msg(&message_id)?;
+        let index = usize::try_from(index).map_err(|_| String::from("unknown_message"))?;
+        self.with(|rt| rt.export_attachment(message, index, std::path::Path::new(&path)))?
+            .map_err(|e| e.to_string())
     }
 
     /// Attachment `index` of a message, decrypted; `None` while its file is not here yet.

@@ -40,7 +40,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1154764979;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 176881508;
 
 // Section: executor
 
@@ -1857,6 +1857,63 @@ fn wire__crate__api__MemNode_events_impl(
                     }
                     let api_that_guard = api_that_guard.unwrap();
                     let output_ok = crate::api::MemNode::events(&*api_that_guard, api_sink)?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__MemNode_export_attachment_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "MemNode_export_attachment",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<MemNode>,
+            >>::sse_decode(&mut deserializer);
+            let api_message_id = <String>::sse_decode(&mut deserializer);
+            let api_index = <u32>::sse_decode(&mut deserializer);
+            let api_path = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let mut api_that_guard = None;
+                    let decode_indices_ =
+                        flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                            flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                &api_that, 0, false,
+                            ),
+                        ]);
+                    for i in decode_indices_ {
+                        match i {
+                            0 => api_that_guard = Some(api_that.lockable_decode_sync_ref()),
+                            _ => unreachable!(),
+                        }
+                    }
+                    let api_that_guard = api_that_guard.unwrap();
+                    let output_ok = crate::api::MemNode::export_attachment(
+                        &*api_that_guard,
+                        api_message_id,
+                        api_index,
+                        api_path,
+                    )?;
                     std::result::Result::Ok(output_ok)
                 })())
             }
@@ -6538,10 +6595,12 @@ impl SseDecode for crate::api::FileInput {
         let mut var_name = <String>::sse_decode(deserializer);
         let mut var_mediaType = <String>::sse_decode(deserializer);
         let mut var_data = <Vec<u8>>::sse_decode(deserializer);
+        let mut var_path = <Option<String>>::sse_decode(deserializer);
         return crate::api::FileInput {
             name: var_name,
             media_type: var_mediaType,
             data: var_data,
+            path: var_path,
         };
     }
 }
@@ -7477,73 +7536,74 @@ fn pde_ffi_dispatcher_primary_impl(
             data_len,
         ),
         37 => wire__crate__api__MemNode_events_impl(port, ptr, rust_vec_len, data_len),
-        38 => wire__crate__api__MemNode_finish_device_join_impl(port, ptr, rust_vec_len, data_len),
-        39 => wire__crate__api__MemNode_forget_this_device_impl(port, ptr, rust_vec_len, data_len),
-        40 => wire__crate__api__MemNode_give_consent_impl(port, ptr, rust_vec_len, data_len),
-        48 => wire__crate__api__MemNode_invite_to_group_impl(port, ptr, rust_vec_len, data_len),
-        51 => wire__crate__api__MemNode_leave_group_impl(port, ptr, rust_vec_len, data_len),
-        52 => wire__crate__api__MemNode_make_backup_impl(port, ptr, rust_vec_len, data_len),
-        56 => wire__crate__api__MemNode_new_pairing_code_impl(port, ptr, rust_vec_len, data_len),
-        57 => wire__crate__api__MemNode_new_recovery_phrase_impl(port, ptr, rust_vec_len, data_len),
-        58 => wire__crate__api__MemNode_open_attachment_impl(port, ptr, rust_vec_len, data_len),
-        65 => wire__crate__api__MemNode_receive_text_impl(port, ptr, rust_vec_len, data_len),
-        66 => wire__crate__api__MemNode_record_attestation_impl(port, ptr, rust_vec_len, data_len),
-        67 => wire__crate__api__MemNode_remove_contact_impl(port, ptr, rust_vec_len, data_len),
-        68 => wire__crate__api__MemNode_remove_from_group_impl(port, ptr, rust_vec_len, data_len),
-        70 => wire__crate__api__MemNode_restore_with_phrase_impl(port, ptr, rust_vec_len, data_len),
-        71 => wire__crate__api__MemNode_retire_device_impl(port, ptr, rust_vec_len, data_len),
-        73 => wire__crate__api__MemNode_revoke_rule_impl(port, ptr, rust_vec_len, data_len),
-        75 => wire__crate__api__MemNode_scan_frame_impl(port, ptr, rust_vec_len, data_len),
-        76 => {
+        38 => wire__crate__api__MemNode_export_attachment_impl(port, ptr, rust_vec_len, data_len),
+        39 => wire__crate__api__MemNode_finish_device_join_impl(port, ptr, rust_vec_len, data_len),
+        40 => wire__crate__api__MemNode_forget_this_device_impl(port, ptr, rust_vec_len, data_len),
+        41 => wire__crate__api__MemNode_give_consent_impl(port, ptr, rust_vec_len, data_len),
+        49 => wire__crate__api__MemNode_invite_to_group_impl(port, ptr, rust_vec_len, data_len),
+        52 => wire__crate__api__MemNode_leave_group_impl(port, ptr, rust_vec_len, data_len),
+        53 => wire__crate__api__MemNode_make_backup_impl(port, ptr, rust_vec_len, data_len),
+        57 => wire__crate__api__MemNode_new_pairing_code_impl(port, ptr, rust_vec_len, data_len),
+        58 => wire__crate__api__MemNode_new_recovery_phrase_impl(port, ptr, rust_vec_len, data_len),
+        59 => wire__crate__api__MemNode_open_attachment_impl(port, ptr, rust_vec_len, data_len),
+        66 => wire__crate__api__MemNode_receive_text_impl(port, ptr, rust_vec_len, data_len),
+        67 => wire__crate__api__MemNode_record_attestation_impl(port, ptr, rust_vec_len, data_len),
+        68 => wire__crate__api__MemNode_remove_contact_impl(port, ptr, rust_vec_len, data_len),
+        69 => wire__crate__api__MemNode_remove_from_group_impl(port, ptr, rust_vec_len, data_len),
+        71 => wire__crate__api__MemNode_restore_with_phrase_impl(port, ptr, rust_vec_len, data_len),
+        72 => wire__crate__api__MemNode_retire_device_impl(port, ptr, rust_vec_len, data_len),
+        74 => wire__crate__api__MemNode_revoke_rule_impl(port, ptr, rust_vec_len, data_len),
+        76 => wire__crate__api__MemNode_scan_frame_impl(port, ptr, rust_vec_len, data_len),
+        77 => {
             wire__crate__api__MemNode_send_contact_request_impl(port, ptr, rust_vec_len, data_len)
         }
-        77 => wire__crate__api__MemNode_send_files_impl(port, ptr, rust_vec_len, data_len),
-        78 => wire__crate__api__MemNode_send_group_text_impl(port, ptr, rust_vec_len, data_len),
-        79 => wire__crate__api__MemNode_send_text_impl(port, ptr, rust_vec_len, data_len),
-        80 => wire__crate__api__MemNode_set_accepts_requests_nearby_impl(
+        78 => wire__crate__api__MemNode_send_files_impl(port, ptr, rust_vec_len, data_len),
+        79 => wire__crate__api__MemNode_send_group_text_impl(port, ptr, rust_vec_len, data_len),
+        80 => wire__crate__api__MemNode_send_text_impl(port, ptr, rust_vec_len, data_len),
+        81 => wire__crate__api__MemNode_set_accepts_requests_nearby_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        81 => wire__crate__api__MemNode_set_ble_enabled_impl(port, ptr, rust_vec_len, data_len),
-        82 => wire__crate__api__MemNode_set_contact_alias_impl(port, ptr, rust_vec_len, data_len),
-        83 => wire__crate__api__MemNode_set_contact_email_impl(port, ptr, rust_vec_len, data_len),
-        84 => wire__crate__api__MemNode_set_courier_limit_impl(port, ptr, rust_vec_len, data_len),
-        85 => wire__crate__api__MemNode_set_default_floor_impl(port, ptr, rust_vec_len, data_len),
-        86 => wire__crate__api__MemNode_set_display_name_impl(port, ptr, rust_vec_len, data_len),
-        87 => wire__crate__api__MemNode_set_email_account_impl(port, ptr, rust_vec_len, data_len),
-        88 => wire__crate__api__MemNode_set_email_enabled_impl(port, ptr, rust_vec_len, data_len),
-        89 => wire__crate__api__MemNode_set_floor_impl(port, ptr, rust_vec_len, data_len),
-        90 => wire__crate__api__MemNode_set_hub_enabled_impl(port, ptr, rust_vec_len, data_len),
-        91 => wire__crate__api__MemNode_set_hub_url_impl(port, ptr, rust_vec_len, data_len),
-        92 => wire__crate__api__MemNode_set_lan_enabled_impl(port, ptr, rust_vec_len, data_len),
-        93 => {
+        82 => wire__crate__api__MemNode_set_ble_enabled_impl(port, ptr, rust_vec_len, data_len),
+        83 => wire__crate__api__MemNode_set_contact_alias_impl(port, ptr, rust_vec_len, data_len),
+        84 => wire__crate__api__MemNode_set_contact_email_impl(port, ptr, rust_vec_len, data_len),
+        85 => wire__crate__api__MemNode_set_courier_limit_impl(port, ptr, rust_vec_len, data_len),
+        86 => wire__crate__api__MemNode_set_default_floor_impl(port, ptr, rust_vec_len, data_len),
+        87 => wire__crate__api__MemNode_set_display_name_impl(port, ptr, rust_vec_len, data_len),
+        88 => wire__crate__api__MemNode_set_email_account_impl(port, ptr, rust_vec_len, data_len),
+        89 => wire__crate__api__MemNode_set_email_enabled_impl(port, ptr, rust_vec_len, data_len),
+        90 => wire__crate__api__MemNode_set_floor_impl(port, ptr, rust_vec_len, data_len),
+        91 => wire__crate__api__MemNode_set_hub_enabled_impl(port, ptr, rust_vec_len, data_len),
+        92 => wire__crate__api__MemNode_set_hub_url_impl(port, ptr, rust_vec_len, data_len),
+        93 => wire__crate__api__MemNode_set_lan_enabled_impl(port, ptr, rust_vec_len, data_len),
+        94 => {
             wire__crate__api__MemNode_set_own_operator_only_impl(port, ptr, rust_vec_len, data_len)
         }
-        94 => wire__crate__api__MemNode_set_phrase_form_impl(port, ptr, rust_vec_len, data_len),
-        95 => wire__crate__api__MemNode_set_push_endpoint_impl(port, ptr, rust_vec_len, data_len),
-        96 => wire__crate__api__MemNode_set_retry_days_impl(port, ptr, rust_vec_len, data_len),
-        97 => wire__crate__api__MemNode_set_wifi_direct_enabled_impl(
+        95 => wire__crate__api__MemNode_set_phrase_form_impl(port, ptr, rust_vec_len, data_len),
+        96 => wire__crate__api__MemNode_set_push_endpoint_impl(port, ptr, rust_vec_len, data_len),
+        97 => wire__crate__api__MemNode_set_retry_days_impl(port, ptr, rust_vec_len, data_len),
+        98 => wire__crate__api__MemNode_set_wifi_direct_enabled_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        98 => wire__crate__api__MemNode_sound_listen_impl(port, ptr, rust_vec_len, data_len),
-        99 => wire__crate__api__MemNode_start_attestation_impl(port, ptr, rust_vec_len, data_len),
-        100 => wire__crate__api__MemNode_start_device_join_impl(port, ptr, rust_vec_len, data_len),
-        101 => {
+        99 => wire__crate__api__MemNode_sound_listen_impl(port, ptr, rust_vec_len, data_len),
+        100 => wire__crate__api__MemNode_start_attestation_impl(port, ptr, rust_vec_len, data_len),
+        101 => wire__crate__api__MemNode_start_device_join_impl(port, ptr, rust_vec_len, data_len),
+        102 => {
             wire__crate__api__MemNode_start_sound_connect_impl(port, ptr, rust_vec_len, data_len)
         }
-        102 => {
+        103 => {
             wire__crate__api__MemNode_start_sound_pairing_impl(port, ptr, rust_vec_len, data_len)
         }
-        103 => wire__crate__api__MemNode_transmit_impl(port, ptr, rust_vec_len, data_len),
-        104 => wire__crate__api__MemNode_transmit_done_impl(port, ptr, rust_vec_len, data_len),
-        116 => wire__crate__api__SoundSession_next_burst_impl(port, ptr, rust_vec_len, data_len),
-        117 => wire__crate__api__init_app_impl(port, ptr, rust_vec_len, data_len),
-        119 => wire__crate__api__open_node_impl(port, ptr, rust_vec_len, data_len),
+        104 => wire__crate__api__MemNode_transmit_impl(port, ptr, rust_vec_len, data_len),
+        105 => wire__crate__api__MemNode_transmit_done_impl(port, ptr, rust_vec_len, data_len),
+        117 => wire__crate__api__SoundSession_next_burst_impl(port, ptr, rust_vec_len, data_len),
+        118 => wire__crate__api__init_app_impl(port, ptr, rust_vec_len, data_len),
+        120 => wire__crate__api__open_node_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -7574,41 +7634,41 @@ fn pde_ffi_dispatcher_sync_impl(
         34 => wire__crate__api__MemNode_email_account_impl(ptr, rust_vec_len, data_len),
         35 => wire__crate__api__MemNode_email_enabled_impl(ptr, rust_vec_len, data_len),
         36 => wire__crate__api__MemNode_email_online_impl(ptr, rust_vec_len, data_len),
-        41 => wire__crate__api__MemNode_group_impl(ptr, rust_vec_len, data_len),
-        42 => wire__crate__api__MemNode_group_messages_impl(ptr, rust_vec_len, data_len),
-        43 => wire__crate__api__MemNode_groups_impl(ptr, rust_vec_len, data_len),
-        44 => wire__crate__api__MemNode_hub_enabled_impl(ptr, rust_vec_len, data_len),
-        45 => wire__crate__api__MemNode_hub_online_impl(ptr, rust_vec_len, data_len),
-        46 => wire__crate__api__MemNode_hub_partner_operators_impl(ptr, rust_vec_len, data_len),
-        47 => wire__crate__api__MemNode_hub_url_impl(ptr, rust_vec_len, data_len),
-        49 => wire__crate__api__MemNode_is_main_device_impl(ptr, rust_vec_len, data_len),
-        50 => wire__crate__api__MemNode_lan_enabled_impl(ptr, rust_vec_len, data_len),
-        53 => wire__crate__api__MemNode_messages_impl(ptr, rust_vec_len, data_len),
-        54 => wire__crate__api__MemNode_nearby_impl(ptr, rust_vec_len, data_len),
-        55 => wire__crate__api__MemNode_nearby_devices_impl(ptr, rust_vec_len, data_len),
-        59 => wire__crate__api__MemNode_own_card_impl(ptr, rust_vec_len, data_len),
-        60 => wire__crate__api__MemNode_own_devices_impl(ptr, rust_vec_len, data_len),
-        61 => wire__crate__api__MemNode_own_operator_only_impl(ptr, rust_vec_len, data_len),
-        62 => wire__crate__api__MemNode_privacy_log_impl(ptr, rust_vec_len, data_len),
-        63 => wire__crate__api__MemNode_profile_impl(ptr, rust_vec_len, data_len),
-        64 => wire__crate__api__MemNode_push_endpoint_impl(ptr, rust_vec_len, data_len),
-        69 => wire__crate__api__MemNode_requests_impl(ptr, rust_vec_len, data_len),
-        72 => wire__crate__api__MemNode_retry_days_impl(ptr, rust_vec_len, data_len),
-        74 => wire__crate__api__MemNode_rules_impl(ptr, rust_vec_len, data_len),
-        105 => wire__crate__api__MemNode_wifi_connections_impl(ptr, rust_vec_len, data_len),
-        106 => wire__crate__api__MemNode_wifi_direct_enabled_impl(ptr, rust_vec_len, data_len),
-        107 => wire__crate__api__MemNode_wifi_local_impl(ptr, rust_vec_len, data_len),
-        108 => wire__crate__api__MemNode_wifi_peer_impl(ptr, rust_vec_len, data_len),
-        109 => wire__crate__api__QrAnimation_frame_impl(ptr, rust_vec_len, data_len),
-        110 => wire__crate__api__QrAnimation_frames_needed_impl(ptr, rust_vec_len, data_len),
-        111 => wire__crate__api__QrAnimation_frames_per_second_impl(ptr, rust_vec_len, data_len),
-        112 => wire__crate__api__QrAnimation_pace_impl(ptr, rust_vec_len, data_len),
-        113 => wire__crate__api__QrAnimation_set_pace_impl(ptr, rust_vec_len, data_len),
-        114 => wire__crate__api__SoundSession_busy_impl(ptr, rust_vec_len, data_len),
-        115 => wire__crate__api__SoundSession_frames_per_round_impl(ptr, rust_vec_len, data_len),
-        118 => wire__crate__api__new_qr_scanner_impl(ptr, rust_vec_len, data_len),
-        120 => wire__crate__api__qr_for_text_impl(ptr, rust_vec_len, data_len),
-        121 => wire__crate__api__sound_sample_rate_impl(ptr, rust_vec_len, data_len),
+        42 => wire__crate__api__MemNode_group_impl(ptr, rust_vec_len, data_len),
+        43 => wire__crate__api__MemNode_group_messages_impl(ptr, rust_vec_len, data_len),
+        44 => wire__crate__api__MemNode_groups_impl(ptr, rust_vec_len, data_len),
+        45 => wire__crate__api__MemNode_hub_enabled_impl(ptr, rust_vec_len, data_len),
+        46 => wire__crate__api__MemNode_hub_online_impl(ptr, rust_vec_len, data_len),
+        47 => wire__crate__api__MemNode_hub_partner_operators_impl(ptr, rust_vec_len, data_len),
+        48 => wire__crate__api__MemNode_hub_url_impl(ptr, rust_vec_len, data_len),
+        50 => wire__crate__api__MemNode_is_main_device_impl(ptr, rust_vec_len, data_len),
+        51 => wire__crate__api__MemNode_lan_enabled_impl(ptr, rust_vec_len, data_len),
+        54 => wire__crate__api__MemNode_messages_impl(ptr, rust_vec_len, data_len),
+        55 => wire__crate__api__MemNode_nearby_impl(ptr, rust_vec_len, data_len),
+        56 => wire__crate__api__MemNode_nearby_devices_impl(ptr, rust_vec_len, data_len),
+        60 => wire__crate__api__MemNode_own_card_impl(ptr, rust_vec_len, data_len),
+        61 => wire__crate__api__MemNode_own_devices_impl(ptr, rust_vec_len, data_len),
+        62 => wire__crate__api__MemNode_own_operator_only_impl(ptr, rust_vec_len, data_len),
+        63 => wire__crate__api__MemNode_privacy_log_impl(ptr, rust_vec_len, data_len),
+        64 => wire__crate__api__MemNode_profile_impl(ptr, rust_vec_len, data_len),
+        65 => wire__crate__api__MemNode_push_endpoint_impl(ptr, rust_vec_len, data_len),
+        70 => wire__crate__api__MemNode_requests_impl(ptr, rust_vec_len, data_len),
+        73 => wire__crate__api__MemNode_retry_days_impl(ptr, rust_vec_len, data_len),
+        75 => wire__crate__api__MemNode_rules_impl(ptr, rust_vec_len, data_len),
+        106 => wire__crate__api__MemNode_wifi_connections_impl(ptr, rust_vec_len, data_len),
+        107 => wire__crate__api__MemNode_wifi_direct_enabled_impl(ptr, rust_vec_len, data_len),
+        108 => wire__crate__api__MemNode_wifi_local_impl(ptr, rust_vec_len, data_len),
+        109 => wire__crate__api__MemNode_wifi_peer_impl(ptr, rust_vec_len, data_len),
+        110 => wire__crate__api__QrAnimation_frame_impl(ptr, rust_vec_len, data_len),
+        111 => wire__crate__api__QrAnimation_frames_needed_impl(ptr, rust_vec_len, data_len),
+        112 => wire__crate__api__QrAnimation_frames_per_second_impl(ptr, rust_vec_len, data_len),
+        113 => wire__crate__api__QrAnimation_pace_impl(ptr, rust_vec_len, data_len),
+        114 => wire__crate__api__QrAnimation_set_pace_impl(ptr, rust_vec_len, data_len),
+        115 => wire__crate__api__SoundSession_busy_impl(ptr, rust_vec_len, data_len),
+        116 => wire__crate__api__SoundSession_frames_per_round_impl(ptr, rust_vec_len, data_len),
+        119 => wire__crate__api__new_qr_scanner_impl(ptr, rust_vec_len, data_len),
+        121 => wire__crate__api__qr_for_text_impl(ptr, rust_vec_len, data_len),
+        122 => wire__crate__api__sound_sample_rate_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -8094,6 +8154,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::FileInput {
             self.name.into_into_dart().into_dart(),
             self.media_type.into_into_dart().into_dart(),
             self.data.into_into_dart().into_dart(),
+            self.path.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -9016,6 +9077,7 @@ impl SseEncode for crate::api::FileInput {
         <String>::sse_encode(self.name, serializer);
         <String>::sse_encode(self.media_type, serializer);
         <Vec<u8>>::sse_encode(self.data, serializer);
+        <Option<String>>::sse_encode(self.path, serializer);
     }
 }
 

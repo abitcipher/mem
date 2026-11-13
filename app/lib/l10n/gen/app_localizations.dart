@@ -707,7 +707,7 @@ abstract class AppLocalizations {
   /// No description provided for @reason_file_too_large.
   ///
   /// In en, this message translates to:
-  /// **'This file is too large. This version sends files up to 256 KB, at most 16 at a time.'**
+  /// **'This file is too large. MEM sends files up to 100 MB, at most 16 at a time.'**
   String get reason_file_too_large;
 
   /// No description provided for @reason_invalid_attachment.

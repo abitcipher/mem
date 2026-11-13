@@ -38,6 +38,10 @@ const KIND_BYE: u8 = 4;
 const KIND_PURGE_TOKENS: u8 = 5;
 const KIND_OFFER: u8 = 6;
 const KIND_WANT: u8 = 7;
+const KIND_BLOB_WANT: u8 = 8;
+const KIND_BLOB_PART: u8 = 9;
+/// Largest piece of a blob in one `blob-part`.
+pub const MAX_BLOB_PART: usize = 256 * 1024;
 /// Most tags in one `offer` or `want`.
 pub const MAX_OFFER_TAGS: usize = 1024;
 
@@ -90,6 +94,28 @@ pub enum EncounterMsg {
     Bundles(Vec<BundleEntry>),
     /// Ends the session.
     Bye,
+    /// Asks for an attachment blob from `offset` on, proving the asker is the contact the file
+    /// was sent to.
+    BlobWant {
+        /// Content address of the sealed blob.
+        address: [u8; 32],
+        /// First byte wanted.
+        offset: u64,
+        /// `HMAC-SHA256(contact_secret, "MEM/v1/blob-want" || address || peer_hello_id)[0..16]`,
+        /// bound to the hello id of the side asked.
+        proof: [u8; 16],
+    },
+    /// A piece of an attachment blob, as asked for.
+    BlobPart {
+        /// Content address of the sealed blob.
+        address: [u8; 32],
+        /// Position of `bytes` in the blob.
+        offset: u64,
+        /// Length of the whole blob.
+        total: u64,
+        /// 1..=[`MAX_BLOB_PART`] bytes, within the blob.
+        bytes: Vec<u8>,
+    },
 }
 
 impl fmt::Debug for EncounterMsg {
@@ -104,6 +130,13 @@ impl fmt::Debug for EncounterMsg {
             Self::PurgeTokens(t) => write!(f, "PurgeTokens({})", t.len()),
             Self::Offer(t) => write!(f, "Offer({})", t.len()),
             Self::Want(t) => write!(f, "Want({})", t.len()),
+            Self::BlobWant { offset, .. } => write!(f, "BlobWant(@{offset})"),
+            Self::BlobPart {
+                offset,
+                total,
+                bytes,
+                ..
+            } => write!(f, "BlobPart(@{offset}+{} of {total})", bytes.len()),
             Self::Bundles(b) => write!(f, "Bundles({})", b.len()),
             Self::Bye => f.write_str("Bye"),
         }
@@ -212,7 +245,74 @@ impl EncounterMsg {
                 e.array(2)?.u8(KIND_BYE)?.map(0)?;
                 Ok(())
             })),
+            Self::BlobWant { .. } | Self::BlobPart { .. } => self.encode_blob(),
         }
+    }
+
+    /// `blob-want` and `blob-part`.
+    fn encode_blob(&self) -> Result<Vec<u8>, ProtoError> {
+        match self {
+            Self::BlobWant {
+                address,
+                offset,
+                proof,
+            } => Ok(encode_with(72, |e| {
+                e.array(2)?.u8(KIND_BLOB_WANT)?.map(3)?;
+                e.u8(0)?.bytes(address)?;
+                e.u8(1)?.u64(*offset)?;
+                e.u8(2)?.bytes(proof)?;
+                Ok(())
+            })),
+            Self::BlobPart {
+                address,
+                offset,
+                total,
+                bytes,
+            } => {
+                if !blob_part_fits(*offset, *total, bytes.len()) {
+                    return Err(SchemaError::WrongLength { key: 3 }.into());
+                }
+                Ok(encode_with(bytes.len() + 72, |e| {
+                    e.array(2)?.u8(KIND_BLOB_PART)?.map(4)?;
+                    e.u8(0)?.bytes(address)?;
+                    e.u8(1)?.u64(*offset)?;
+                    e.u8(2)?.u64(*total)?;
+                    e.u8(3)?.bytes(bytes)?;
+                    Ok(())
+                }))
+            }
+            _ => Err(SchemaError::MapShape.into()),
+        }
+    }
+
+    /// The body of a `blob-want` (3 entries) or `blob-part` (4 entries) after its kind.
+    fn decode_blob(kind: u8, d: &mut Decoder<'_>) -> Result<Self, SchemaError> {
+        key(d, 0)?;
+        let address = bytes32(d, 0)?;
+        key(d, 1)?;
+        let offset = d.u64().map_err(|_| SchemaError::WrongType { key: 1 })?;
+        if kind == KIND_BLOB_WANT {
+            key(d, 2)?;
+            let proof = bytes16(d, 2)?;
+            return Ok(Self::BlobWant {
+                address,
+                offset,
+                proof,
+            });
+        }
+        key(d, 2)?;
+        let total = d.u64().map_err(|_| SchemaError::WrongType { key: 2 })?;
+        key(d, 3)?;
+        let bytes = d.bytes().map_err(|_| SchemaError::WrongType { key: 3 })?;
+        if !blob_part_fits(offset, total, bytes.len()) {
+            return Err(SchemaError::WrongLength { key: 3 });
+        }
+        Ok(Self::BlobPart {
+            address,
+            offset,
+            total,
+            bytes: bytes.to_vec(),
+        })
     }
 
     /// Decodes an untrusted message.
@@ -278,9 +378,10 @@ impl EncounterMsg {
                 Self::Bundles(bundles)
             }
             (KIND_BYE, 0) => Self::Bye,
+            (KIND_BLOB_WANT, 3) | (KIND_BLOB_PART, 4) => Self::decode_blob(kind, &mut d)?,
             (
                 KIND_HELLO | KIND_TAGS | KIND_SUMMARY | KIND_PURGE_TOKENS | KIND_OFFER | KIND_WANT
-                | KIND_BUNDLES | KIND_BYE,
+                | KIND_BUNDLES | KIND_BYE | KIND_BLOB_WANT | KIND_BLOB_PART,
                 _,
             ) => {
                 return Err(SchemaError::MapShape.into());
@@ -293,6 +394,22 @@ impl EncounterMsg {
         }
         Ok(msg)
     }
+}
+
+/// Whether a piece of `len` bytes at `offset` lies inside a blob of `total` bytes, within limits.
+fn blob_part_fits(offset: u64, total: u64, len: usize) -> bool {
+    (1..=MAX_BLOB_PART).contains(&len)
+        && total <= crate::attachment::MAX_SEALED_LEN
+        && offset
+            .checked_add(len as u64)
+            .is_some_and(|end| end <= total)
+}
+
+fn bytes32(d: &mut Decoder<'_>, k: u64) -> Result<[u8; 32], SchemaError> {
+    d.bytes()
+        .ok()
+        .and_then(|b| <[u8; 32]>::try_from(b).ok())
+        .ok_or(SchemaError::WrongLength { key: k })
 }
 
 fn key(d: &mut Decoder<'_>, expected: u64) -> Result<(), SchemaError> {
@@ -408,6 +525,27 @@ mod tests {
         roundtrip(&EncounterMsg::PurgeTokens(vec![[2; 16]; 3]));
         roundtrip(&EncounterMsg::Offer(vec![[3; 16]; 2]));
         roundtrip(&EncounterMsg::Want(vec![[4; 16]]));
+        roundtrip(&EncounterMsg::BlobWant {
+            address: [5; 32],
+            offset: 1 << 20,
+            proof: [6; 16],
+        });
+        roundtrip(&EncounterMsg::BlobPart {
+            address: [5; 32],
+            offset: 10,
+            total: 20 + MAX_BLOB_PART as u64,
+            bytes: vec![7; MAX_BLOB_PART],
+        });
+        // A piece past the end of its blob, or too large, is refused both ways.
+        for (offset, total, len) in [(10, 15, 6), (0, 1 << 30, MAX_BLOB_PART + 1), (0, 5, 0)] {
+            let part = EncounterMsg::BlobPart {
+                address: [5; 32],
+                offset,
+                total,
+                bytes: vec![1; len],
+            };
+            assert!(part.encode().is_err());
+        }
         assert!(
             EncounterMsg::Offer(vec![[0; 16]; MAX_OFFER_TAGS + 1])
                 .encode()

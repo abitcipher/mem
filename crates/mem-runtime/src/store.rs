@@ -185,13 +185,161 @@ impl Store {
         Ok(())
     }
 
+    fn blob_path(&self, address: &[u8; 32]) -> PathBuf {
+        self.dir
+            .join(BLOB_DIR)
+            .join(data_encoding::HEXLOWER.encode(address))
+    }
+
+    fn partial_path(&self, address: &[u8; 32]) -> PathBuf {
+        self.dir
+            .join(BLOB_DIR)
+            .join(format!("{}.part", data_encoding::HEXLOWER.encode(address)))
+    }
+
+    /// Writes a piece of a blob being pulled into its partial file, at `offset`, durably.
+    /// Writing the same piece twice is harmless.
+    pub(crate) fn write_blob_part(
+        &self,
+        address: &[u8; 32],
+        offset: u64,
+        bytes: &[u8],
+    ) -> Result<(), StoreError> {
+        use std::io::{Seek, SeekFrom};
+        fs::create_dir_all(self.dir.join(BLOB_DIR))?;
+        let mut options = OpenOptions::new();
+        options.write(true).create(true).truncate(false);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        let mut f = options.open(self.partial_path(address))?;
+        f.seek(SeekFrom::Start(offset))?;
+        f.write_all(bytes)?;
+        f.sync_data()?;
+        Ok(())
+    }
+
+    /// Checks a completed partial file: exactly `total` bytes whose BLAKE3 is `address`. A match
+    /// becomes the stored blob; anything else is deleted. Returns whether it matched.
+    pub(crate) fn finish_blob(&self, address: &[u8; 32], total: u64) -> Result<bool, StoreError> {
+        let partial = self.partial_path(address);
+        let ok = match File::open(&partial) {
+            Ok(mut f) => {
+                let mut hasher = blake3::Hasher::new();
+                let len = std::io::copy(&mut f, &mut hasher)?;
+                len == total && hasher.finalize().as_bytes() == address
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => false,
+            Err(e) => return Err(e.into()),
+        };
+        if ok {
+            fs::rename(&partial, self.blob_path(address))?;
+            if let Ok(d) = File::open(self.dir.join(BLOB_DIR)) {
+                let _ = d.sync_all();
+            }
+        } else if partial.exists() {
+            fs::remove_file(&partial)?;
+        }
+        Ok(ok)
+    }
+
+    /// `len` bytes of a stored blob from `offset` (fewer at its end); `None` if it is not here.
+    pub(crate) fn blob_range(
+        &self,
+        address: &[u8; 32],
+        offset: u64,
+        len: u64,
+    ) -> Result<Option<Vec<u8>>, StoreError> {
+        use std::io::{Read, Seek, SeekFrom};
+        let mut f = match File::open(self.blob_path(address)) {
+            Ok(f) => f,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+            Err(e) => return Err(e.into()),
+        };
+        f.seek(SeekFrom::Start(offset))?;
+        let mut out = Vec::new();
+        f.take(len).read_to_end(&mut out)?;
+        Ok(Some(out))
+    }
+
+    /// Seals the file at `path` under `key` straight into the blob store, chunk by chunk, and
+    /// returns its content address and size.
+    pub(crate) fn seal_file_into_store(
+        &self,
+        path: &Path,
+        key: &mem_crypto::attachment::FileKey,
+    ) -> Result<([u8; 32], u64), StoreError> {
+        use std::io::Read;
+        fs::create_dir_all(self.dir.join(BLOB_DIR))?;
+        let mut src = File::open(path)?;
+        let size = src.metadata()?.len();
+        let tmp = self.dir.join(BLOB_DIR).join("sealing.tmp");
+        let mut options = OpenOptions::new();
+        options.write(true).create(true).truncate(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        let mut out = std::io::BufWriter::new(options.open(&tmp)?);
+        let address = mem_crypto::attachment::seal_stream(
+            key,
+            size,
+            |buf| src.read(buf),
+            |chunk| out.write_all(chunk),
+        )
+        .map_err(|e| match e {
+            mem_crypto::attachment::StreamError::Io(io) => StoreError::Io(io),
+            mem_crypto::attachment::StreamError::Crypto(_) => StoreError::Seal,
+        })?;
+        out.into_inner()
+            .map_err(|e| StoreError::Io(e.into_error()))?
+            .sync_all()?;
+        fs::rename(&tmp, self.blob_path(&address.0))?;
+        Ok((address.0, size))
+    }
+
+    /// Opens stored blob `address` with `key` and writes the file to `to`, chunk by chunk.
+    /// A blob that does not check out leaves nothing behind.
+    pub(crate) fn open_blob_to_file(
+        &self,
+        address: &[u8; 32],
+        key: &mem_crypto::attachment::FileKey,
+        size: u64,
+        to: &Path,
+    ) -> Result<bool, StoreError> {
+        use std::io::Read;
+        let mut src = match File::open(self.blob_path(address)) {
+            Ok(f) => std::io::BufReader::new(f),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+            Err(e) => return Err(e.into()),
+        };
+        let mut out = std::io::BufWriter::new(File::create(to)?);
+        let opened = mem_crypto::attachment::open_stream(
+            key,
+            &mem_crypto::attachment::ContentAddress(*address),
+            size,
+            |buf| src.read(buf),
+            |piece| out.write_all(piece),
+        );
+        drop(out);
+        match opened {
+            Ok(()) => Ok(true),
+            Err(e) => {
+                let _ = fs::remove_file(to);
+                match e {
+                    mem_crypto::attachment::StreamError::Io(io) => Err(StoreError::Io(io)),
+                    mem_crypto::attachment::StreamError::Crypto(_) => Err(StoreError::Corrupt),
+                }
+            }
+        }
+    }
+
     /// A stored sealed blob, or `None` if it is not here.
     pub(crate) fn blob(&self, address: &[u8; 32]) -> Result<Option<Vec<u8>>, StoreError> {
-        let path = self
-            .dir
-            .join(BLOB_DIR)
-            .join(data_encoding::HEXLOWER.encode(address));
-        match fs::read(path) {
+        match fs::read(self.blob_path(address)) {
             Ok(b) => Ok(Some(b)),
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
             Err(e) => Err(e.into()),

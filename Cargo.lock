@@ -2398,6 +2398,7 @@ dependencies = [
 name = "mem-runtime"
 version = "0.1.0"
 dependencies = [
+ "blake3",
  "cla-ble",
  "cla-email",
  "cla-hub",

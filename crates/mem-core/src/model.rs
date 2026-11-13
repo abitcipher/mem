@@ -308,8 +308,8 @@ pub struct NewAttachment {
     pub name: String,
     /// Media type, e.g. `image/jpeg`.
     pub media_type: String,
-    /// The file.
-    pub data: Vec<u8>,
+    /// The file, or where the runtime stored it sealed.
+    pub data: AttachmentData,
     /// A small preview (thumbnail), if the app made one.
     pub preview: Option<Vec<u8>>,
 }
@@ -319,9 +319,25 @@ impl core::fmt::Debug for NewAttachment {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("NewAttachment")
             .field("media_type", &self.media_type)
-            .field("len", &self.data.len())
             .finish_non_exhaustive()
     }
+}
+
+/// The content of a file to attach.
+#[derive(Clone, PartialEq, Eq)]
+pub enum AttachmentData {
+    /// A small file: the core seals it and sends it in parts with the message.
+    Bytes(Vec<u8>),
+    /// A large file the runtime already sealed under `key` and stored as `address`; the
+    /// recipient pulls it directly.
+    Stored {
+        /// Content address of the sealed blob.
+        address: [u8; 32],
+        /// File size in bytes.
+        size: u64,
+        /// The file key it was sealed with.
+        key: mem_crypto::attachment::FileKey,
+    },
 }
 
 /// An attached file as shown. The file key stays inside the core.

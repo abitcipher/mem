@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:file_selector/file_selector.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../app_scope.dart';
@@ -19,14 +21,20 @@ Future<String?> pickAndSendFiles(
   if (picked.isEmpty || !context.mounted) return null;
   final state = AppScope.read(context);
   try {
-    final files = [
-      for (final f in picked)
+    final files = <FileInput>[];
+    for (final f in picked) {
+      final mediaType = f.mimeType ?? mediaTypeFor(f.name);
+      // Large files go by path: the node seals them from disk, they never cross in memory.
+      final large = await f.length() > maxSmallFile && f.path.isNotEmpty;
+      files.add(
         FileInput(
           name: f.name,
-          mediaType: f.mimeType ?? mediaTypeFor(f.name),
-          data: await f.readAsBytes(),
+          mediaType: mediaType,
+          data: large ? Uint8List(0) : await f.readAsBytes(),
+          path: large ? f.path : null,
         ),
-    ];
+      );
+    }
     final sent = await state.node.sendFiles(
       contactId: contactId,
       text: '',
@@ -39,6 +47,13 @@ Future<String?> pickAndSendFiles(
     return null;
   }
 }
+
+/// Largest file sent with its message in parts; larger ones are pulled directly by the
+/// recipient (a file of up to this size fits the 256 KiB sealed bucket).
+const maxSmallFile = 256 * 1024 - 1;
+
+/// Largest image decrypted into memory to show in the chat; larger ones open elsewhere.
+const maxInlineImage = 16 * 1024 * 1024;
 
 /// A media type from a file name, for platforms whose picker does not say.
 String mediaTypeFor(String name) {
@@ -151,10 +166,12 @@ class _AttachmentTile extends StatelessWidget {
 
   bool get _image => attachment.mediaType.startsWith('image/');
 
+  bool get _inline => _image && attachment.size.toInt() <= maxInlineImage;
+
   @override
   Widget build(BuildContext context) {
     final ready = attachment.state is AttachmentStatus_Ready;
-    if (ready && _image) {
+    if (ready && _inline) {
       return _ImagePreview(
         messageId: messageId,
         index: index,
@@ -218,6 +235,10 @@ class _AttachmentTile extends StatelessWidget {
 
   Future<void> _open(BuildContext context) async {
     final l = AppLocalizations.of(context);
+    if (!_inline) {
+      await exportAttachment(context, messageId, index, attachment);
+      return;
+    }
     final file = await openAttachment(context, messageId, index);
     if (!context.mounted) return;
     if (file == null) {
@@ -228,8 +249,8 @@ class _AttachmentTile extends StatelessWidget {
   }
 }
 
-/// Hands a decrypted file to another app through the system, after saying what that means.
-Future<void> shareAttachment(BuildContext context, OpenedFile file) async {
+/// Asks before a file leaves MEM unencrypted for another app.
+Future<bool> _confirmOpenElsewhere(BuildContext context) async {
   final l = AppLocalizations.of(context);
   final ok = await showDialog<bool>(
     context: context,
@@ -248,7 +269,12 @@ Future<void> shareAttachment(BuildContext context, OpenedFile file) async {
       ],
     ),
   );
-  if (ok != true) return;
+  return ok == true;
+}
+
+/// Hands a decrypted file to another app through the system, after saying what that means.
+Future<void> shareAttachment(BuildContext context, OpenedFile file) async {
+  if (!await _confirmOpenElsewhere(context)) return;
   await SharePlus.instance.share(
     ShareParams(
       files: [
@@ -261,6 +287,42 @@ Future<void> shareAttachment(BuildContext context, OpenedFile file) async {
       fileNameOverrides: [file.name],
     ),
   );
+}
+
+/// Decrypts a file into a private temporary folder and hands it to another app. Only the
+/// latest exported file is kept there.
+Future<void> exportAttachment(
+  BuildContext context,
+  String messageId,
+  int index,
+  AttachmentItem attachment,
+) async {
+  final l = AppLocalizations.of(context);
+  if (!await _confirmOpenElsewhere(context) || !context.mounted) return;
+  final node = AppScope.read(context).node;
+  final dir = Directory('${(await getTemporaryDirectory()).path}/opened');
+  if (await dir.exists()) await dir.delete(recursive: true);
+  await dir.create(recursive: true);
+  // Only the last path segment of the sender's name, so it cannot point elsewhere.
+  final name = attachment.name.split(RegExp(r'[/\\]')).last;
+  final path = '${dir.path}/${name.isEmpty ? 'file' : name}';
+  try {
+    final done = await node.exportAttachment(
+      messageId: messageId,
+      index: index,
+      path: path,
+    );
+    if (!context.mounted) return;
+    if (!done) {
+      showSnack(context, l.attachmentMissing);
+      return;
+    }
+    await SharePlus.instance.share(
+      ShareParams(files: [XFile(path, mimeType: attachment.mediaType)]),
+    );
+  } on Object catch (e) {
+    if (context.mounted) showSnack(context, reasonText(context, e));
+  }
 }
 
 /// A received or sent image, shown inside the bubble; tap for full screen.

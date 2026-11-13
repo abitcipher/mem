@@ -5,7 +5,8 @@
 ; On a stream transport (Iroh), each message is prefixed by its length as a u32 big-endian
 ; (at most 1 048 768 bytes).
 
-encounter-msg = hello / tags / summary / purge-tokens / offer / want / bundles / bye
+encounter-msg = hello / tags / summary / purge-tokens / offer / want / bundles / bye /
+                blob-want / blob-part
 
 hello = [0, {
   0: uint,                 ; protocol_version
@@ -50,6 +51,24 @@ bundles = [3, {
 bundle-entry = bstr .size (0..65536) / [bstr .size (0..65536), bstr .size 16]
 
 bye = [4, {}]
+
+; Attachment blobs too large for parts are pulled directly from the sender. The asker proves it
+; is the contact the file was sent to, bound to this encounter:
+; proof = HMAC-SHA256(contact_secret, "MEM/v1/blob-want" || address || asked_hello_id)[0..16],
+; where asked_hello_id is the ephemeral id the asked side sent in its hello.
+blob-want = [8, {
+  0: bstr .size 32,        ; content address of the sealed blob
+  1: uint,                 ; first byte wanted
+  2: bstr .size 16,        ; proof
+}]
+
+; The asked side answers with pieces from that offset on (a window it chooses).
+blob-part = [9, {
+  0: bstr .size 32,        ; content address
+  1: uint,                 ; offset of this piece
+  2: uint .le 134250496,   ; length of the whole blob
+  3: bstr .size (1..262144), ; the piece; offset + its length <= the whole length
+}]
 
 caps = {
   * uint => any,           ; none defined in v1 (sent empty); unknown keys are ignored

@@ -304,6 +304,19 @@ abstract class MemNode implements RustOpaqueInterface {
   /// Never; fallible for FRB's stream signature.
   Stream<NodeEventItem> events();
 
+  /// Decrypts attachment `index` of a message into the file at `path` (for opening large files
+  /// in another app). `false` while the file is not here yet.
+  ///
+  /// # Errors
+  ///
+  /// `"unknown_message"` for a bad id, or a storage error (also when the stored file does
+  /// not open with the message's key; nothing is left at `path` then).
+  Future<bool> exportAttachment({
+    required String messageId,
+    required int index,
+    required String path,
+  });
+
   /// Finishes joining with the setup the main device showed.
   ///
   /// # Errors
@@ -627,7 +640,7 @@ abstract class MemNode implements RustOpaqueInterface {
   ///
   /// # Errors
   ///
-  /// `"file_too_large"` (this version sends files up to 256 KiB, at most 16),
+  /// `"file_too_large"` (above 100 MiB, or more than 16 files),
   /// `"invalid_attachment"`, `"invalid_text"`, `"unknown_contact"`, or a storage error.
   Future<SentText> sendFiles({
     required String contactId,
@@ -1675,7 +1688,8 @@ class EmailAccountItem {
           password == other.password;
 }
 
-/// A file to send.
+/// A file to send: its bytes (small files), or a path the node reads it from (large files,
+/// which then never cross the bridge).
 class FileInput {
   /// File name shown to the recipient.
   final String name;
@@ -1683,17 +1697,22 @@ class FileInput {
   /// Media type, e.g. `image/jpeg`.
   final String mediaType;
 
-  /// The file.
+  /// The file, when `path` is not given.
   final Uint8List data;
+
+  /// Where to read the file from instead.
+  final String? path;
 
   const FileInput({
     required this.name,
     required this.mediaType,
     required this.data,
+    this.path,
   });
 
   @override
-  int get hashCode => name.hashCode ^ mediaType.hashCode ^ data.hashCode;
+  int get hashCode =>
+      name.hashCode ^ mediaType.hashCode ^ data.hashCode ^ path.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -1702,7 +1721,8 @@ class FileInput {
           runtimeType == other.runtimeType &&
           name == other.name &&
           mediaType == other.mediaType &&
-          data == other.data;
+          data == other.data &&
+          path == other.path;
 }
 
 /// A group.

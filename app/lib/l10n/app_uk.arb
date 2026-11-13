@@ -101,7 +101,7 @@
  "reason_too_large_for_channel": "Задовге для цього каналу.",
  "reason_consent_mismatch": "Дозвіл не збігся. Спробуйте ще раз.",
  "reason_invalid_text": "Повідомлення порожнє або задовге.",
- "reason_file_too_large": "Файл завеликий. Ця версія надсилає файли до 256 КБ, не більше 16 за раз.",
+ "reason_file_too_large": "Файл завеликий. MEM надсилає файли до 100 МБ, не більше 16 за раз.",
  "reason_invalid_attachment": "Цей файл не можна прикріпити: його назва або тип задовгі.",
  "attachmentSending": "Надсилаю {sent} з {total}",
  "attachmentArriving": "Надходить {have} з {total}",

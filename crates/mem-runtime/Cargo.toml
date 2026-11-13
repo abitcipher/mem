@@ -15,6 +15,7 @@ mem-core.workspace = true
 mem-store.workspace = true
 mem-proto.workspace = true
 data-encoding.workspace = true
+blake3.workspace = true
 mem-crypto.workspace = true
 rand_core.workspace = true
 rand_chacha.workspace = true

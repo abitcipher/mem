@@ -1,25 +1,34 @@
 //! Attachments: each file sealed once under its own key, its blob sent as hidden part messages,
 //! and parts from a contact reassembled and checked against the blob's content address.
 //!
-//! Parts are ordinary sealed bundles (content type [`CONTENT_TYPE_ATTACHMENT_PART`]): they take
-//! the same channels, grades, consent, acks, retransmission and purge as text messages. This
-//! version carries small blobs only ([`SMALL_SEALED_MAX`]); incoming parts wait in the state
-//! until their blob is complete, within [`MAX_PENDING_PART_BYTES`].
+//! Small blobs ([`SMALL_SEALED_MAX`]) travel as parts: ordinary sealed bundles (content type
+//! [`CONTENT_TYPE_ATTACHMENT_PART`]) with the same channels, grades, consent, acks,
+//! retransmission and purge as text messages; incoming parts wait in the state until their blob
+//! is complete, within [`MAX_PENDING_PART_BYTES`].
+//!
+//! Large blobs are pulled by the recipient over a direct encounter with the sender
+//! ([`EncounterMsg::BlobWant`] / [`EncounterMsg::BlobPart`]), in windows of [`PULL_WINDOW`],
+//! resumable from the last byte written. The request carries a proof bound to the encounter;
+//! both sides use a channel only within the contact's floor (or a standing rule). The runtime
+//! moves the bytes; the core decides who may have what.
 
 use alloc::collections::BTreeMap;
 use alloc::string::String;
 use alloc::vec::Vec;
 
+use mem_cla::ClaId;
 use mem_crypto::attachment::{ContentAddress, FileKey, SEALED_CHUNK_LEN, seal, sealed_len};
 use mem_proto::BundleKind;
 use mem_proto::attachment::{
     AttachmentPart, AttachmentRef, CONTENT_TYPE_ATTACHMENT_PART, MAX_ATTACHMENTS, PART_LEN,
 };
+use mem_proto::encounter::{EncounterMsg, MAX_BLOB_PART};
 use rand_core::CryptoRng;
 
 use super::{Agent, Message, MsgDirection, Output, StorageOp};
 use crate::model::{
-    AttachmentState, AttachmentView, ContactId, MsgId, NewAttachment, RejectReason,
+    AttachmentData, AttachmentState, AttachmentView, ChannelUse, ContactId, MsgId, NewAttachment,
+    PeerHandle, RejectReason,
 };
 
 /// Largest sealed blob this version sends and accepts: a file padded to 256 KiB (four chunks).
@@ -27,6 +36,32 @@ pub const SMALL_SEALED_MAX: u64 = 4 * SEALED_CHUNK_LEN as u64;
 /// Incoming parts waiting for the rest of their blob, in bytes; the oldest blob is dropped
 /// beyond this.
 pub const MAX_PENDING_PART_BYTES: usize = 4 * 1024 * 1024;
+/// Bytes of a large blob asked for at a time.
+pub const PULL_WINDOW: u64 = 4 * MAX_BLOB_PART as u64;
+
+/// Whether a file of `size` bytes is pulled directly rather than sent in parts.
+fn is_large(size: u64) -> bool {
+    sealed_len(size).is_none_or(|l| l > SMALL_SEALED_MAX)
+}
+
+/// A large incoming blob being pulled from its sender.
+#[derive(Clone, PartialEq, Eq)]
+pub(crate) struct Pull {
+    /// Who sent the message naming it; only their encounters are asked.
+    pub(crate) contact: ContactId,
+    /// Length of the whole sealed blob.
+    pub(crate) total: u64,
+    /// Bytes written so far, from the start (the runtime writes at offsets, so a repeat is
+    /// harmless).
+    pub(crate) have: u64,
+    /// The encounter asked now, and the end of the window asked for (volatile).
+    pub(crate) peer: Option<PeerHandle>,
+    pub(crate) until: u64,
+    /// How the last piece arrived, recorded on the message once the blob checks out (volatile).
+    pub(crate) via: Option<ChannelUse>,
+    /// Complete; the runtime is checking it (volatile).
+    pub(crate) checking: bool,
+}
 
 /// An attached file of a stored message.
 #[derive(Clone, PartialEq, Eq)]
@@ -70,10 +105,11 @@ fn part_count(total: u64) -> u16 {
     u16::try_from(total.div_ceil(PART_LEN as u64)).unwrap_or(u16::MAX)
 }
 
-/// A file sealed for sending, with its blob.
+/// A file sealed for sending, with its blob when the core sealed it (small files); large files
+/// are already stored by the runtime.
 pub(crate) struct SealedFile {
     pub(super) reference: AttachmentRef,
-    pub(super) sealed: Vec<u8>,
+    pub(super) sealed: Option<Vec<u8>>,
 }
 
 impl SealedFile {
@@ -98,14 +134,26 @@ impl Agent {
         files
             .into_iter()
             .map(|f| {
-                let size = f.data.len() as u64;
-                if sealed_len(size).is_none_or(|l| l > SMALL_SEALED_MAX) {
-                    return Err(RejectReason::FileTooLarge);
-                }
-                let key = FileKey::generate(rng);
-                let sealed = seal(&key, &f.data).map_err(|_| RejectReason::FileTooLarge)?;
+                let (address, size, key, sealed) = match f.data {
+                    AttachmentData::Bytes(data) => {
+                        let size = data.len() as u64;
+                        if is_large(size) {
+                            return Err(RejectReason::FileTooLarge);
+                        }
+                        let key = FileKey::generate(rng);
+                        let sealed = seal(&key, &data).map_err(|_| RejectReason::FileTooLarge)?;
+                        (ContentAddress::of(&sealed).0, size, key, Some(sealed))
+                    }
+                    // Only large files are stored ahead; small ones would never be pulled.
+                    AttachmentData::Stored { address, size, key } => {
+                        if !is_large(size) || sealed_len(size).is_none() {
+                            return Err(RejectReason::InvalidAttachment);
+                        }
+                        (address, size, key, None)
+                    }
+                };
                 let reference = AttachmentRef {
-                    address: ContentAddress::of(&sealed).0,
+                    address,
                     size,
                     key: *key.as_bytes(),
                     name: f.name,
@@ -130,7 +178,11 @@ impl Agent {
         let mut ids = Vec::with_capacity(files.len());
         for f in files {
             let mut part_ids = Vec::new();
-            for part in AttachmentPart::split(f.reference.address, &f.sealed) {
+            let Some(sealed) = &f.sealed else {
+                ids.push(part_ids);
+                continue;
+            };
+            for part in AttachmentPart::split(f.reference.address, sealed) {
                 // Offsets and lengths come from `split`, so encoding cannot fail.
                 let Ok(content) = part.encode() else {
                     continue;
@@ -171,11 +223,13 @@ impl Agent {
         }
         files
             .into_iter()
-            .map(|f| {
+            .filter_map(|f| {
                 self.blobs.insert(f.reference.address);
-                Output::Persist(StorageOp::PutBlob {
-                    address: f.reference.address,
-                    sealed: f.sealed,
+                f.sealed.map(|sealed| {
+                    Output::Persist(StorageOp::PutBlob {
+                        address: f.reference.address,
+                        sealed,
+                    })
                 })
             })
             .collect()
@@ -260,6 +314,10 @@ impl Agent {
                 let r = &a.reference;
                 let total = sealed_len(r.size).map_or(0, part_count);
                 let state = match m.direction {
+                    // A large file of ours is here from the start; the recipient pulls it.
+                    MsgDirection::Outgoing if a.parts.is_empty() && is_large(r.size) => {
+                        AttachmentState::Ready
+                    }
                     MsgDirection::Outgoing => {
                         let sent = a
                             .parts
@@ -277,10 +335,13 @@ impl Agent {
                         AttachmentState::Ready
                     }
                     MsgDirection::Incoming => AttachmentState::Receiving {
-                        have: self
-                            .partials
-                            .get(&r.address)
-                            .map_or(0, |p| u16::try_from(p.parts.len()).unwrap_or(u16::MAX)),
+                        have: match self.pulls.get(&r.address) {
+                            Some(p) => part_count(p.have),
+                            None => self
+                                .partials
+                                .get(&r.address)
+                                .map_or(0, |p| u16::try_from(p.parts.len()).unwrap_or(u16::MAX)),
+                        },
                         total,
                     },
                 };
@@ -291,6 +352,217 @@ impl Agent {
                     preview: r.preview.clone(),
                     state,
                 }
+            })
+            .collect()
+    }
+
+    /// Starts pulling the large files of a message from `contact` that are not here yet, at
+    /// once if that contact is connected.
+    pub(super) fn track_pulls(
+        &mut self,
+        contact: ContactId,
+        refs: &[AttachmentRef],
+    ) -> Vec<Output> {
+        for r in refs.iter().filter(|r| is_large(r.size)) {
+            let Some(total) = sealed_len(r.size) else {
+                continue;
+            };
+            if !self.blobs.contains(&r.address) {
+                self.pulls.entry(r.address).or_insert(Pull {
+                    contact,
+                    total,
+                    have: 0,
+                    peer: None,
+                    until: 0,
+                    via: None,
+                    checking: false,
+                });
+            }
+        }
+        let peers: Vec<PeerHandle> = self.peers.keys().copied().collect();
+        peers
+            .into_iter()
+            .flat_map(|p| self.request_blobs(p))
+            .collect()
+    }
+
+    /// Whether a blob transfer with `contact` may use `cla` without asking: within the
+    /// contact's floor, or under a standing rule the user created.
+    fn blob_channel_ok(&self, contact: ContactId, cla: ClaId) -> bool {
+        let grade = cla.grade();
+        self.contacts.get(&contact).is_some_and(|c| {
+            grade.within(c.floor) || self.matching_rule(contact, cla, grade).is_some()
+        })
+    }
+
+    /// Asks `peer` for the next window of one blob it can give us, unless a pull from it is
+    /// already under way (one at a time per encounter).
+    pub(super) fn request_blobs(&mut self, peer: PeerHandle) -> Vec<Output> {
+        let Some(p) = self.peers.get(&peer) else {
+            return Vec::new();
+        };
+        let Some(asked_id) = p.their_id else {
+            return Vec::new();
+        };
+        if !p.hello || self.pulls.values().any(|x| x.peer == Some(peer)) {
+            return Vec::new();
+        }
+        let wanted = self.pulls.iter().find_map(|(address, x)| {
+            let c = self.contacts.get(&x.contact)?;
+            let theirs = self.delivery_tags(c).iter().any(|t| p.tags.contains(t));
+            (x.peer.is_none() && !x.checking && theirs && self.blob_channel_ok(x.contact, p.cla))
+                .then(|| (*address, c.secret.blob_proof(address, &asked_id)))
+        });
+        let Some((address, proof)) = wanted else {
+            return Vec::new();
+        };
+        let Some(x) = self.pulls.get_mut(&address) else {
+            return Vec::new();
+        };
+        x.peer = Some(peer);
+        x.until = x.have.saturating_add(PULL_WINDOW).min(x.total);
+        alloc::vec![Output::Encounter {
+            peer,
+            msg: EncounterMsg::BlobWant {
+                address,
+                offset: x.have,
+                proof,
+            },
+        }]
+    }
+
+    /// A peer asks for a blob of ours: answered only if the proof shows it is the contact the
+    /// file went to, in this encounter, over a channel within that contact's floor.
+    pub(super) fn blob_wanted(
+        &self,
+        peer: PeerHandle,
+        address: [u8; 32],
+        offset: u64,
+        proof: &[u8; 16],
+    ) -> Vec<Output> {
+        let Some(p) = self.peers.get(&peer) else {
+            return Vec::new();
+        };
+        let sent_to = self.messages.iter().find_map(|m| {
+            let a = m
+                .attachments
+                .iter()
+                .find(|a| a.reference.address == address)?;
+            (m.direction == MsgDirection::Outgoing).then_some((m.contact, a.reference.size))
+        });
+        let Some((contact, size)) = sent_to else {
+            return Vec::new();
+        };
+        let Some(total) = sealed_len(size) else {
+            return Vec::new();
+        };
+        let proven = self
+            .contacts
+            .get(&contact)
+            .is_some_and(|c| c.secret.verify_blob_proof(&address, &p.our_id, proof));
+        if !proven
+            || !self.blob_channel_ok(contact, p.cla)
+            || !self.blobs.contains(&address)
+            || offset >= total
+        {
+            return Vec::new();
+        }
+        alloc::vec![Output::SendBlob {
+            peer,
+            address,
+            offset,
+            len: PULL_WINDOW.min(total - offset),
+            total,
+        }]
+    }
+
+    /// A piece of a blob we asked `peer` for. Pieces out of order or not asked for are ignored.
+    pub(super) fn blob_part(
+        &mut self,
+        peer: PeerHandle,
+        address: [u8; 32],
+        offset: u64,
+        total: u64,
+        bytes: Vec<u8>,
+    ) -> Vec<Output> {
+        let Some(cla) = self.peers.get(&peer).map(|p| p.cla) else {
+            return Vec::new();
+        };
+        let now = self.now_unix_ms;
+        let Some(x) = self.pulls.get_mut(&address) else {
+            return Vec::new();
+        };
+        if x.peer != Some(peer) || x.total != total || x.have != offset {
+            return Vec::new();
+        }
+        x.have += bytes.len() as u64;
+        let (have, until) = (x.have, x.until);
+        let mut out = alloc::vec![Output::Persist(StorageOp::WriteBlob {
+            address,
+            offset,
+            bytes,
+        })];
+        if have >= total {
+            x.peer = None;
+            x.checking = true;
+            x.via = Some(ChannelUse {
+                cla,
+                grade: cla.grade(),
+                at_unix_ms: now,
+            });
+            out.push(Output::Persist(StorageOp::FinishBlob { address, total }));
+        } else if have >= until {
+            // The window is done: keep the progress, show it, then ask for the next one.
+            x.peer = None;
+            out.push(Output::Persist(StorageOp::SaveSnapshot));
+            out.extend(self.attachment_changed(address));
+            out.extend(self.request_blobs(peer));
+        }
+        out
+    }
+
+    /// The runtime's verdict on a completed pull. A match is stored and its channel recorded on
+    /// the messages that name it (honest provenance); a mismatch starts over.
+    pub(super) fn blob_checked(&mut self, address: [u8; 32], ok: bool) -> Vec<Output> {
+        let Some(mut x) = self.pulls.remove(&address) else {
+            return Vec::new();
+        };
+        if !ok {
+            x.have = 0;
+            x.checking = false;
+            x.via = None;
+            self.pulls.insert(address, x);
+            return alloc::vec![Output::Persist(StorageOp::SaveSnapshot)];
+        }
+        self.blobs.insert(address);
+        let mut out = alloc::vec![Output::Persist(StorageOp::SaveSnapshot)];
+        for m in self
+            .messages
+            .iter_mut()
+            .filter(|m| m.attachments.iter().any(|a| a.reference.address == address))
+        {
+            if let Some(via) = x.via
+                && !m
+                    .channels
+                    .iter()
+                    .any(|u| u.cla == via.cla && u.grade == via.grade)
+            {
+                m.channels.push(via);
+            }
+        }
+        out.extend(self.attachment_changed(address));
+        out
+    }
+
+    /// Tells the app that the messages naming blob `address` changed (progress or arrival),
+    /// without announcing them as new.
+    fn attachment_changed(&self, address: [u8; 32]) -> Vec<Output> {
+        self.messages
+            .iter()
+            .filter(|m| m.attachments.iter().any(|a| a.reference.address == address))
+            .map(|m| Output::StatusChanged {
+                message: m.id,
+                status: m.status,
             })
             .collect()
     }
@@ -370,7 +642,7 @@ mod tests {
         NewAttachment {
             name: "photo.jpg".into(),
             media_type: "image/jpeg".into(),
-            data: (0..len).map(|i| u8::try_from(i % 251).unwrap()).collect(),
+            data: AttachmentData::Bytes((0..len).map(|i| u8::try_from(i % 251).unwrap()).collect()),
             preview: None,
         }
     }
@@ -429,7 +701,10 @@ mod tests {
         assert_eq!(msg.attachments[0].state, AttachmentState::Ready);
         let secret = b.attachment(msg.id, 0).unwrap();
         let file = open(&secret.key, &stored.unwrap(), secret.size).unwrap();
-        assert_eq!(&*file, &sent.data[..]);
+        let AttachmentData::Bytes(data) = &sent.data else {
+            unreachable!()
+        };
+        assert_eq!(&*file, &data[..]);
         assert_eq!(secret.name, "photo.jpg");
         assert!(b.partials.is_empty());
     }
@@ -520,5 +795,267 @@ mod tests {
         let out = b.received_part(a_id, parts.remove(0));
         assert_eq!(out, alloc::vec![Output::Rejected(RejectReason::Malformed)]);
         assert!(b.blobs.is_empty() && b.partials.is_empty());
+    }
+
+    /// Plays the runtime between two agents in one encounter (B is handle 1 at A, A is handle 2
+    /// at B): carries
+    /// encounter messages, serves A's stored blobs, writes B's partial files and checks them.
+    struct Link {
+        a_disk: BTreeMap<[u8; 32], Vec<u8>>,
+        b_disk: BTreeMap<[u8; 32], Vec<u8>>,
+        /// What each side produced, for failure messages.
+        log: Vec<String>,
+    }
+
+    impl Link {
+        fn run(
+            &mut self,
+            a: &mut Agent,
+            ra: &mut ChaCha20Rng,
+            b: &mut Agent,
+            rb: &mut ChaCha20Rng,
+            first: Vec<(bool, Input)>,
+        ) {
+            let mut queue = alloc::collections::VecDeque::from(first);
+            let mut steps = 0;
+            while let Some((to_a, input)) = queue.pop_front() {
+                steps += 1;
+                assert!(steps < 10_000, "no progress");
+                let out = if to_a {
+                    a.handle(input, ra)
+                } else {
+                    b.handle(input, rb)
+                };
+                for o in out.iter().filter(|o| !matches!(o, Output::Persist(_))) {
+                    self.log
+                        .push(alloc::format!("{} -> {o:?}", if to_a { "A" } else { "B" }));
+                }
+                let other = PeerHandle(if to_a { 2 } else { 1 });
+                for o in out {
+                    match o {
+                        Output::Encounter { msg, .. } => {
+                            queue.push_back((!to_a, Input::EncounterMessage { peer: other, msg }));
+                        }
+                        Output::SendBlob {
+                            address,
+                            offset,
+                            len,
+                            total,
+                            ..
+                        } => {
+                            let blob = &self.a_disk[&address];
+                            let start = usize::try_from(offset).unwrap();
+                            let end = usize::try_from(offset + len).unwrap();
+                            for piece in blob[start..end].chunks(MAX_BLOB_PART) {
+                                let at = piece.as_ptr() as usize - blob.as_ptr() as usize;
+                                queue.push_back((
+                                    false,
+                                    Input::EncounterMessage {
+                                        // At B, A is handle 2.
+                                        peer: PeerHandle(2),
+                                        msg: EncounterMsg::BlobPart {
+                                            address,
+                                            offset: at as u64,
+                                            total,
+                                            bytes: piece.to_vec(),
+                                        },
+                                    },
+                                ));
+                            }
+                        }
+                        Output::Persist(StorageOp::WriteBlob {
+                            address,
+                            offset,
+                            bytes,
+                        }) => {
+                            let f = self.b_disk.entry(address).or_default();
+                            let start = usize::try_from(offset).unwrap();
+                            let end = start + bytes.len();
+                            if f.len() < end {
+                                f.resize(end, 0);
+                            }
+                            f[start..end].copy_from_slice(&bytes);
+                        }
+                        Output::Persist(StorageOp::FinishBlob { address, .. }) => {
+                            let ok = ContentAddress::of(&self.b_disk[&address]).0 == address;
+                            queue.push_back((false, Input::BlobChecked { address, ok }));
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+    }
+
+    /// A sends B a large file sealed ahead (as the runtime does); returns the file and the
+    /// harness holding A's copy.
+    fn send_large(
+        a: &mut Agent,
+        ra: &mut ChaCha20Rng,
+        b: &mut Agent,
+        rb: &mut ChaCha20Rng,
+        b_id: ContactId,
+    ) -> (Vec<u8>, Link) {
+        let file: Vec<u8> = (0..1_500_000u32).map(|i| (i % 253) as u8).collect();
+        let key = FileKey::generate(ra);
+        let sealed = seal(&key, &file).unwrap();
+        let address = ContentAddress::of(&sealed).0;
+        let out = a.handle(
+            Input::UserSendFiles {
+                contact: b_id,
+                text: "big".into(),
+                files: alloc::vec![NewAttachment {
+                    name: "video.mp4".into(),
+                    media_type: "video/mp4".into(),
+                    data: AttachmentData::Stored {
+                        address,
+                        size: file.len() as u64,
+                        key,
+                    },
+                    preview: None,
+                }],
+            },
+            ra,
+        );
+        // Nothing to store or send in parts: the runtime already holds the blob.
+        assert!(
+            !out.iter()
+                .any(|o| matches!(o, Output::Persist(StorageOp::PutBlob { .. })))
+        );
+        assert_eq!(a.outbox.len(), 1);
+        for bytes in bundles(a) {
+            let _ = deliver(b, rb, bytes);
+        }
+        let link = Link {
+            a_disk: BTreeMap::from([(address, sealed)]),
+            b_disk: BTreeMap::new(),
+            log: Vec::new(),
+        };
+        (file, link)
+    }
+
+    fn meet() -> Vec<(bool, Input)> {
+        alloc::vec![
+            (
+                true,
+                Input::EncounterStarted {
+                    peer: PeerHandle(1),
+                    cla: ClaId::Iroh,
+                },
+            ),
+            (
+                false,
+                Input::EncounterStarted {
+                    peer: PeerHandle(2),
+                    cla: ClaId::Iroh,
+                },
+            ),
+        ]
+    }
+
+    #[test]
+    fn a_large_file_is_pulled_over_a_direct_encounter() {
+        let (mut a, mut ra, mut b, mut rb, b_id) = paired();
+        let (file, mut link) = send_large(&mut a, &mut ra, &mut b, &mut rb, b_id);
+        let a_id = b.contacts()[0].id;
+        let waiting = &b.messages(a_id)[0];
+        assert!(matches!(
+            waiting.attachments[0].state,
+            AttachmentState::Receiving { have: 0, .. }
+        ));
+        assert_eq!(
+            a.messages(b_id)[0].attachments[0].state,
+            AttachmentState::Ready
+        );
+
+        link.run(&mut a, &mut ra, &mut b, &mut rb, meet());
+
+        let msg = &b.messages(a_id)[0];
+        assert_eq!(
+            msg.attachments[0].state,
+            AttachmentState::Ready,
+            "{}",
+            link.log.join("\n")
+        );
+        // The channel that carried the file is shown on the message.
+        assert!(msg.channels.iter().any(|u| u.cla == ClaId::Iroh));
+        let secret = b.attachment(msg.id, 0).unwrap();
+        let blob = &link.b_disk[&secret.address];
+        assert_eq!(&*open(&secret.key, blob, secret.size).unwrap(), &file[..]);
+        assert!(b.pulls.is_empty());
+    }
+
+    #[test]
+    fn a_pull_resumes_after_a_restart() {
+        let (mut a, mut ra, mut b, mut rb, b_id) = paired();
+        let (_, mut link) = send_large(&mut a, &mut ra, &mut b, &mut rb, b_id);
+        // One window arrives, then the encounter ends and B restarts.
+        let address = *b.pulls.keys().next().unwrap();
+        b.pulls.get_mut(&address).unwrap().have = PULL_WINDOW;
+        let window = usize::try_from(PULL_WINDOW).unwrap();
+        let first_window = link.a_disk[&address][..window].to_vec();
+        link.b_disk.insert(address, first_window);
+        let mut b = Agent::restore(&b.snapshot(), NOW).unwrap();
+        assert_eq!(b.pulls[&address].have, PULL_WINDOW);
+        link.run(&mut a, &mut ra, &mut b, &mut rb, meet());
+        assert!(b.blobs.contains(&address));
+    }
+
+    #[test]
+    fn nobody_but_the_recipient_gets_the_blob() {
+        let (mut a, mut ra, mut b, mut rb, b_id) = paired();
+        let (_, _link) = send_large(&mut a, &mut ra, &mut b, &mut rb, b_id);
+        let address = *b.pulls.keys().next().unwrap();
+        let _ = a.handle(
+            Input::EncounterStarted {
+                peer: PeerHandle(9),
+                cla: ClaId::Iroh,
+            },
+            &mut ra,
+        );
+        let _ = a.handle(
+            Input::EncounterMessage {
+                peer: PeerHandle(9),
+                msg: EncounterMsg::Hello {
+                    version: mem_proto::encounter::ENCOUNTER_VERSION,
+                    ephemeral_id: [4; 16],
+                },
+            },
+            &mut ra,
+        );
+        // A stranger who learned the address cannot make a proof.
+        let out = a.handle(
+            Input::EncounterMessage {
+                peer: PeerHandle(9),
+                msg: EncounterMsg::BlobWant {
+                    address,
+                    offset: 0,
+                    proof: [0; 16],
+                },
+            },
+            &mut ra,
+        );
+        assert!(!out.iter().any(|o| matches!(o, Output::SendBlob { .. })));
+    }
+
+    #[test]
+    fn a_pull_stays_within_the_floor() {
+        let (mut a, mut ra, mut b, mut rb, b_id) = paired();
+        let (_, mut link) = send_large(&mut a, &mut ra, &mut b, &mut rb, b_id);
+        let a_id = b.contacts()[0].id;
+        // B allows only face-to-face channels for A: the local network (P1) is not used.
+        let _ = b.handle(
+            Input::SetFloor {
+                contact: a_id,
+                floor: mem_cla::PrivacyGrade::P0,
+            },
+            &mut rb,
+        );
+        link.run(&mut a, &mut ra, &mut b, &mut rb, meet());
+        assert!(link.b_disk.is_empty());
+        assert!(matches!(
+            b.messages(a_id)[0].attachments[0].state,
+            AttachmentState::Receiving { .. }
+        ));
     }
 }

@@ -225,6 +225,37 @@ impl ContactSecret {
             .fold(0u8, |acc, (a, b)| acc | (a ^ b))
             == 0
     }
+
+    /// Proof that the asker for an attachment blob is this contact:
+    /// `HMAC-SHA256(contact_secret, "MEM/v1/blob-want" || address || asked_ephemeral_id)[0..16]`.
+    ///
+    /// # Security
+    ///
+    /// Binding to the `hello` id of the side asked stops a recorded request from being replayed
+    /// in another encounter. Compare with [`ContactSecret::verify_blob_proof`] (constant time).
+    #[must_use]
+    pub fn blob_proof(&self, address: &[u8; 32], asked_ephemeral_id: &[u8; 16]) -> [u8; 16] {
+        let full = hmac_sha256(&self.0, &[b"MEM/v1/blob-want", address, asked_ephemeral_id]);
+        let mut out = [0u8; 16];
+        out.copy_from_slice(&full[..16]);
+        out
+    }
+
+    /// Checks a blob request proof in constant time.
+    #[must_use]
+    pub fn verify_blob_proof(
+        &self,
+        address: &[u8; 32],
+        asked_ephemeral_id: &[u8; 16],
+        proof: &[u8; 16],
+    ) -> bool {
+        let expected = self.blob_proof(address, asked_ephemeral_id);
+        expected
+            .iter()
+            .zip(proof)
+            .fold(0u8, |acc, (a, b)| acc | (a ^ b))
+            == 0
+    }
 }
 
 impl fmt::Debug for ContactSecret {
@@ -350,6 +381,17 @@ mod tests {
         reference.update(b"abc");
         let expected: [u8; 32] = reference.finalize().into_bytes().into();
         assert_eq!(hmac_sha256(&key, &[b"a", b"bc"]), expected);
+    }
+
+    #[test]
+    fn blob_proof_binds_address_and_encounter() {
+        let s = ContactSecret(Zeroizing::new([5; 32]));
+        let p = s.blob_proof(&[1; 32], &[2; 16]);
+        assert!(s.verify_blob_proof(&[1; 32], &[2; 16], &p));
+        assert!(!s.verify_blob_proof(&[1; 32], &[3; 16], &p));
+        assert!(!s.verify_blob_proof(&[9; 32], &[2; 16], &p));
+        // Not interchangeable with a direct-delivery proof.
+        assert_ne!(p, s.direct_proof(&[1; 16], &[2; 16]));
     }
 
     #[test]

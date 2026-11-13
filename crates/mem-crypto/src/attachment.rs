@@ -217,6 +217,118 @@ pub fn open(
     Ok(out)
 }
 
+/// A failure while sealing or opening a stream: from the caller's reader or writer, or from
+/// the cryptography (a short file, a malformed or altered blob).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StreamError<E> {
+    /// The reader or writer failed.
+    Io(E),
+    /// Sealing or opening failed.
+    Crypto(CryptoError),
+}
+
+/// Pads and seals a file of `len` bytes chunk by chunk, so it never has to be in memory whole.
+/// `read` fills its buffer with the next bytes of the file (returning how many; fewer only at
+/// the end); `write` takes each sealed chunk in order. Gives the same blob as [`seal`].
+///
+/// # Errors
+///
+/// [`StreamError::Io`] from `read` or `write`; [`StreamError::Crypto`] for a file above
+/// [`MAX_FILE_LEN`] or one shorter than `len`.
+pub fn seal_stream<E>(
+    key: &FileKey,
+    len: u64,
+    mut read: impl FnMut(&mut [u8]) -> Result<usize, E>,
+    mut write: impl FnMut(&[u8]) -> Result<(), E>,
+) -> Result<ContentAddress, StreamError<E>> {
+    let padded = padded_len(len).ok_or(StreamError::Crypto(CryptoError::Seal))?;
+    let chunks = padded / CHUNK_LEN as u64;
+    let mut remaining = len;
+    let mut marked = false;
+    let mut hasher = blake3::Hasher::new();
+    let mut buf = Zeroizing::new(alloc::vec![0u8; CHUNK_LEN]);
+    for i in 0..chunks {
+        buf.fill(0);
+        // `take` is at most CHUNK_LEN, so it fits a usize.
+        let take = usize::try_from(remaining.min(CHUNK_LEN as u64)).unwrap_or(CHUNK_LEN);
+        let mut filled = 0;
+        while filled < take {
+            let n = read(&mut buf[filled..take]).map_err(StreamError::Io)?;
+            if n == 0 {
+                return Err(StreamError::Crypto(CryptoError::Seal));
+            }
+            filled += n;
+        }
+        remaining -= take as u64;
+        // The 0x80 marker follows the last file byte, in this chunk or at the start of the next.
+        if remaining == 0 && !marked && take < CHUNK_LEN {
+            buf[take] = 0x80;
+            marked = true;
+        }
+        let sealed = seal_chunk(key, i, i + 1 == chunks, &buf[..]).map_err(StreamError::Crypto)?;
+        hasher.update(&sealed);
+        write(&sealed).map_err(StreamError::Io)?;
+    }
+    Ok(ContentAddress(*hasher.finalize().as_bytes()))
+}
+
+/// Opens a sealed blob chunk by chunk and writes the file (without padding) in pieces.
+/// `read` fills its buffer with the next sealed bytes; `write` takes the file in order.
+/// Checks the content address, every chunk, the end of the blob and the padding.
+///
+/// # Errors
+///
+/// [`StreamError::Io`] from `read` or `write`; [`StreamError::Crypto`] for a wrong key, an
+/// altered, short or extended blob, a blob whose address is not `address`, or bad padding.
+/// Bytes already written must then be discarded by the caller.
+pub fn open_stream<E>(
+    key: &FileKey,
+    address: &ContentAddress,
+    expected_len: u64,
+    mut read: impl FnMut(&mut [u8]) -> Result<usize, E>,
+    mut write: impl FnMut(&[u8]) -> Result<(), E>,
+) -> Result<(), StreamError<E>> {
+    let bad = StreamError::Crypto(CryptoError::Open);
+    let padded = padded_len(expected_len).ok_or(StreamError::Crypto(CryptoError::Open))?;
+    let chunks = padded / CHUNK_LEN as u64;
+    let mut hasher = blake3::Hasher::new();
+    let mut sealed = alloc::vec![0u8; SEALED_CHUNK_LEN];
+    let mut left = expected_len;
+    let mut marked = false;
+    for i in 0..chunks {
+        let mut filled = 0;
+        while filled < SEALED_CHUNK_LEN {
+            let n = read(&mut sealed[filled..]).map_err(StreamError::Io)?;
+            if n == 0 {
+                return Err(StreamError::Crypto(CryptoError::Open));
+            }
+            filled += n;
+        }
+        hasher.update(&sealed);
+        let plain = open_chunk(key, i, i + 1 == chunks, &sealed).map_err(StreamError::Crypto)?;
+        let keep = usize::try_from(left.min(CHUNK_LEN as u64)).unwrap_or(CHUNK_LEN);
+        write(&plain[..keep]).map_err(StreamError::Io)?;
+        left -= keep as u64;
+        // After the file: exactly one 0x80, then zeros.
+        for &b in &plain[keep..] {
+            match (marked, b) {
+                (false, 0x80) => marked = true,
+                (true, 0) => {}
+                _ => return Err(StreamError::Crypto(CryptoError::Open)),
+            }
+        }
+    }
+    // Nothing may follow the last chunk.
+    let mut extra = [0u8; 1];
+    if read(&mut extra).map_err(StreamError::Io)? != 0 {
+        return Err(bad);
+    }
+    if !marked || ContentAddress(*hasher.finalize().as_bytes()) != *address {
+        return Err(bad);
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -287,6 +399,62 @@ mod tests {
         )
         .unwrap();
         assert_ne!(addr, ContentAddress::of(&other));
+    }
+
+    /// Reads from a byte slice in uneven pieces, as a file reader may.
+    fn reader(mut src: &[u8]) -> impl FnMut(&mut [u8]) -> Result<usize, ()> + '_ {
+        move |buf| {
+            let n = buf.len().min(src.len()).min(7_001);
+            buf[..n].copy_from_slice(&src[..n]);
+            src = &src[n..];
+            Ok(n)
+        }
+    }
+
+    #[test]
+    fn streams_match_the_whole_file_functions() {
+        let k = key();
+        for len in [0, 5, CHUNK_LEN - 1, CHUNK_LEN, 3 * CHUNK_LEN + 17] {
+            let file: Vec<u8> = (0..len).map(|i| u8::try_from(i % 251).unwrap()).collect();
+            let mut sealed = Vec::new();
+            let addr = seal_stream(&k, len as u64, reader(&file), |c| {
+                sealed.extend_from_slice(c);
+                Ok(())
+            })
+            .unwrap();
+            assert_eq!(sealed, seal(&k, &file).unwrap(), "{len}");
+            assert_eq!(addr, ContentAddress::of(&sealed));
+            let mut out = Vec::new();
+            open_stream(&k, &addr, len as u64, reader(&sealed), |p| {
+                out.extend_from_slice(p);
+                Ok(())
+            })
+            .unwrap();
+            assert_eq!(out, file);
+        }
+    }
+
+    #[test]
+    fn streams_refuse_short_altered_or_extended_input() {
+        let k = key();
+        let file = alloc::vec![3u8; CHUNK_LEN + 5];
+        let len = file.len() as u64;
+        // A file shorter than announced.
+        let short = seal_stream(&k, len, reader(&file[..10]), |_| Ok(()));
+        assert_eq!(short, Err(StreamError::Crypto(CryptoError::Seal)));
+        let sealed = seal(&k, &file).unwrap();
+        let addr = ContentAddress::of(&sealed);
+        let open =
+            |blob: &[u8], a: &ContentAddress| open_stream(&k, a, len, reader(blob), |_| Ok(()));
+        assert!(open(&sealed, &addr).is_ok());
+        let mut altered = sealed.clone();
+        altered[100] ^= 1;
+        assert!(open(&altered, &addr).is_err());
+        let mut longer = sealed.clone();
+        longer.push(0);
+        assert!(open(&longer, &addr).is_err());
+        assert!(open(&sealed[..SEALED_CHUNK_LEN], &addr).is_err());
+        assert!(open(&sealed, &ContentAddress([0; 32])).is_err());
     }
 
     /// Fixed key and file. The SHA-256 of the sealed blob was computed independently (Python

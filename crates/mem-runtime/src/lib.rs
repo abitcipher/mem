@@ -176,8 +176,16 @@ impl Runtime {
     /// between those two only means the index is reloaded from it at the next start.
     fn persist(&mut self, outputs: &[Output], rng: &mut ChaCha20Rng) -> Result<(), RuntimeError> {
         for o in outputs {
-            if let Output::Persist(StorageOp::PutBlob { address, sealed }) = o {
-                self.store.put_blob(address, sealed)?;
+            match o {
+                Output::Persist(StorageOp::PutBlob { address, sealed }) => {
+                    self.store.put_blob(address, sealed)?;
+                }
+                Output::Persist(StorageOp::WriteBlob {
+                    address,
+                    offset,
+                    bytes,
+                }) => self.store.write_blob_part(address, *offset, bytes)?,
+                _ => {}
             }
         }
         let writes: Vec<mem_core::courier::StoreWrite> = outputs
@@ -263,7 +271,106 @@ impl Runtime {
         );
         outputs.extend(self.agent.handle(input, &mut rng));
         self.persist(&outputs, &mut rng)?;
+        // Completed pulls are checked now and the verdicts fed back, so a caller sees the
+        // whole effect of its input.
+        let mut checked = 0;
+        while checked < outputs.len() {
+            let finished: Vec<([u8; 32], u64)> = outputs[checked..]
+                .iter()
+                .filter_map(|o| match o {
+                    Output::Persist(StorageOp::FinishBlob { address, total }) => {
+                        Some((*address, *total))
+                    }
+                    _ => None,
+                })
+                .collect();
+            checked = outputs.len();
+            for (address, total) in finished {
+                let ok = self.store.finish_blob(&address, total)?;
+                let more = self
+                    .agent
+                    .handle(Input::BlobChecked { address, ok }, &mut rng);
+                self.persist(&more, &mut rng)?;
+                outputs.extend(more);
+            }
+        }
+        self.serve_blobs(&mut outputs)?;
         Ok(outputs)
+    }
+
+    /// Replaces each [`Output::SendBlob`] with the encounter messages that carry it, read from
+    /// the blob store (a missing blob sends nothing; the asker tries again later).
+    fn serve_blobs(&self, outputs: &mut Vec<Output>) -> Result<(), RuntimeError> {
+        let mut served = Vec::with_capacity(outputs.len());
+        for o in outputs.drain(..) {
+            let Output::SendBlob {
+                peer,
+                address,
+                offset,
+                len,
+                total,
+            } = o
+            else {
+                served.push(o);
+                continue;
+            };
+            let Some(bytes) = self.store.blob_range(&address, offset, len)? else {
+                continue;
+            };
+            let mut at = offset;
+            for piece in bytes.chunks(mem_proto::encounter::MAX_BLOB_PART) {
+                served.push(Output::Encounter {
+                    peer,
+                    msg: mem_core::EncounterMsg::BlobPart {
+                        address,
+                        offset: at,
+                        total,
+                        bytes: piece.to_vec(),
+                    },
+                });
+                at += piece.len() as u64;
+            }
+        }
+        *outputs = served;
+        Ok(())
+    }
+
+    /// Seals a large file from `path` straight into the blob store under a fresh key, for
+    /// [`mem_core::model::AttachmentData::Stored`].
+    ///
+    /// # Errors
+    ///
+    /// [`RuntimeError`] if the file cannot be read, is larger than 100 MiB, or the store
+    /// cannot be written.
+    pub fn seal_file(
+        &self,
+        path: &std::path::Path,
+    ) -> Result<mem_core::model::AttachmentData, RuntimeError> {
+        let mut rng = fresh_rng()?;
+        let key = mem_crypto::attachment::FileKey::generate(&mut rng);
+        let (address, size) = self.store.seal_file_into_store(path, &key)?;
+        Ok(mem_core::model::AttachmentData::Stored { address, size, key })
+    }
+
+    /// Decrypts attachment `index` of `message` into the file `to` (for large files, which do
+    /// not fit in memory comfortably). `Ok(false)` while the file is not here yet.
+    ///
+    /// # Errors
+    ///
+    /// [`RuntimeError`] if the store or `to` cannot be used, or the blob does not open with the
+    /// message's key.
+    pub fn export_attachment(
+        &self,
+        message: mem_core::model::MsgId,
+        index: usize,
+        to: &std::path::Path,
+    ) -> Result<bool, RuntimeError> {
+        let Some(secret) = self.agent.attachment(message, index) else {
+            return Ok(false);
+        };
+        Ok(self
+            .store
+            .open_blob_to_file(&secret.address, &secret.key, secret.size, to)?)
     }
 
     /// Advances the clock alone (epoch rollover re-advertises tags to peers).

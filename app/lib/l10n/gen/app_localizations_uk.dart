@@ -338,7 +338,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get reason_file_too_large =>
-      'Файл завеликий. Ця версія надсилає файли до 256 КБ, не більше 16 за раз.';
+      'Файл завеликий. MEM надсилає файли до 100 МБ, не більше 16 за раз.';
 
   @override
   String get reason_invalid_attachment =>

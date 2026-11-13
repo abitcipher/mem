@@ -20,7 +20,7 @@ use zeroize::Zeroizing;
 
 use crate::agent::{
     Agent, Attachment, Contact, ContactRequest, DeliveredEntry, EmailAccount, Group, HeldMailbox,
-    Message, OutboxItem, PartialBlob, PendingIntro, Tombstone,
+    Message, OutboxItem, PartialBlob, PendingIntro, Pull, Tombstone,
 };
 use crate::model::{
     AttestLogEntry, AttestReturn, ChannelUse, ConsentBasis, ConsentRule, ContactId, DeliveryStatus,
@@ -156,6 +156,8 @@ struct StateV1 {
     blobs: Vec<[u8; 32]>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     partials: Vec<PartialDto>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pulls: Vec<PullDto>,
     /// The identity's public key (another device), this device's key, its
     /// certificate and our device list.
     #[serde(default)]
@@ -345,6 +347,15 @@ struct AttachmentDto {
     /// Ours: the part messages carrying the blob.
     #[serde(default)]
     parts: Vec<[u8; 16]>,
+}
+
+/// A large blob being pulled: how far it got.
+#[derive(Serialize, Deserialize)]
+struct PullDto {
+    address: [u8; 32],
+    contact: [u8; 32],
+    total: u64,
+    have: u64,
 }
 
 /// Parts of an incoming blob still waiting for the rest.
@@ -707,6 +718,16 @@ impl Agent {
                 .map(|(c, d)| (*c.as_bytes(), d.contact.0, d.message.0, d.expires_unix_ms))
                 .collect(),
             blobs: self.blobs.iter().copied().collect(),
+            pulls: self
+                .pulls
+                .iter()
+                .map(|(address, p)| PullDto {
+                    address: *address,
+                    contact: p.contact.0,
+                    total: p.total,
+                    have: p.have,
+                })
+                .collect(),
             partials: self
                 .partials
                 .iter()
@@ -1035,9 +1056,29 @@ impl Agent {
                 )
             })
             .collect();
+        // A pull that finished but was not checked before the restart starts over.
+        let pulls = s
+            .pulls
+            .iter()
+            .map(|p| {
+                (
+                    p.address,
+                    Pull {
+                        contact: ContactId(p.contact),
+                        total: p.total,
+                        have: if p.have >= p.total { 0 } else { p.have },
+                        peer: None,
+                        until: 0,
+                        via: None,
+                        checking: false,
+                    },
+                )
+            })
+            .collect();
         Ok(Self {
             blobs: s.blobs.iter().copied().collect(),
             partials,
+            pulls,
             identity: own_identity,
             own,
             own_sync: s
