@@ -4,6 +4,7 @@ use alloc::collections::{BTreeMap, BTreeSet, VecDeque};
 use alloc::string::String;
 use alloc::vec::Vec;
 
+mod attach;
 mod devices;
 pub(crate) use devices::{ContactDevice, list_valid as device_list_valid};
 pub use own::{DeviceJoin, JoinError};
@@ -29,6 +30,7 @@ use mem_crypto::{
     ContactSecret, Direction, IdentityKey, IdentityPublic, MailboxKey, MailboxPublic, PairingNonce,
     PurgeCommitment, PurgeToken, SUITE_ID, SUITE_XWING, SenderPurgeKey, XWingPublic,
 };
+use mem_proto::attachment::{AttachmentPart, AttachmentRef, CONTENT_TYPE_ATTACHMENT_PART};
 use mem_proto::card::{CARD_SIGNATURE_DOMAIN, CardFields, MAX_DISPLAY_NAME_LEN, PairingCard};
 use mem_proto::encounter::{
     BundleEntry, ENCOUNTER_VERSION, EncounterMsg, MAX_OFFER_TAGS, MAX_PURGE_TOKENS, MAX_TAGS,
@@ -56,6 +58,8 @@ use crate::model::{
     MsgDirection, MsgId, OfferId, OpId, PeerHandle, PrivacyLogEntry, RejectReason, RequestId,
     RuleId, TrustLevel,
 };
+pub(crate) use attach::{Attachment, PartialBlob};
+pub use attach::{AttachmentSecret, MAX_PENDING_PART_BYTES, SMALL_SEALED_MAX};
 pub use email::EmailAccount;
 pub(crate) use email::EmailState;
 pub(crate) use group::Group;
@@ -120,6 +124,15 @@ pub enum Input {
         contact: ContactId,
         /// Text.
         text: String,
+    },
+    /// The user sends files, with optional text.
+    UserSendFiles {
+        /// Recipient.
+        contact: ContactId,
+        /// Text; may be empty.
+        text: String,
+        /// The files, at most [`mem_proto::attachment::MAX_ATTACHMENTS`].
+        files: Vec<crate::model::NewAttachment>,
     },
     /// The user picked a channel for a queued message.
     RequestTransmit {
@@ -375,6 +388,14 @@ pub enum StorageOp {
     SaveSnapshot,
     /// Apply these database changes (courier store, tombstones), in order, in one transaction.
     Store(Vec<StoreWrite>),
+    /// Store this sealed attachment blob under its content address (ciphertext only). Comes
+    /// before the snapshot that records it as stored.
+    PutBlob {
+        /// BLAKE3 of `sealed`.
+        address: [u8; 32],
+        /// The sealed blob.
+        sealed: Vec<u8>,
+    },
 }
 
 /// Everything the agent asks the outside world to do.
@@ -624,6 +645,8 @@ pub(crate) struct Message {
     pub(crate) group: Option<GroupId>,
     /// Our group message: the id of its first copy, shared by all copies (local only).
     pub(crate) fanout: Option<MsgId>,
+    /// Attached files.
+    pub(crate) attachments: Vec<Attachment>,
 }
 
 impl From<&Message> for MessageView {
@@ -639,6 +662,7 @@ impl From<&Message> for MessageView {
             channels: m.channels.clone(),
             group: m.group,
             recipients: None,
+            attachments: Vec::new(),
         }
     }
 }
@@ -798,6 +822,8 @@ struct Sealing {
     kind: BundleKind,
     content_type: u64,
     content: Vec<u8>,
+    /// Attached files (inner field 5); empty for none.
+    attachments: Vec<AttachmentRef>,
     ack_requested: Option<bool>,
     acks: Vec<[u8; 16]>,
     lifetime_s: u32,
@@ -830,7 +856,10 @@ enum OpenedContent {
         created_unix_ms: u64,
         text: String,
         ack_requested: bool,
+        attachments: Vec<AttachmentRef>,
     },
+    /// One part of an attachment blob.
+    Part(AttachmentPart),
     /// A standalone ack bundle (kind 1, content type 2).
     Ack,
     /// Group traffic.
@@ -938,6 +967,10 @@ pub struct Agent {
     pub(crate) contacts: BTreeMap<ContactId, Contact>,
     pub(crate) messages: Vec<Message>,
     pub(crate) outbox: BTreeMap<MsgId, OutboxItem>,
+    /// Attachment blobs stored on this device, by content address.
+    pub(crate) blobs: BTreeSet<[u8; 32]>,
+    /// Incoming attachment blobs still missing parts.
+    pub(crate) partials: BTreeMap<[u8; 32], PartialBlob>,
     pub(crate) seen: VecDeque<MsgId>,
     pub(crate) rules: Vec<ConsentRule>,
     pub(crate) privacy_log: Vec<PrivacyLogEntry>,
@@ -1061,6 +1094,8 @@ impl Agent {
                 .collect(),
             pending_acks: BTreeMap::new(),
             ack_from: BTreeMap::new(),
+            blobs: BTreeSet::new(),
+            partials: BTreeMap::new(),
             delivered: BTreeMap::new(),
             message_lifetime_s: MESSAGE_LIFETIME_S,
             default_floor: DEFAULT_FLOOR,
@@ -1112,15 +1147,13 @@ impl Agent {
                 self.on_tick(rng)
             }
             Input::UserSend { contact, text } => {
-                let mut out = self.user_send(contact, &text, rng);
-                if let Some(message) = out.iter().find_map(|o| match o {
-                    Output::Queued { message, .. } => Some(*message),
-                    _ => None,
-                }) {
-                    out.extend(self.flush_message(message));
-                }
-                out
+                self.user_send_and_flush(contact, &text, Vec::new(), rng)
             }
+            Input::UserSendFiles {
+                contact,
+                text,
+                files,
+            } => self.user_send_and_flush(contact, &text, files, rng),
             Input::RequestTransmit { message, cla } => self.request_transmit(message, cla),
             Input::ConsentGiven(record) => self.consent_given(record),
             Input::TransmitResult { op, result } => self.transmit_result(op, result),
@@ -1263,14 +1296,57 @@ impl Agent {
         Ok(())
     }
 
+    /// Queues a message (and its attachments' parts), then offers it to open channels.
+    fn user_send_and_flush(
+        &mut self,
+        contact: ContactId,
+        text: &str,
+        files: Vec<crate::model::NewAttachment>,
+        rng: &mut impl CryptoRng,
+    ) -> Vec<Output> {
+        let files = match Self::seal_files(files, rng) {
+            Ok(f) => f,
+            Err(r) => return alloc::vec![Output::Rejected(r)],
+        };
+        let mut out = self.user_send(contact, text, files, rng);
+        let queued = out.iter().find_map(|o| match o {
+            Output::Queued { message, .. } => Some(*message),
+            _ => None,
+        });
+        if let Some(message) = queued {
+            let parts: Vec<MsgId> = self
+                .messages
+                .iter()
+                .find(|m| m.id == message)
+                .map(|m| {
+                    m.attachments
+                        .iter()
+                        .flat_map(|a| a.parts.iter().copied())
+                        .collect()
+                })
+                .unwrap_or_default();
+            out.extend(self.flush_message(message));
+            for part in parts {
+                out.extend(self.flush_message(part));
+            }
+        }
+        out
+    }
+
+    #[allow(
+        clippy::too_many_lines,
+        reason = "one straight sequence: seal, store, queue, device copies, parts"
+    )]
     fn user_send(
         &mut self,
         contact_id: ContactId,
         text: &str,
+        files: Vec<attach::SealedFile>,
         rng: &mut impl CryptoRng,
     ) -> Vec<Output> {
         let text = text.trim();
-        if text.is_empty() || text.len() > MAX_TEXT_LEN {
+        // Text may be empty only when files go with it.
+        if (text.is_empty() && files.is_empty()) || text.len() > MAX_TEXT_LEN {
             return alloc::vec![Output::Rejected(RejectReason::InvalidText)];
         }
         if let Err(r) = self.may_write_to(contact_id) {
@@ -1308,6 +1384,7 @@ impl Agent {
                 kind: BundleKind::Message,
                 content_type: CONTENT_TYPE_TEXT,
                 content,
+                attachments: files.iter().map(|f| f.reference.clone()).collect(),
                 ack_requested: Some(true),
                 acks: acks.iter().map(|m| m.0).collect(),
                 lifetime_s: self.message_lifetime_s,
@@ -1320,7 +1397,13 @@ impl Agent {
             commitment,
             rng,
         ) else {
-            return alloc::vec![Output::Rejected(RejectReason::InvalidText)];
+            // Text and references together exceed the largest padding bucket.
+            let reason = if files.is_empty() {
+                RejectReason::InvalidText
+            } else {
+                RejectReason::InvalidAttachment
+            };
+            return alloc::vec![Output::Rejected(reason)];
         };
         let (bundle, id) = bundle;
         self.messages.push(Message {
@@ -1334,6 +1417,7 @@ impl Agent {
             channels: Vec::new(),
             group: None,
             fanout: None,
+            attachments: files.iter().map(attach::SealedFile::stored).collect(),
         });
         self.outbox.insert(
             id,
@@ -1363,13 +1447,15 @@ impl Agent {
             &copy_content,
             rng,
         );
-        alloc::vec![
+        let mut out = self.send_files_of(contact_id, id, files, rng);
+        out.extend([
             Output::Persist(StorageOp::SaveSnapshot),
             Output::Queued {
                 contact: contact_id,
                 message: id,
             },
-        ]
+        ]);
+        out
     }
 
     /// Builds a sealed bundle. Callers pass the purge token and its
@@ -1393,6 +1479,7 @@ impl Agent {
             conversation_id: contact.secret.conversation_id(),
             content_type: what.content_type,
             content: what.content,
+            attachments: what.attachments,
             ack_requested: what.ack_requested,
             purge_token: *token.as_bytes(),
             acks: what.acks,
@@ -1523,6 +1610,7 @@ impl Agent {
                 kind: BundleKind::Message,
                 content_type: CONTENT_TYPE_TEXT,
                 content: encode_text(text)?,
+                attachments: Vec::new(),
                 ack_requested: Some(true),
                 acks: Vec::new(),
                 lifetime_s: self.message_lifetime_s,
@@ -2545,6 +2633,7 @@ impl Agent {
                 kind: BundleKind::Ack,
                 content_type: CONTENT_TYPE_ACK,
                 content,
+                attachments: Vec::new(),
                 ack_requested: None,
                 acks: Vec::new(),
                 lifetime_s: ACK_LIFETIME_S,
@@ -3340,12 +3429,19 @@ impl Agent {
         // The identity fallback reaches only the main device.
         let to_identity =
             device.is_none() && kind == BundleKind::KeyUpdate && self.key_stale(contact);
+        // A text keeps naming its files; a device copy takes them from the message it copies.
+        let attachments = if content_type == CONTENT_TYPE_TEXT {
+            self.attachment_refs(message)
+        } else {
+            Vec::new()
+        };
         let Ok((bundle, _)) = self.seal(
             contact,
             Sealing {
                 kind,
                 content_type,
                 content,
+                attachments,
                 ack_requested,
                 acks,
                 lifetime_s: self.message_lifetime_s,
@@ -3489,6 +3585,7 @@ impl Agent {
                     kind: BundleKind::KeyUpdate,
                     content_type: CONTENT_TYPE_KEY_UPDATE,
                     content: Vec::new(),
+                    attachments: Vec::new(),
                     ack_requested: Some(true),
                     acks: Vec::new(),
                     lifetime_s: self.message_lifetime_s,
@@ -3757,7 +3854,7 @@ impl Agent {
         contact: ContactId,
         content: &OpenedContent,
     ) -> Result<(), RejectReason> {
-        if matches!(content, OpenedContent::Text { .. })
+        if matches!(content, OpenedContent::Text { .. } | OpenedContent::Part(_))
             && self.contacts.get(&contact).is_some_and(|c| c.group_only)
         {
             return Err(RejectReason::NotAContact);
@@ -3870,10 +3967,19 @@ impl Agent {
             out.extend(self.received_group(contact, id, created_unix_ms, content, via, rng));
             return out;
         }
+        if let OpenedContent::Part(part) = content {
+            self.remember_delivered(commitment, contact, id, from_device);
+            self.owe_ack_from(contact, id, from_device);
+            // A completed blob is stored before the snapshot that records it.
+            let blob = self.received_part(contact, part);
+            out.splice(0..0, blob);
+            return out;
+        }
         if let OpenedContent::Text {
             created_unix_ms,
             text,
             ack_requested,
+            attachments,
         } = content
         {
             let channel = ChannelUse {
@@ -3889,13 +3995,19 @@ impl Agent {
                 ack_requested,
                 from_device,
             };
-            out.extend(self.store_text(delivered, text, channel));
+            out.extend(self.store_text(delivered, text, attachments, channel));
         }
         out
     }
 
     /// Stores a delivered 1:1 text (already tombstoned) and owes its ack.
-    fn store_text(&mut self, d: Delivered, text: String, channel: ChannelUse) -> Vec<Output> {
+    fn store_text(
+        &mut self,
+        d: Delivered,
+        text: String,
+        attachments: Vec<AttachmentRef>,
+        channel: ChannelUse,
+    ) -> Vec<Output> {
         let Delivered {
             contact,
             id,
@@ -3926,6 +4038,13 @@ impl Agent {
             channels: alloc::vec![channel],
             group: None,
             fanout: None,
+            attachments: attachments
+                .into_iter()
+                .map(|reference| Attachment {
+                    reference,
+                    parts: Vec::new(),
+                })
+                .collect(),
         });
         // `Persist` comes first in `out`: the runtime stores the message before any ack for it can
         // be transmitted, since acks only leave on a later tick or with a later message.
@@ -4510,7 +4629,10 @@ impl Agent {
         self.messages
             .iter()
             .filter(|m| m.contact == contact && m.group.is_none())
-            .map(MessageView::from)
+            .map(|m| MessageView {
+                attachments: self.attachment_views(m),
+                ..MessageView::from(m)
+            })
             .collect()
     }
 
@@ -4634,7 +4756,17 @@ fn opened_content(
             text: decode_text(&fields.content).map_err(|_| RejectReason::Malformed)?,
             // Messages from builds without delivery acks carry no flag; ack those too.
             ack_requested: fields.ack_requested != Some(false),
+            attachments: fields.attachments.clone(),
         },
+        // Only text names attachments.
+        _ if !fields.attachments.is_empty() => return Err(RejectReason::Malformed),
+        (BundleKind::Message, CONTENT_TYPE_ATTACHMENT_PART)
+            if fields.ack_requested == Some(true) =>
+        {
+            OpenedContent::Part(
+                AttachmentPart::decode(&fields.content).map_err(|_| RejectReason::Malformed)?,
+            )
+        }
         // A standalone ack: never asks for an ack and carries no piggyback of its own.
         (BundleKind::Ack, CONTENT_TYPE_ACK)
             if fields.ack_requested != Some(true) && acks.is_empty() =>
@@ -4676,7 +4808,8 @@ fn opened_content(
             | CONTENT_TYPE_KEY_UPDATE
             | CONTENT_TYPE_GROUP_TEXT
             | CONTENT_TYPE_GROUP_STATE
-            | CONTENT_TYPE_GROUP_REPLY,
+            | CONTENT_TYPE_GROUP_REPLY
+            | CONTENT_TYPE_ATTACHMENT_PART,
         ) => {
             return Err(RejectReason::Malformed);
         }
@@ -4794,6 +4927,7 @@ mod tests {
                     kind: BundleKind::Message,
                     content_type: CONTENT_TYPE_TEXT,
                     content: encode_text("no forward secrecy").unwrap(),
+                    attachments: Vec::new(),
                     ack_requested: Some(true),
                     acks: Vec::new(),
                     lifetime_s: a.message_lifetime_s,
@@ -4962,6 +5096,7 @@ mod tests {
                     kind: BundleKind::Ack,
                     content_type: CONTENT_TYPE_ACK,
                     content: encode_ack_ids(&[msg.0]).unwrap(),
+                    attachments: Vec::new(),
                     ack_requested: None,
                     acks: Vec::new(),
                     lifetime_s: ACK_LIFETIME_S,
@@ -4983,6 +5118,7 @@ mod tests {
                     kind: BundleKind::Message,
                     content_type: CONTENT_TYPE_TEXT,
                     content: encode_text("hi A").unwrap(),
+                    attachments: Vec::new(),
                     ack_requested: Some(true),
                     acks: alloc::vec![msg.0],
                     lifetime_s: MESSAGE_LIFETIME_S,
@@ -5022,6 +5158,7 @@ mod tests {
                     kind: BundleKind::Ack,
                     content_type: CONTENT_TYPE_ACK,
                     content: encode_ack_ids(&[msg.0]).unwrap(),
+                    attachments: Vec::new(),
                     ack_requested: None,
                     acks: Vec::new(),
                     lifetime_s: ACK_LIFETIME_S,
@@ -5063,6 +5200,7 @@ mod tests {
                     kind: BundleKind::Ack,
                     content_type: CONTENT_TYPE_ACK,
                     content: encode_ack_ids(&[[1; 16]]).unwrap(),
+                    attachments: Vec::new(),
                     ack_requested: Some(true),
                     acks: Vec::new(),
                     lifetime_s: ACK_LIFETIME_S,

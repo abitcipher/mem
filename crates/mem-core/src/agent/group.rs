@@ -369,6 +369,7 @@ impl Agent {
                 channels: Vec::new(),
                 group: Some(group),
                 fanout: Some(first),
+                attachments: Vec::new(),
             });
             out.extend(self.flush_message(id));
         }
@@ -476,6 +477,7 @@ impl Agent {
                     kind: BundleKind::Message,
                     content_type,
                     content: content.clone(),
+                    attachments: Vec::new(),
                     ack_requested: Some(true),
                     acks: acks.iter().map(|m| m.0).collect(),
                     lifetime_s: self.message_lifetime_s,
@@ -564,6 +566,7 @@ impl Agent {
             channels: alloc::vec![via],
             group: Some(group),
             fanout: None,
+            attachments: Vec::new(),
         });
         alloc::vec![
             Output::GroupMessage { group, message: id },

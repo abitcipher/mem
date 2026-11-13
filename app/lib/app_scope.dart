@@ -188,6 +188,8 @@ String reasonText(BuildContext context, Object error) {
     'too_large_for_channel' => l.reason_too_large_for_channel,
     'consent_mismatch' => l.reason_consent_mismatch,
     'invalid_text' => l.reason_invalid_text,
+    'file_too_large' => l.reason_file_too_large,
+    'invalid_attachment' => l.reason_invalid_attachment,
     'invalid_name' => l.reason_invalid_name,
     'unreachable' => l.reason_unreachable,
     'channel_disabled' => l.reason_channel_disabled,

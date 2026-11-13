@@ -209,6 +209,7 @@ impl Agent {
             channels: Vec::new(),
             group: None,
             fanout: None,
+            attachments: Vec::new(),
         });
         let mut bundle_id = [0u8; 16];
         rng.fill_bytes(&mut bundle_id);
@@ -284,6 +285,7 @@ impl Agent {
                 kind: BundleKind::Intro,
                 content_type: CONTENT_TYPE_INTRO,
                 content,
+                attachments: Vec::new(),
                 ack_requested: Some(true),
                 acks: Vec::new(),
                 lifetime_s: INTRO_LIFETIME_S,

@@ -704,6 +704,54 @@ abstract class AppLocalizations {
   /// **'The message is empty or too long.'**
   String get reason_invalid_text;
 
+  /// No description provided for @reason_file_too_large.
+  ///
+  /// In en, this message translates to:
+  /// **'This file is too large. This version sends files up to 256 KB, at most 16 at a time.'**
+  String get reason_file_too_large;
+
+  /// No description provided for @reason_invalid_attachment.
+  ///
+  /// In en, this message translates to:
+  /// **'This file cannot be attached: its name or type is too long.'**
+  String get reason_invalid_attachment;
+
+  /// No description provided for @attachmentSending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending {sent} of {total}'**
+  String attachmentSending(int sent, int total);
+
+  /// No description provided for @attachmentArriving.
+  ///
+  /// In en, this message translates to:
+  /// **'Arriving {have} of {total}'**
+  String attachmentArriving(int have, int total);
+
+  /// No description provided for @attachmentMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'This file is not on this device.'**
+  String get attachmentMissing;
+
+  /// No description provided for @attachmentOpenElsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in another app'**
+  String get attachmentOpenElsewhere;
+
+  /// No description provided for @attachmentOpenElsewhereBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The app you choose gets this file, unencrypted, and may keep or upload it.'**
+  String get attachmentOpenElsewhereBody;
+
+  /// No description provided for @attachmentOpenElsewhereAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose app'**
+  String get attachmentOpenElsewhereAction;
+
   /// No description provided for @reason_invalid_name.
   ///
   /// In en, this message translates to:

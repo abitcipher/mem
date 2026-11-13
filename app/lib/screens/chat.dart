@@ -5,6 +5,7 @@ import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import '../app_scope.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../src/rust/api.dart';
+import '../widgets/attachments.dart';
 import '../widgets/chat_sync.dart';
 import '../widgets/message_bubble.dart';
 import 'contact.dart';
@@ -168,6 +169,9 @@ class _ChatScreenState extends State<ChatScreen> {
       resolveUser: (id) async =>
           fc.User(id: id, name: id == _me ? null : title),
       onMessageSend: _send,
+      // Small files only in this version; groups do not take files yet.
+      onAttachmentTap: () =>
+          pickAndSendFiles(context, contactId: widget.contactId),
       onMessageTap: (context, message, {required index, required details}) {
         final item = _items[message.id];
         // Unconfirmed messages can be sent again by any channel (one-tap resend).

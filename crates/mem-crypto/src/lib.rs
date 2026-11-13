@@ -11,6 +11,7 @@
 
 extern crate alloc;
 
+pub mod attachment;
 pub mod attest;
 pub mod backup;
 pub mod bloom;

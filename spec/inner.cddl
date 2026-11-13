@@ -9,7 +9,7 @@ inner = {
   2: bstr .size 16,        ; conversation_id
   3: uint,                 ; content_type
   4: bstr,                 ; content (CBOR per content_type)
-  ? 5: [* attachment_ref],
+  ? 5: [1*16 attachment_ref], ; with content type 1 or 5
   ? 6: key_update,
   ? 7: bool,               ; ack requested
   8: bstr .size 64,        ; Ed25519 signature (see header)
@@ -22,10 +22,26 @@ inner = {
 ; Content type 2 (ack): the content is
 ack-content = [1*64 bstr .size 16]   ; message_ids being acknowledged
 
-; Content-addressed attachment. Shape not final.
+; An attached file. The file is sealed once under a random file key (STREAM with
+; ChaCha20-Poly1305 over 64 KiB chunks, padded to a power-of-two bucket of at least 64 KiB);
+; the sealed blob travels separately and is named by its content address. The key appears only
+; here, inside the encrypted and signed payload.
 attachment_ref = {
-  0: bstr .size 32,        ; BLAKE3 hash
-  1: uint,                 ; size in bytes
+  0: bstr .size 32,          ; content address: BLAKE3 of the sealed blob
+  1: uint .le 104857600,     ; file size in bytes (at most 100 MiB)
+  2: bstr .size 32,          ; file key
+  3: tstr .size (1..255),    ; file name
+  4: tstr .size (1..127),    ; media type, e.g. "image/jpeg"
+  ? 5: bstr .size (1..8192), ; preview: a small thumbnail or waveform
+}
+
+; Content type 9 (attachment part, envelope kind 0, ack requested): one piece of a sealed blob.
+; Parts are ordinary sealed messages, so they travel, are acknowledged and purged like text.
+attachment-part = {
+  0: bstr .size 32,          ; content address of the whole sealed blob
+  1: uint,                   ; offset: a multiple of 30720
+  2: uint .le 134250496,     ; length of the whole sealed blob
+  3: bstr .size (1..30720),  ; this part (30720 bytes, or the rest of the blob)
 }
 
 ; The sender's current mailbox key; only a higher serial replaces a held key.

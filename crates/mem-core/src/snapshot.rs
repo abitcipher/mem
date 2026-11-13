@@ -14,12 +14,13 @@ use mem_crypto::{
     PurgeCommitment, PurgeToken, SenderPurgeKey,
 };
 use mem_proto::Bundle;
+use mem_proto::attachment::AttachmentRef;
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroizing;
 
 use crate::agent::{
-    Agent, Contact, ContactRequest, DeliveredEntry, EmailAccount, Group, HeldMailbox, Message,
-    OutboxItem, PendingIntro, Tombstone,
+    Agent, Attachment, Contact, ContactRequest, DeliveredEntry, EmailAccount, Group, HeldMailbox,
+    Message, OutboxItem, PartialBlob, PendingIntro, Tombstone,
 };
 use crate::model::{
     AttestLogEntry, AttestReturn, ChannelUse, ConsentBasis, ConsentRule, ContactId, DeliveryStatus,
@@ -150,6 +151,11 @@ struct StateV1 {
     ack_from: Vec<([u8; 16], [u8; 32], [u8; 8])>,
     #[serde(default)]
     delivered_devices: Vec<([u8; 16], [u8; 8])>,
+    /// Attachment blobs stored on this device, and incoming ones still missing parts.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    blobs: Vec<[u8; 32]>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    partials: Vec<PartialDto>,
     /// The identity's public key (another device), this device's key, its
     /// certificate and our device list.
     #[serde(default)]
@@ -239,6 +245,13 @@ impl Drop for StateV1 {
         for c in &mut self.contacts {
             c.secret.zeroize();
         }
+        for a in self
+            .messages
+            .iter_mut()
+            .flat_map(|m| m.attachments.iter_mut())
+        {
+            a.key.zeroize();
+        }
     }
 }
 
@@ -315,6 +328,33 @@ struct MessageDto {
     group: Option<[u8; 16]>,
     #[serde(default)]
     fanout: Option<[u8; 16]>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    attachments: Vec<AttachmentDto>,
+}
+
+/// An attached file of a message, with the file key (the snapshot is encrypted).
+#[derive(Serialize, Deserialize)]
+struct AttachmentDto {
+    address: [u8; 32],
+    size: u64,
+    key: [u8; 32],
+    name: String,
+    media_type: String,
+    #[serde(default)]
+    preview: Option<Vec<u8>>,
+    /// Ours: the part messages carrying the blob.
+    #[serde(default)]
+    parts: Vec<[u8; 16]>,
+}
+
+/// Parts of an incoming blob still waiting for the rest.
+#[derive(Serialize, Deserialize)]
+struct PartialDto {
+    address: [u8; 32],
+    contact: [u8; 32],
+    total: u64,
+    parts: Vec<(u64, Vec<u8>)>,
+    first_unix_ms: u64,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -576,6 +616,19 @@ impl Agent {
                         .collect(),
                     group: m.group.map(|g| g.0),
                     fanout: m.fanout.map(|f| f.0),
+                    attachments: m
+                        .attachments
+                        .iter()
+                        .map(|a| AttachmentDto {
+                            address: a.reference.address,
+                            size: a.reference.size,
+                            key: a.reference.key,
+                            name: a.reference.name.clone(),
+                            media_type: a.reference.media_type.clone(),
+                            preview: a.reference.preview.clone(),
+                            parts: a.parts.iter().map(|p| p.0).collect(),
+                        })
+                        .collect(),
                 })
                 .collect(),
             outbox: self
@@ -652,6 +705,18 @@ impl Agent {
                 .delivered
                 .iter()
                 .map(|(c, d)| (*c.as_bytes(), d.contact.0, d.message.0, d.expires_unix_ms))
+                .collect(),
+            blobs: self.blobs.iter().copied().collect(),
+            partials: self
+                .partials
+                .iter()
+                .map(|(address, p)| PartialDto {
+                    address: *address,
+                    contact: p.contact.0,
+                    total: p.total,
+                    parts: p.parts.iter().map(|(o, b)| (*o, b.clone())).collect(),
+                    first_unix_ms: p.first_unix_ms,
+                })
                 .collect(),
             delivered_devices: self
                 .delivered
@@ -860,6 +925,21 @@ impl Agent {
                 channels,
                 group: m.group.map(GroupId),
                 fanout: m.fanout.map(MsgId),
+                attachments: m
+                    .attachments
+                    .iter()
+                    .map(|a| Attachment {
+                        reference: AttachmentRef {
+                            address: a.address,
+                            size: a.size,
+                            key: a.key,
+                            name: a.name.clone(),
+                            media_type: a.media_type.clone(),
+                            preview: a.preview.clone(),
+                        },
+                        parts: a.parts.iter().copied().map(MsgId).collect(),
+                    })
+                    .collect(),
             });
         }
         let mut outbox = BTreeMap::new();
@@ -940,7 +1020,24 @@ impl Agent {
         }
         // Volatile ids restart after a restore; request ids are persisted, so start above them.
         let next_id = requests.iter().map(|r| r.id.0 + 1).max().unwrap_or(1);
+        let partials = s
+            .partials
+            .iter()
+            .map(|p| {
+                (
+                    p.address,
+                    PartialBlob {
+                        contact: ContactId(p.contact),
+                        total: p.total,
+                        parts: p.parts.iter().cloned().collect(),
+                        first_unix_ms: p.first_unix_ms,
+                    },
+                )
+            })
+            .collect();
         Ok(Self {
+            blobs: s.blobs.iter().copied().collect(),
+            partials,
             identity: own_identity,
             own,
             own_sync: s

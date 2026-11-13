@@ -337,6 +337,37 @@ class AppLocalizationsUk extends AppLocalizations {
   String get reason_invalid_text => 'Повідомлення порожнє або задовге.';
 
   @override
+  String get reason_file_too_large =>
+      'Файл завеликий. Ця версія надсилає файли до 256 КБ, не більше 16 за раз.';
+
+  @override
+  String get reason_invalid_attachment =>
+      'Цей файл не можна прикріпити: його назва або тип задовгі.';
+
+  @override
+  String attachmentSending(int sent, int total) {
+    return 'Надсилаю $sent з $total';
+  }
+
+  @override
+  String attachmentArriving(int have, int total) {
+    return 'Надходить $have з $total';
+  }
+
+  @override
+  String get attachmentMissing => 'Цього файлу немає на цьому пристрої.';
+
+  @override
+  String get attachmentOpenElsewhere => 'Відкрити в іншому застосунку';
+
+  @override
+  String get attachmentOpenElsewhereBody =>
+      'Обраний застосунок отримає цей файл незашифрованим і може зберегти або вивантажити його.';
+
+  @override
+  String get attachmentOpenElsewhereAction => 'Обрати застосунок';
+
+  @override
   String get reason_invalid_name => 'Ім\'я задовге.';
 
   @override

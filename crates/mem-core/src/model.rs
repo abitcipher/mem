@@ -297,6 +297,67 @@ pub struct MessageView {
     pub group: Option<GroupId>,
     /// Our group message: members who confirmed it, of all it went to.
     pub recipients: Option<(u16, u16)>,
+    /// Attached files, in order.
+    pub attachments: Vec<AttachmentView>,
+}
+
+/// A file to attach to a message. The core seals it; the bytes never leave in clear.
+#[derive(Clone, PartialEq, Eq)]
+pub struct NewAttachment {
+    /// File name shown to the recipient.
+    pub name: String,
+    /// Media type, e.g. `image/jpeg`.
+    pub media_type: String,
+    /// The file.
+    pub data: Vec<u8>,
+    /// A small preview (thumbnail), if the app made one.
+    pub preview: Option<Vec<u8>>,
+}
+
+impl core::fmt::Debug for NewAttachment {
+    /// Never prints the file or its name.
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("NewAttachment")
+            .field("media_type", &self.media_type)
+            .field("len", &self.data.len())
+            .finish_non_exhaustive()
+    }
+}
+
+/// An attached file as shown. The file key stays inside the core.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AttachmentView {
+    /// File name (chosen by the sender).
+    pub name: String,
+    /// Media type (stated by the sender).
+    pub media_type: String,
+    /// File size in bytes.
+    pub size: u64,
+    /// Small preview, if the sender made one.
+    pub preview: Option<Vec<u8>>,
+    /// Whether the file is here yet.
+    pub state: AttachmentState,
+}
+
+/// Where an attached file stands.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AttachmentState {
+    /// Ours, going out: `sent` of `total` parts confirmed by the recipient.
+    Sending {
+        /// Parts confirmed.
+        sent: u16,
+        /// All parts.
+        total: u16,
+    },
+    /// Theirs, coming in: `have` of `total` parts arrived.
+    Receiving {
+        /// Parts here.
+        have: u16,
+        /// All parts.
+        total: u16,
+    },
+    /// The whole file is on this device and can be opened.
+    Ready,
 }
 
 /// Scope of a consent.
@@ -474,6 +535,10 @@ pub enum RejectReason {
     ConsentMismatch,
     /// The message text is empty or too long.
     InvalidText,
+    /// An attachment is too large for this version, or the message has too many.
+    FileTooLarge,
+    /// An attachment's name, type or preview is out of bounds.
+    InvalidAttachment,
     /// The display name is empty or too long.
     InvalidName,
     /// No connected peer can take the bundle to this contact right now.

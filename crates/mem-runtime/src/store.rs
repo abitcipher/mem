@@ -47,6 +47,8 @@ pub trait KeyGuard: Send + Sync + std::fmt::Debug {
 pub struct KeyGuardError;
 const STATE_FILE: &str = "state.bin";
 const TMP_FILE: &str = "state.bin.tmp";
+/// Sealed attachment blobs, one file per content address (lowercase hex).
+const BLOB_DIR: &str = "blobs";
 
 /// Storage failures.
 #[derive(Debug, thiserror::Error)]
@@ -166,6 +168,34 @@ impl Store {
         let kept = self.dir.join(format!("replaced-{unix_ms}.bin"));
         write_private(&kept, &fs::read(path)?)?;
         Ok(Some(kept))
+    }
+
+    /// Stores a sealed attachment blob under its content address, atomically. Blobs are
+    /// ciphertext; their file keys live only in the encrypted state.
+    pub(crate) fn put_blob(&self, address: &[u8; 32], sealed: &[u8]) -> Result<(), StoreError> {
+        let dir = self.dir.join(BLOB_DIR);
+        fs::create_dir_all(&dir)?;
+        let name = data_encoding::HEXLOWER.encode(address);
+        let tmp = dir.join(format!("{name}.tmp"));
+        write_private(&tmp, sealed)?;
+        fs::rename(&tmp, dir.join(&name))?;
+        if let Ok(d) = File::open(&dir) {
+            let _ = d.sync_all();
+        }
+        Ok(())
+    }
+
+    /// A stored sealed blob, or `None` if it is not here.
+    pub(crate) fn blob(&self, address: &[u8; 32]) -> Result<Option<Vec<u8>>, StoreError> {
+        let path = self
+            .dir
+            .join(BLOB_DIR)
+            .join(data_encoding::HEXLOWER.encode(address));
+        match fs::read(path) {
+            Ok(b) => Ok(Some(b)),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+            Err(e) => Err(e.into()),
+        }
     }
 
     pub(crate) fn save(&self, snapshot: &[u8], rng: &mut impl CryptoRng) -> Result<(), StoreError> {

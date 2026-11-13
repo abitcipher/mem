@@ -10,6 +10,7 @@ import '../screens/chat.dart';
 import '../src/rust/api.dart';
 import '../src/ui_settings.dart';
 import '../theme.dart';
+import 'attachments.dart';
 import 'grade_badge.dart';
 import 'grade_symbol.dart';
 
@@ -96,7 +97,9 @@ class MessageBubble extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(message.text, style: textStyle),
+              if (item?.attachments.isNotEmpty ?? false)
+                AttachmentList(item: item!, background: background),
+              if (message.text.isNotEmpty) Text(message.text, style: textStyle),
               const SizedBox(height: 4),
               footer,
             ],

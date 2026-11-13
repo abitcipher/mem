@@ -28,7 +28,9 @@ pub use agent::{
     MIN_MESSAGE_LIFETIME_S, Output, PEER_BUNDLE_QUOTA, POW_CHECKS_PER_ENCOUNTER, PowJob,
     RETRANSMIT_AFTER_MS, SEEN_CAPACITY, StorageOp, TOMBSTONE_CAPACITY, clamp_lifetime,
 };
-pub use agent::{DeviceJoin, JoinError};
+pub use agent::{
+    AttachmentSecret, DeviceJoin, JoinError, MAX_PENDING_PART_BYTES, SMALL_SEALED_MAX,
+};
 pub use backup::{BackupFailure, Restored};
 pub use mem_cla::{ClaId, PrivacyGrade};
 pub use mem_crypto::backup::{BackupError, KdfParams, PhraseForm};

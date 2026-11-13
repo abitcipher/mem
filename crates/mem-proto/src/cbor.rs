@@ -321,6 +321,15 @@ impl<'b> MapReader<'b> {
         Ok(out)
     }
 
+    /// Inner field 5: the attachment references ([`crate::attachment`]).
+    pub(crate) fn attachments(
+        &mut self,
+        key: u64,
+    ) -> Result<Vec<crate::attachment::AttachmentRef>, SchemaError> {
+        self.key(key)?;
+        crate::attachment::read_list(&mut self.d, key)
+    }
+
     pub(crate) fn text(&mut self, key: u64) -> Result<&'b str, SchemaError> {
         self.key(key)?;
         self.d.str().map_err(|_| SchemaError::WrongType { key })

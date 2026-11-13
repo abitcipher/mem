@@ -336,6 +336,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reason_invalid_text => 'The message is empty or too long.';
 
   @override
+  String get reason_file_too_large =>
+      'This file is too large. This version sends files up to 256 KB, at most 16 at a time.';
+
+  @override
+  String get reason_invalid_attachment =>
+      'This file cannot be attached: its name or type is too long.';
+
+  @override
+  String attachmentSending(int sent, int total) {
+    return 'Sending $sent of $total';
+  }
+
+  @override
+  String attachmentArriving(int have, int total) {
+    return 'Arriving $have of $total';
+  }
+
+  @override
+  String get attachmentMissing => 'This file is not on this device.';
+
+  @override
+  String get attachmentOpenElsewhere => 'Open in another app';
+
+  @override
+  String get attachmentOpenElsewhereBody =>
+      'The app you choose gets this file, unencrypted, and may keep or upload it.';
+
+  @override
+  String get attachmentOpenElsewhereAction => 'Choose app';
+
+  @override
   String get reason_invalid_name => 'The name is too long.';
 
   @override

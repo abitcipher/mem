@@ -156,6 +156,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String dco_decode_String(dynamic raw);
 
   @protected
+  AttachmentItem dco_decode_attachment_item(dynamic raw);
+
+  @protected
+  AttachmentStatus dco_decode_attachment_status(dynamic raw);
+
+  @protected
   AttestLogItem dco_decode_attest_log_item(dynamic raw);
 
   @protected
@@ -187,6 +193,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   EmailAccountItem dco_decode_box_autoadd_email_account_item(dynamic raw);
+
+  @protected
+  OpenedFile dco_decode_box_autoadd_opened_file(dynamic raw);
 
   @protected
   QrView dco_decode_box_autoadd_qr_view(dynamic raw);
@@ -246,6 +255,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   EmailAccountItem dco_decode_email_account_item(dynamic raw);
 
   @protected
+  FileInput dco_decode_file_input(dynamic raw);
+
+  @protected
   GroupItem dco_decode_group_item(dynamic raw);
 
   @protected
@@ -267,6 +279,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<String> dco_decode_list_String(dynamic raw);
 
   @protected
+  List<AttachmentItem> dco_decode_list_attachment_item(dynamic raw);
+
+  @protected
   List<AttestLogItem> dco_decode_list_attest_log_item(dynamic raw);
 
   @protected
@@ -283,6 +298,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<DeviceItem> dco_decode_list_device_item(dynamic raw);
+
+  @protected
+  List<FileInput> dco_decode_list_file_input(dynamic raw);
 
   @protected
   List<GroupItem> dco_decode_list_group_item(dynamic raw);
@@ -327,6 +345,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   NodeEventItem dco_decode_node_event_item(dynamic raw);
 
   @protected
+  OpenedFile dco_decode_opened_file(dynamic raw);
+
+  @protected
   String? dco_decode_opt_String(dynamic raw);
 
   @protected
@@ -342,6 +363,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   EmailAccountItem? dco_decode_opt_box_autoadd_email_account_item(dynamic raw);
 
   @protected
+  OpenedFile? dco_decode_opt_box_autoadd_opened_file(dynamic raw);
+
+  @protected
   QrView? dco_decode_opt_box_autoadd_qr_view(dynamic raw);
 
   @protected
@@ -355,6 +379,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   WifiEndpoint? dco_decode_opt_box_autoadd_wifi_endpoint(dynamic raw);
+
+  @protected
+  Uint8List? dco_decode_opt_list_prim_u_8_strict(dynamic raw);
 
   @protected
   PhraseFormItem dco_decode_phrase_form_item(dynamic raw);
@@ -535,6 +562,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String sse_decode_String(SseDeserializer deserializer);
 
   @protected
+  AttachmentItem sse_decode_attachment_item(SseDeserializer deserializer);
+
+  @protected
+  AttachmentStatus sse_decode_attachment_status(SseDeserializer deserializer);
+
+  @protected
   AttestLogItem sse_decode_attest_log_item(SseDeserializer deserializer);
 
   @protected
@@ -576,6 +609,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   EmailAccountItem sse_decode_box_autoadd_email_account_item(
     SseDeserializer deserializer,
   );
+
+  @protected
+  OpenedFile sse_decode_box_autoadd_opened_file(SseDeserializer deserializer);
 
   @protected
   QrView sse_decode_box_autoadd_qr_view(SseDeserializer deserializer);
@@ -643,6 +679,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   EmailAccountItem sse_decode_email_account_item(SseDeserializer deserializer);
 
   @protected
+  FileInput sse_decode_file_input(SseDeserializer deserializer);
+
+  @protected
   GroupItem sse_decode_group_item(SseDeserializer deserializer);
 
   @protected
@@ -662,6 +701,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<String> sse_decode_list_String(SseDeserializer deserializer);
+
+  @protected
+  List<AttachmentItem> sse_decode_list_attachment_item(
+    SseDeserializer deserializer,
+  );
 
   @protected
   List<AttestLogItem> sse_decode_list_attest_log_item(
@@ -686,6 +730,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<DeviceItem> sse_decode_list_device_item(SseDeserializer deserializer);
+
+  @protected
+  List<FileInput> sse_decode_list_file_input(SseDeserializer deserializer);
 
   @protected
   List<GroupItem> sse_decode_list_group_item(SseDeserializer deserializer);
@@ -734,6 +781,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   NodeEventItem sse_decode_node_event_item(SseDeserializer deserializer);
 
   @protected
+  OpenedFile sse_decode_opened_file(SseDeserializer deserializer);
+
+  @protected
   String? sse_decode_opt_String(SseDeserializer deserializer);
 
   @protected
@@ -753,6 +803,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  OpenedFile? sse_decode_opt_box_autoadd_opened_file(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   QrView? sse_decode_opt_box_autoadd_qr_view(SseDeserializer deserializer);
 
   @protected
@@ -768,6 +823,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   WifiEndpoint? sse_decode_opt_box_autoadd_wifi_endpoint(
     SseDeserializer deserializer,
   );
+
+  @protected
+  Uint8List? sse_decode_opt_list_prim_u_8_strict(SseDeserializer deserializer);
 
   @protected
   PhraseFormItem sse_decode_phrase_form_item(SseDeserializer deserializer);
@@ -969,6 +1027,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_String(String self, SseSerializer serializer);
 
   @protected
+  void sse_encode_attachment_item(
+    AttachmentItem self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_attachment_status(
+    AttachmentStatus self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_attest_log_item(AttestLogItem self, SseSerializer serializer);
 
   @protected
@@ -1017,6 +1087,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_box_autoadd_email_account_item(
     EmailAccountItem self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_opened_file(
+    OpenedFile self,
     SseSerializer serializer,
   );
 
@@ -1102,6 +1178,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_file_input(FileInput self, SseSerializer serializer);
+
+  @protected
   void sse_encode_group_item(GroupItem self, SseSerializer serializer);
 
   @protected
@@ -1127,6 +1206,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_attachment_item(
+    List<AttachmentItem> self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_list_attest_log_item(
@@ -1161,6 +1246,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_list_device_item(
     List<DeviceItem> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_file_input(
+    List<FileInput> self,
     SseSerializer serializer,
   );
 
@@ -1234,6 +1325,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_node_event_item(NodeEventItem self, SseSerializer serializer);
 
   @protected
+  void sse_encode_opened_file(OpenedFile self, SseSerializer serializer);
+
+  @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer);
 
   @protected
@@ -1256,6 +1350,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_opt_box_autoadd_opened_file(
+    OpenedFile? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_box_autoadd_qr_view(
     QrView? self,
     SseSerializer serializer,
@@ -1273,6 +1373,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_opt_box_autoadd_wifi_endpoint(
     WifiEndpoint? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_list_prim_u_8_strict(
+    Uint8List? self,
     SseSerializer serializer,
   );
 

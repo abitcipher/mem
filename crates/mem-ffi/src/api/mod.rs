@@ -11,9 +11,9 @@ use cla_qr::{Animation, Pace, ScanEvent, Scanner};
 use flutter_rust_bridge::frb;
 use mem_core::disclosure::{self, Locale};
 use mem_core::model::{
-    ChannelOffer, ConsentBasis, ConsentRecord, ConsentScope, ContactId, DeliveryStatus, GroupId,
-    GroupStatus, GroupView, MemberRole, MessageKind, MessageView, MsgDirection, MsgId, OfferId,
-    OpId, RejectReason, RequestId, RuleId, TrustLevel, sas_emoji,
+    AttachmentState, ChannelOffer, ConsentBasis, ConsentRecord, ConsentScope, ContactId,
+    DeliveryStatus, GroupId, GroupStatus, GroupView, MemberRole, MessageKind, MessageView,
+    MsgDirection, MsgId, OfferId, OpId, RejectReason, RequestId, RuleId, TrustLevel, sas_emoji,
 };
 use mem_core::{ClaError, ClaId, Input, Output, PrivacyGrade};
 use mem_proto::frame::ObjectKind;
@@ -622,6 +622,62 @@ pub struct MessageItem {
     pub delivered_to: Option<u16>,
     /// Our group message: members it went to.
     pub sent_to: Option<u16>,
+    /// Attached files, in order (their index is the position here).
+    pub attachments: Vec<AttachmentItem>,
+}
+
+/// An attached file as shown.
+pub struct AttachmentItem {
+    /// File name (chosen by the sender).
+    pub name: String,
+    /// Media type (stated by the sender).
+    pub media_type: String,
+    /// File size in bytes.
+    pub size: u64,
+    /// Small preview, if the sender made one.
+    pub preview: Option<Vec<u8>>,
+    /// Whether it is here yet.
+    pub state: AttachmentStatus,
+}
+
+/// Where an attached file stands.
+pub enum AttachmentStatus {
+    /// Ours, going out: `sent` of `total` parts confirmed.
+    Sending {
+        /// Parts confirmed.
+        sent: u16,
+        /// All parts.
+        total: u16,
+    },
+    /// Theirs, coming in: `have` of `total` parts here.
+    Receiving {
+        /// Parts here.
+        have: u16,
+        /// All parts.
+        total: u16,
+    },
+    /// On this device; can be opened.
+    Ready,
+}
+
+/// A file to send.
+pub struct FileInput {
+    /// File name shown to the recipient.
+    pub name: String,
+    /// Media type, e.g. `image/jpeg`.
+    pub media_type: String,
+    /// The file.
+    pub data: Vec<u8>,
+}
+
+/// An attached file, decrypted.
+pub struct OpenedFile {
+    /// File name (chosen by the sender).
+    pub name: String,
+    /// Media type (stated by the sender).
+    pub media_type: String,
+    /// The file.
+    pub data: Vec<u8>,
 }
 
 /// Where we stand in a group.
@@ -2316,7 +2372,11 @@ impl MemNode {
                         last_unix_ms: ms(last
                             .as_ref()
                             .map_or(c.added_unix_ms, |m| m.created_unix_ms)),
-                        last_text: last.map(|m| m.text),
+                        // A message of files only shows its first file's name.
+                        last_text: last.map(|m| match m.attachments.first() {
+                            Some(a) if m.text.is_empty() => format!("📎 {}", a.name),
+                            _ => m.text,
+                        }),
                         email: c.email.clone(),
                         alias: c.alias.clone(),
                     }
@@ -2494,32 +2554,61 @@ impl MemNode {
     pub fn send_text(&self, contact_id: String, text: String) -> Result<SentText, String> {
         let contact = contact(&contact_id)?;
         let out = self.handle(Input::UserSend { contact, text })?;
-        if let Some(r) = rejected(&out) {
-            return Err(reason_key(r));
-        }
-        let message_id = out
-            .iter()
-            .find_map(|o| match o {
-                Output::Queued { message, .. } => Some(hex::encode(message.as_bytes())),
-                _ => None,
+        sent_text(&out)
+    }
+
+    /// Seals files (with optional text) for a contact and queues the message and the files'
+    /// parts; sent right away as [`MemNode::send_text`] would be.
+    ///
+    /// # Errors
+    ///
+    /// `"file_too_large"` (this version sends files up to 256 KiB, at most 16),
+    /// `"invalid_attachment"`, `"invalid_text"`, `"unknown_contact"`, or a storage error.
+    pub fn send_files(
+        &self,
+        contact_id: String,
+        text: String,
+        files: Vec<FileInput>,
+    ) -> Result<SentText, String> {
+        let contact = contact(&contact_id)?;
+        let files = files
+            .into_iter()
+            .map(|f| mem_core::model::NewAttachment {
+                name: f.name,
+                media_type: f.media_type,
+                data: f.data,
+                preview: None,
             })
-            .ok_or_else(|| String::from("not_queued"))?;
-        Ok(SentText {
-            message_id,
-            sending_nearby: out
-                .iter()
-                .any(|o| matches!(o, Output::Transmit { peer: Some(_), .. })),
-            sending_hub: out.iter().any(|o| {
-                matches!(
-                    o,
-                    Output::Transmit {
-                        cla: ClaId::Hub,
-                        peer: None,
-                        ..
-                    }
-                )
-            }),
-        })
+            .collect();
+        let out = self.handle(Input::UserSendFiles {
+            contact,
+            text,
+            files,
+        })?;
+        sent_text(&out)
+    }
+
+    /// Attachment `index` of a message, decrypted; `None` while its file is not here yet.
+    ///
+    /// # Errors
+    ///
+    /// `"unknown_message"` for a bad id, or a storage error (also when the stored file does
+    /// not open with the message's key).
+    pub fn open_attachment(
+        &self,
+        message_id: String,
+        index: u32,
+    ) -> Result<Option<OpenedFile>, String> {
+        let message = msg(&message_id)?;
+        let index = usize::try_from(index).map_err(|_| String::from("unknown_message"))?;
+        let opened = self
+            .with(|rt| rt.open_attachment(message, index))?
+            .map_err(|e| e.to_string())?;
+        Ok(opened.map(|o| OpenedFile {
+            name: o.name,
+            media_type: o.media_type,
+            data: o.data.to_vec(),
+        }))
     }
 
     /// Channels available for a queued message.
@@ -2839,6 +2928,8 @@ fn reason_key(r: RejectReason) -> String {
         RejectReason::TooLargeForChannel => "too_large_for_channel",
         RejectReason::ConsentMismatch => "consent_mismatch",
         RejectReason::InvalidText => "invalid_text",
+        RejectReason::FileTooLarge => "file_too_large",
+        RejectReason::InvalidAttachment => "invalid_attachment",
         RejectReason::InvalidName => "invalid_name",
         RejectReason::Unreachable => "unreachable",
         RejectReason::ChannelDisabled => "channel_disabled",
@@ -2907,6 +2998,25 @@ fn message_item(m: MessageView) -> MessageItem {
         sender_id: hex::encode(m.contact.as_bytes()),
         delivered_to: m.recipients.map(|(k, _)| k),
         sent_to: m.recipients.map(|(_, n)| n),
+        attachments: m
+            .attachments
+            .into_iter()
+            .map(|a| AttachmentItem {
+                name: a.name,
+                media_type: a.media_type,
+                size: a.size,
+                preview: a.preview,
+                state: match a.state {
+                    AttachmentState::Sending { sent, total } => {
+                        AttachmentStatus::Sending { sent, total }
+                    }
+                    AttachmentState::Receiving { have, total } => {
+                        AttachmentStatus::Receiving { have, total }
+                    }
+                    AttachmentState::Ready => AttachmentStatus::Ready,
+                },
+            })
+            .collect(),
     }
 }
 
@@ -2991,6 +3101,36 @@ const fn grade_from(v: u8) -> Option<PrivacyGrade> {
 
 fn ms(v: u64) -> i64 {
     i64::try_from(v).unwrap_or(i64::MAX)
+}
+
+/// What a send reports: the queued message and whether it is already on its way.
+fn sent_text(out: &[Output]) -> Result<SentText, String> {
+    if let Some(r) = rejected(out) {
+        return Err(reason_key(r));
+    }
+    let message_id = out
+        .iter()
+        .find_map(|o| match o {
+            Output::Queued { message, .. } => Some(hex::encode(message.as_bytes())),
+            _ => None,
+        })
+        .ok_or_else(|| String::from("not_queued"))?;
+    Ok(SentText {
+        message_id,
+        sending_nearby: out
+            .iter()
+            .any(|o| matches!(o, Output::Transmit { peer: Some(_), .. })),
+        sending_hub: out.iter().any(|o| {
+            matches!(
+                o,
+                Output::Transmit {
+                    cla: ClaId::Hub,
+                    peer: None,
+                    ..
+                }
+            )
+        }),
+    })
 }
 
 #[cfg(test)]

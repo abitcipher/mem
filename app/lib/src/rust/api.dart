@@ -9,7 +9,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'api.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `attest_error`, `consent_request`, `contact_name`, `contact`, `dial_hint`, `grade_from`, `grade_u8`, `group_call`, `group_item`, `handle`, `message_item`, `ms`, `msg`, `new`, `outcome`, `own_hint`, `parse_group`, `parse_locale`, `qr`, `reason_key`, `receive_outcome`, `rejected`, `single`, `with`
+// These functions are ignored because they are not marked as `pub`: `attest_error`, `consent_request`, `contact_name`, `contact`, `dial_hint`, `grade_from`, `grade_u8`, `group_call`, `group_item`, `handle`, `message_item`, `ms`, `msg`, `new`, `outcome`, `own_hint`, `parse_group`, `parse_locale`, `qr`, `reason_key`, `receive_outcome`, `rejected`, `sent_text`, `single`, `with`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`
 
 /// Creates a scanner.
@@ -456,6 +456,17 @@ abstract class MemNode implements RustOpaqueInterface {
   /// Only if the node lock is poisoned.
   Future<void> newRecoveryPhrase({required PhraseFormItem form});
 
+  /// Attachment `index` of a message, decrypted; `None` while its file is not here yet.
+  ///
+  /// # Errors
+  ///
+  /// `"unknown_message"` for a bad id, or a storage error (also when the stored file does
+  /// not open with the message's key).
+  Future<OpenedFile?> openAttachment({
+    required String messageId,
+    required int index,
+  });
+
   /// Our pairing card as text and QR.
   ///
   /// # Errors
@@ -610,6 +621,19 @@ abstract class MemNode implements RustOpaqueInterface {
   /// `"not_a_card"`, `"own_card"`, `"already_contact"`, `"invalid_note"`, `"bad_signature"`,
   /// or a storage error.
   Future<String> sendContactRequest({required String cardText, String? note});
+
+  /// Seals files (with optional text) for a contact and queues the message and the files'
+  /// parts; sent right away as [`MemNode::send_text`] would be.
+  ///
+  /// # Errors
+  ///
+  /// `"file_too_large"` (this version sends files up to 256 KiB, at most 16),
+  /// `"invalid_attachment"`, `"invalid_text"`, `"unknown_contact"`, or a storage error.
+  Future<SentText> sendFiles({
+    required String contactId,
+    required String text,
+    required List<FileInput> files,
+  });
 
   /// Sends a text to every other member; each copy goes out on its own, automatically.
   ///
@@ -876,6 +900,77 @@ abstract class SoundSession implements RustOpaqueInterface {
   ///
   /// `"sound_failed"` if encoding fails.
   Future<Int16List> nextBurst();
+}
+
+/// An attached file as shown.
+class AttachmentItem {
+  /// File name (chosen by the sender).
+  final String name;
+
+  /// Media type (stated by the sender).
+  final String mediaType;
+
+  /// File size in bytes.
+  final BigInt size;
+
+  /// Small preview, if the sender made one.
+  final Uint8List? preview;
+
+  /// Whether it is here yet.
+  final AttachmentStatus state;
+
+  const AttachmentItem({
+    required this.name,
+    required this.mediaType,
+    required this.size,
+    this.preview,
+    required this.state,
+  });
+
+  @override
+  int get hashCode =>
+      name.hashCode ^
+      mediaType.hashCode ^
+      size.hashCode ^
+      preview.hashCode ^
+      state.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AttachmentItem &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          mediaType == other.mediaType &&
+          size == other.size &&
+          preview == other.preview &&
+          state == other.state;
+}
+
+@freezed
+sealed class AttachmentStatus with _$AttachmentStatus {
+  const AttachmentStatus._();
+
+  /// Ours, going out: `sent` of `total` parts confirmed.
+  const factory AttachmentStatus.sending({
+    /// Parts confirmed.
+    required int sent,
+
+    /// All parts.
+    required int total,
+  }) = AttachmentStatus_Sending;
+
+  /// Theirs, coming in: `have` of `total` parts here.
+  const factory AttachmentStatus.receiving({
+    /// Parts here.
+    required int have,
+
+    /// All parts.
+    required int total,
+  }) = AttachmentStatus_Receiving;
+
+  /// On this device; can be opened.
+  const factory AttachmentStatus.ready() = AttachmentStatus_Ready;
 }
 
 /// One attestation in the log.
@@ -1580,6 +1675,36 @@ class EmailAccountItem {
           password == other.password;
 }
 
+/// A file to send.
+class FileInput {
+  /// File name shown to the recipient.
+  final String name;
+
+  /// Media type, e.g. `image/jpeg`.
+  final String mediaType;
+
+  /// The file.
+  final Uint8List data;
+
+  const FileInput({
+    required this.name,
+    required this.mediaType,
+    required this.data,
+  });
+
+  @override
+  int get hashCode => name.hashCode ^ mediaType.hashCode ^ data.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FileInput &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          mediaType == other.mediaType &&
+          data == other.data;
+}
+
 /// A group.
 class GroupItem {
   /// Hex id.
@@ -1750,6 +1875,9 @@ class MessageItem {
   /// Our group message: members it went to.
   final int? sentTo;
 
+  /// Attached files, in order (their index is the position here).
+  final List<AttachmentItem> attachments;
+
   const MessageItem({
     required this.id,
     required this.outgoing,
@@ -1761,6 +1889,7 @@ class MessageItem {
     required this.senderId,
     this.deliveredTo,
     this.sentTo,
+    required this.attachments,
   });
 
   @override
@@ -1774,7 +1903,8 @@ class MessageItem {
       channels.hashCode ^
       senderId.hashCode ^
       deliveredTo.hashCode ^
-      sentTo.hashCode;
+      sentTo.hashCode ^
+      attachments.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -1790,7 +1920,8 @@ class MessageItem {
           channels == other.channels &&
           senderId == other.senderId &&
           deliveredTo == other.deliveredTo &&
-          sentTo == other.sentTo;
+          sentTo == other.sentTo &&
+          attachments == other.attachments;
 }
 
 /// Message status.
@@ -1848,6 +1979,36 @@ sealed class NodeEventItem with _$NodeEventItem {
   /// Our main device removed this device: tell the user, then
   /// [`MemNode::forget_this_device`].
   const factory NodeEventItem.deviceRetired() = NodeEventItem_DeviceRetired;
+}
+
+/// An attached file, decrypted.
+class OpenedFile {
+  /// File name (chosen by the sender).
+  final String name;
+
+  /// Media type (stated by the sender).
+  final String mediaType;
+
+  /// The file.
+  final Uint8List data;
+
+  const OpenedFile({
+    required this.name,
+    required this.mediaType,
+    required this.data,
+  });
+
+  @override
+  int get hashCode => name.hashCode ^ mediaType.hashCode ^ data.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is OpenedFile &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          mediaType == other.mediaType &&
+          data == other.data;
 }
 
 /// How the recovery phrase is written.

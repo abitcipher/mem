@@ -13,6 +13,348 @@ part of 'api.dart';
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
+mixin _$AttachmentStatus {
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AttachmentStatus);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+    return 'AttachmentStatus()';
+}
+
+
+}
+
+/// @nodoc
+class $AttachmentStatusCopyWith<$Res>  {
+$AttachmentStatusCopyWith(AttachmentStatus _, $Res Function(AttachmentStatus) __);
+}
+
+
+/// Adds pattern-matching-related methods to [AttachmentStatus].
+extension AttachmentStatusPatterns on AttachmentStatus {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( AttachmentStatus_Sending value)?  sending,TResult Function( AttachmentStatus_Receiving value)?  receiving,TResult Function( AttachmentStatus_Ready value)?  ready,required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case AttachmentStatus_Sending() when sending != null:
+return sending(_that);case AttachmentStatus_Receiving() when receiving != null:
+return receiving(_that);case AttachmentStatus_Ready() when ready != null:
+return ready(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( AttachmentStatus_Sending value)  sending,required TResult Function( AttachmentStatus_Receiving value)  receiving,required TResult Function( AttachmentStatus_Ready value)  ready,}){
+final _that = this;
+switch (_that) {
+case AttachmentStatus_Sending():
+return sending(_that);case AttachmentStatus_Receiving():
+return receiving(_that);case AttachmentStatus_Ready():
+return ready(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( AttachmentStatus_Sending value)?  sending,TResult? Function( AttachmentStatus_Receiving value)?  receiving,TResult? Function( AttachmentStatus_Ready value)?  ready,}){
+final _that = this;
+switch (_that) {
+case AttachmentStatus_Sending() when sending != null:
+return sending(_that);case AttachmentStatus_Receiving() when receiving != null:
+return receiving(_that);case AttachmentStatus_Ready() when ready != null:
+return ready(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( int sent,  int total)?  sending,TResult Function( int have,  int total)?  receiving,TResult Function()?  ready,required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case AttachmentStatus_Sending() when sending != null:
+return sending(_that.sent,_that.total);case AttachmentStatus_Receiving() when receiving != null:
+return receiving(_that.have,_that.total);case AttachmentStatus_Ready() when ready != null:
+return ready();case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( int sent,  int total)  sending,required TResult Function( int have,  int total)  receiving,required TResult Function()  ready,}) {final _that = this;
+switch (_that) {
+case AttachmentStatus_Sending():
+return sending(_that.sent,_that.total);case AttachmentStatus_Receiving():
+return receiving(_that.have,_that.total);case AttachmentStatus_Ready():
+return ready();}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( int sent,  int total)?  sending,TResult? Function( int have,  int total)?  receiving,TResult? Function()?  ready,}) {final _that = this;
+switch (_that) {
+case AttachmentStatus_Sending() when sending != null:
+return sending(_that.sent,_that.total);case AttachmentStatus_Receiving() when receiving != null:
+return receiving(_that.have,_that.total);case AttachmentStatus_Ready() when ready != null:
+return ready();case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class AttachmentStatus_Sending extends AttachmentStatus {
+  const AttachmentStatus_Sending({required this.sent, required this.total}): super._();
+  
+
+/// Parts confirmed.
+ final  int sent;
+/// All parts.
+ final  int total;
+
+/// Create a copy of AttachmentStatus
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AttachmentStatus_SendingCopyWith<AttachmentStatus_Sending> get copyWith => _$AttachmentStatus_SendingCopyWithImpl<AttachmentStatus_Sending>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AttachmentStatus_Sending&&(identical(other.sent, sent) || other.sent == sent)&&(identical(other.total, total) || other.total == total));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,sent,total);
+}
+
+@override
+String toString() {
+    return 'AttachmentStatus.sending(sent: $sent, total: $total)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $AttachmentStatus_SendingCopyWith<$Res> implements $AttachmentStatusCopyWith<$Res> {
+  factory $AttachmentStatus_SendingCopyWith(AttachmentStatus_Sending value, $Res Function(AttachmentStatus_Sending) _then) = _$AttachmentStatus_SendingCopyWithImpl;
+@useResult
+$Res call({
+ int sent, int total
+});
+
+
+
+
+}
+/// @nodoc
+class _$AttachmentStatus_SendingCopyWithImpl<$Res>
+    implements $AttachmentStatus_SendingCopyWith<$Res> {
+  _$AttachmentStatus_SendingCopyWithImpl(this._self, this._then);
+
+  final AttachmentStatus_Sending _self;
+  final $Res Function(AttachmentStatus_Sending) _then;
+
+/// Create a copy of AttachmentStatus
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? sent = null,Object? total = null,}) {
+  return _then(AttachmentStatus_Sending(
+sent: null == sent ? _self.sent : sent // ignore: cast_nullable_to_non_nullable
+as int,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class AttachmentStatus_Receiving extends AttachmentStatus {
+  const AttachmentStatus_Receiving({required this.have, required this.total}): super._();
+  
+
+/// Parts here.
+ final  int have;
+/// All parts.
+ final  int total;
+
+/// Create a copy of AttachmentStatus
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AttachmentStatus_ReceivingCopyWith<AttachmentStatus_Receiving> get copyWith => _$AttachmentStatus_ReceivingCopyWithImpl<AttachmentStatus_Receiving>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AttachmentStatus_Receiving&&(identical(other.have, have) || other.have == have)&&(identical(other.total, total) || other.total == total));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,have,total);
+}
+
+@override
+String toString() {
+    return 'AttachmentStatus.receiving(have: $have, total: $total)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $AttachmentStatus_ReceivingCopyWith<$Res> implements $AttachmentStatusCopyWith<$Res> {
+  factory $AttachmentStatus_ReceivingCopyWith(AttachmentStatus_Receiving value, $Res Function(AttachmentStatus_Receiving) _then) = _$AttachmentStatus_ReceivingCopyWithImpl;
+@useResult
+$Res call({
+ int have, int total
+});
+
+
+
+
+}
+/// @nodoc
+class _$AttachmentStatus_ReceivingCopyWithImpl<$Res>
+    implements $AttachmentStatus_ReceivingCopyWith<$Res> {
+  _$AttachmentStatus_ReceivingCopyWithImpl(this._self, this._then);
+
+  final AttachmentStatus_Receiving _self;
+  final $Res Function(AttachmentStatus_Receiving) _then;
+
+/// Create a copy of AttachmentStatus
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? have = null,Object? total = null,}) {
+  return _then(AttachmentStatus_Receiving(
+have: null == have ? _self.have : have // ignore: cast_nullable_to_non_nullable
+as int,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class AttachmentStatus_Ready extends AttachmentStatus {
+  const AttachmentStatus_Ready(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AttachmentStatus_Ready);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+    return 'AttachmentStatus.ready()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
 mixin _$BleCommandItem {
 
 /// Plugin link id.

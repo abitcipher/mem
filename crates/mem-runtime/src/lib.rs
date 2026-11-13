@@ -23,6 +23,25 @@ use rand_core::{SeedableRng, TryRng};
 pub use node::{BleCommand, Node, NodeConfig, NodeEvent, OPERATOR_KEYS};
 pub use store::{KeyGuard, KeyGuardError, StoreError};
 
+/// A decrypted attachment, ready to show or hand to the system.
+pub struct OpenedAttachment {
+    /// File name (chosen by the sender).
+    pub name: String,
+    /// Media type (stated by the sender).
+    pub media_type: String,
+    /// The file; wiped from memory when dropped.
+    pub data: zeroize::Zeroizing<Vec<u8>>,
+}
+
+impl core::fmt::Debug for OpenedAttachment {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("OpenedAttachment")
+            .field("media_type", &self.media_type)
+            .field("len", &self.data.len())
+            .finish_non_exhaustive()
+    }
+}
+
 /// Runtime failures.
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
@@ -151,10 +170,16 @@ impl Runtime {
         self.persist(&out, rng)
     }
 
-    /// Applies the agent's persistence requests: courier changes in one transaction, then the
-    /// snapshot. The courier database is the source of truth for its index, so a crash between
-    /// the two only means the index is reloaded from it at the next start.
+    /// Applies the agent's persistence requests: attachment blobs first (the snapshot that
+    /// names them must never come before them), then courier changes in one transaction, then
+    /// the snapshot. The courier database is the source of truth for its index, so a crash
+    /// between those two only means the index is reloaded from it at the next start.
     fn persist(&mut self, outputs: &[Output], rng: &mut ChaCha20Rng) -> Result<(), RuntimeError> {
+        for o in outputs {
+            if let Output::Persist(StorageOp::PutBlob { address, sealed }) = o {
+                self.store.put_blob(address, sealed)?;
+            }
+        }
         let writes: Vec<mem_core::courier::StoreWrite> = outputs
             .iter()
             .filter_map(|o| match o {
@@ -187,6 +212,33 @@ impl Runtime {
     ) -> Option<Vec<u8>> {
         let stored = self.courier.bundle(key).ok().flatten()?;
         mem_proto::Bundle::relayed(&stored, hops, copies, age_ms).ok()
+    }
+
+    /// Attachment `index` of `message`, decrypted: its name, media type and bytes. `None` if
+    /// there is no such attachment or its blob is not on this device yet.
+    ///
+    /// # Errors
+    ///
+    /// [`RuntimeError`] if the blob cannot be read, or [`StoreError::Corrupt`] if it does not
+    /// open with the message's key (altered on disk).
+    pub fn open_attachment(
+        &self,
+        message: mem_core::model::MsgId,
+        index: usize,
+    ) -> Result<Option<OpenedAttachment>, RuntimeError> {
+        let Some(secret) = self.agent.attachment(message, index) else {
+            return Ok(None);
+        };
+        let Some(sealed) = self.store.blob(&secret.address)? else {
+            return Ok(None);
+        };
+        let data = mem_crypto::attachment::open(&secret.key, &sealed, secret.size)
+            .map_err(|_| StoreError::Corrupt)?;
+        Ok(Some(OpenedAttachment {
+            name: secret.name,
+            media_type: secret.media_type,
+            data,
+        }))
     }
 
     /// Read access for queries.

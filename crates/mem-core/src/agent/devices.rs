@@ -356,6 +356,12 @@ impl Agent {
             .as_ref()
             .and_then(|k| k.device_list.as_ref())
             .map(|l| l.serial);
+        let attachments = match copy_of {
+            Some(main) if content_type == mem_proto::inner::CONTENT_TYPE_TEXT => {
+                self.attachment_refs(main)
+            }
+            _ => Vec::new(),
+        };
         let (bundle, id) = self
             .seal(
                 contact,
@@ -363,6 +369,7 @@ impl Agent {
                     kind,
                     content_type,
                     content: content.to_vec(),
+                    attachments,
                     ack_requested: Some(true),
                     acks: acks.iter().map(|m| m.0).collect(),
                     lifetime_s: self.message_lifetime_s,

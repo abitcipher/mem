@@ -1,8 +1,8 @@
 //! Inner payload, v1 (`spec/inner.cddl`).
 //!
-//! Only ever exists in plaintext after HPKE decryption, or before sealing. Attachments (field 5)
-//! and key updates (field 6) are not supported yet; inputs carrying them are rejected. Field 10
-//! carries piggybacked delivery acks, and content type 2 is a standalone ack.
+//! Only ever exists in plaintext after HPKE decryption, or before sealing. Field 5 names attached
+//! files ([`crate::attachment`]), field 6 announces mailbox keys, field 10 carries piggybacked
+//! delivery acks, and content type 2 is a standalone ack.
 
 use alloc::string::String;
 use alloc::vec::Vec;
@@ -11,13 +11,14 @@ use core::fmt;
 use minicbor::Encoder;
 use minicbor::encode::Error as EncodeError;
 
+use crate::attachment::AttachmentRef;
 use crate::cbor::{DecodeLimits, MapReader, encode_with};
 use crate::error::{InvalidBundle, ProtoError, SchemaError};
 
 /// Domain separation label for the inner signature.
 pub const SIGNATURE_DOMAIN: &[u8] = b"MEM/v1/inner-sig";
-/// Padding buckets in bytes (v0.1 stops at 16 KiB).
-pub const PAD_BUCKETS: [usize; 5] = [256, 512, 1024, 4096, 16_384];
+/// Padding buckets in bytes. Messages fit 16 KiB; the 32 KiB bucket holds attachment parts.
+pub const PAD_BUCKETS: [usize; 6] = [256, 512, 1024, 4096, 16_384, 32_768];
 /// Content type: UTF-8 text.
 pub const CONTENT_TYPE_TEXT: u64 = 1;
 /// Maximum UTF-8 text length in bytes in v0.1.
@@ -36,7 +37,7 @@ const MAX_INTRO_CARD_LEN: usize = 512;
 pub const MAX_ACK_IDS: usize = 64;
 
 const LIMITS: DecodeLimits = DecodeLimits {
-    max_input_len: 16_384,
+    max_input_len: 32_768,
     // The map has at most 10 entries; field 10 holds up to 64 ids.
     max_container_len: MAX_ACK_IDS as u64,
 };
@@ -54,6 +55,9 @@ pub struct InnerFields {
     pub content_type: u64,
     /// Content, CBOR per content type.
     pub content: Vec<u8>,
+    /// Attached files (key 5); empty means the field is absent. At most
+    /// [`crate::attachment::MAX_ATTACHMENTS`].
+    pub attachments: Vec<AttachmentRef>,
     /// Whether the sender asks for a delivery ack.
     pub ack_requested: Option<bool>,
     /// Purge token, released by the receiver after delivery (key 9).
@@ -124,7 +128,8 @@ impl InnerFields {
 
     /// Number of map entries excluding the signature.
     fn entries(&self) -> u64 {
-        6 + u64::from(self.ack_requested.is_some())
+        6 + u64::from(!self.attachments.is_empty())
+            + u64::from(self.ack_requested.is_some())
             + u64::from(!self.acks.is_empty())
             + u64::from(self.key_update.is_some())
             + u64::from(self.device_cert.is_some())
@@ -162,6 +167,10 @@ impl InnerFields {
             .u64(self.content_type)?
             .u8(4)?
             .bytes(&self.content)?;
+        if !self.attachments.is_empty() {
+            e.u8(5)?;
+            crate::attachment::write_list(e, &self.attachments)?;
+        }
         if let Some(k) = &self.key_update {
             let entries = 2
                 + u64::from(k.xwing_pk.is_some())
@@ -223,6 +232,11 @@ impl Inner {
         let conversation_id = r.array::<16>(2)?;
         let content_type = r.u64(3)?;
         let content = r.bytes(4)?.to_vec();
+        let attachments = if r.has(5) {
+            r.attachments(5)?
+        } else {
+            Vec::new()
+        };
         let key_update = if r.has(6) {
             Some(r.key_update(6)?)
         } else {
@@ -249,6 +263,7 @@ impl Inner {
                 conversation_id,
                 content_type,
                 content,
+                attachments,
                 ack_requested,
                 purge_token,
                 acks,
@@ -480,6 +495,7 @@ mod tests {
                 conversation_id: [3; 16],
                 content_type: CONTENT_TYPE_TEXT,
                 content: encode_text("привіт").unwrap(),
+                attachments: Vec::new(),
                 ack_requested: ack,
                 purge_token: [5; 16],
                 acks: Vec::new(),
@@ -691,13 +707,13 @@ mod tests {
 
     #[test]
     fn padding_roundtrip_and_buckets() {
-        for len in [0usize, 1, 254, 255, 256, 511, 4095, 16_383] {
+        for len in [0usize, 1, 254, 255, 256, 511, 4095, 16_383, 32_767] {
             let data = vec![0xAB; len];
             let padded = pad(&data).unwrap();
             assert!(PAD_BUCKETS.contains(&padded.len()), "{len}");
             assert_eq!(unpad(&padded).unwrap(), &data[..]);
         }
-        assert!(pad(&vec![0; 16_384]).is_err());
+        assert!(pad(&vec![0; 32_768]).is_err());
     }
 
     #[test]
