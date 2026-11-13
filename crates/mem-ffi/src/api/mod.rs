@@ -780,8 +780,10 @@ pub struct MessageItem {
     pub call: Option<CallItem>,
     /// Corrected by its sender after sending.
     pub edited: bool,
-    /// Ours and still within the recipient's edit limit: offer "edit".
+    /// Ours and still within the conversation's edit limit: offer "edit" and "delete".
     pub editable: bool,
+    /// Ours: until when it may be edited or deleted, Unix ms (`None`: without end, or not ours).
+    pub edit_until_unix_ms: Option<i64>,
 }
 
 /// A voice call, as a line in the chat.
@@ -1686,16 +1688,15 @@ impl MemNode {
         }
     }
 
-    /// Deletes a message here; with `for_both`, also at the contact (own text, while it is
-    /// `editable`: deleting counts as editing).
+    /// Deletes an own text on both sides, while it is `editable` (deleting counts as editing;
+    /// nobody changes the conversation on one side only).
     ///
     /// # Errors
     ///
-    /// `"unknown_message"` (also when the limit has passed for `for_both`), or a storage error.
-    pub fn delete_message(&self, message_id: String, for_both: bool) -> Result<(), String> {
+    /// `"unknown_message"` (also when the limit has passed), or a storage error.
+    pub fn delete_message(&self, message_id: String) -> Result<(), String> {
         let out = self.handle(Input::DeleteMessage {
             message: msg(&message_id)?,
-            for_both,
         })?;
         match rejected(&out) {
             Some(r) => Err(reason_key(r)),
@@ -3396,6 +3397,7 @@ fn message_item(m: MessageView) -> MessageItem {
         is_request: m.kind == MessageKind::ContactRequest,
         edited: m.edited,
         editable: m.editable,
+        edit_until_unix_ms: m.edit_until_unix_ms.map(ms),
         call: match m.kind {
             MessageKind::Call(c) => Some(CallItem {
                 duration_s: c.duration_s,

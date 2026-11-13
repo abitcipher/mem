@@ -1028,17 +1028,23 @@ abstract class AppLocalizations {
   /// **'Delete message?'**
   String get deleteMessageTitle;
 
-  /// No description provided for @deleteAlsoFor.
+  /// No description provided for @deleteForBoth.
   ///
   /// In en, this message translates to:
-  /// **'Also delete for {name}'**
-  String deleteAlsoFor(String name);
+  /// **'It will be deleted for you and {name}.'**
+  String deleteForBoth(String name);
 
-  /// No description provided for @deleteForMeOnly.
+  /// No description provided for @editTimeLeft.
   ///
   /// In en, this message translates to:
-  /// **'It will be deleted on this device only.'**
-  String get deleteForMeOnly;
+  /// **'Time left to edit: {time}'**
+  String editTimeLeft(String time);
+
+  /// No description provided for @editTimeOver.
+  ///
+  /// In en, this message translates to:
+  /// **'The time to edit this message has run out.'**
+  String get editTimeOver;
 
   /// No description provided for @editLimitTitle.
   ///
@@ -1049,7 +1055,7 @@ abstract class AppLocalizations {
   /// No description provided for @editLimitHelp.
   ///
   /// In en, this message translates to:
-  /// **'How long after a message arrives your contacts may still correct or delete it (typos, missed words). Deleting a message for both of you counts as editing. Their phones offer \"Edit\" and \"Delete for both\" only within this time; later changes are ignored. Each contact can have its own setting on its contact screen.'**
+  /// **'How long after a message arrives it may still be corrected or deleted (typos, missed words). One rule for both of you: each conversation uses the stricter of your setting and your contact\'s, so you both have the same rights. Deleting counts as editing and always removes the message for both. After the time runs out neither option is offered. Each contact can have its own setting on its contact screen.'**
   String get editLimitHelp;
 
   /// No description provided for @editLimitContact.

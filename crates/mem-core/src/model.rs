@@ -358,8 +358,10 @@ pub struct MessageView {
     pub attachments: Vec<AttachmentView>,
     /// Corrected by its sender after sending.
     pub edited: bool,
-    /// Ours, and still within the limit its recipient told us: "edit" may be offered.
+    /// Ours, and still within the conversation's edit limit: "edit" and "delete" may be offered.
     pub editable: bool,
+    /// Ours: until when it may be edited or deleted, Unix ms (`None`: without end, or not ours).
+    pub edit_until_unix_ms: Option<u64>,
 }
 
 /// A file to attach to a message. The core seals it; the bytes never leave in clear.

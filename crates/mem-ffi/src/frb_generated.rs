@@ -1696,7 +1696,6 @@ fn wire__crate__api__MemNode_delete_message_impl(
                 flutter_rust_bridge::for_generated::RustAutoOpaqueInner<MemNode>,
             >>::sse_decode(&mut deserializer);
             let api_message_id = <String>::sse_decode(&mut deserializer);
-            let api_for_both = <bool>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, String>((move || {
@@ -1714,11 +1713,8 @@ fn wire__crate__api__MemNode_delete_message_impl(
                         }
                     }
                     let api_that_guard = api_that_guard.unwrap();
-                    let output_ok = crate::api::MemNode::delete_message(
-                        &*api_that_guard,
-                        api_message_id,
-                        api_for_both,
-                    )?;
+                    let output_ok =
+                        crate::api::MemNode::delete_message(&*api_that_guard, api_message_id)?;
                     std::result::Result::Ok(output_ok)
                 })())
             }
@@ -7526,6 +7522,7 @@ impl SseDecode for crate::api::MessageItem {
         let mut var_call = <Option<crate::api::CallItem>>::sse_decode(deserializer);
         let mut var_edited = <bool>::sse_decode(deserializer);
         let mut var_editable = <bool>::sse_decode(deserializer);
+        let mut var_editUntilUnixMs = <Option<i64>>::sse_decode(deserializer);
         return crate::api::MessageItem {
             id: var_id,
             outgoing: var_outgoing,
@@ -7541,6 +7538,7 @@ impl SseDecode for crate::api::MessageItem {
             call: var_call,
             edited: var_edited,
             editable: var_editable,
+            edit_until_unix_ms: var_editUntilUnixMs,
         };
     }
 }
@@ -7696,6 +7694,17 @@ impl SseDecode for Option<crate::api::EmailAccountItem> {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         if (<bool>::sse_decode(deserializer)) {
             return Some(<crate::api::EmailAccountItem>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<i64> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<i64>::sse_decode(deserializer));
         } else {
             return None;
         }
@@ -9078,6 +9087,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::MessageItem {
             self.call.into_into_dart().into_dart(),
             self.edited.into_into_dart().into_dart(),
             self.editable.into_into_dart().into_dart(),
+            self.edit_until_unix_ms.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -10281,6 +10291,7 @@ impl SseEncode for crate::api::MessageItem {
         <Option<crate::api::CallItem>>::sse_encode(self.call, serializer);
         <bool>::sse_encode(self.edited, serializer);
         <bool>::sse_encode(self.editable, serializer);
+        <Option<i64>>::sse_encode(self.edit_until_unix_ms, serializer);
     }
 }
 
@@ -10420,6 +10431,16 @@ impl SseEncode for Option<crate::api::EmailAccountItem> {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <crate::api::EmailAccountItem>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<i64> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <i64>::sse_encode(value, serializer);
         }
     }
 }

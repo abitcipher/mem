@@ -38,13 +38,52 @@ const WINDOWS_MS: [u64; 11] = [
     31 * DAY,
 ];
 
+/// The edit window at `position`, in ms; `None` for "always".
+#[must_use]
+pub const fn edit_window_ms(position: u8) -> Option<u64> {
+    match position {
+        0 => None,
+        p if p >= EDIT_LIMIT_POSITIONS - 1 => Some(0),
+        p => Some(WINDOWS_MS[(p - 1) as usize]),
+    }
+}
+
 /// Whether an edit `elapsed_ms` after the original is within the limit at `position`.
 #[must_use]
 pub const fn edit_allowed(position: u8, elapsed_ms: u64) -> bool {
-    match position {
-        0 => true,
-        p if p >= EDIT_LIMIT_POSITIONS - 1 => false,
-        p => elapsed_ms < WINDOWS_MS[(p - 1) as usize],
+    match edit_window_ms(position) {
+        None => true,
+        Some(w) => elapsed_ms < w,
+    }
+}
+
+/// The shorter of two windows (`None` is unlimited).
+const fn shorter(a: Option<u64>, b: Option<u64>) -> Option<u64> {
+    match (a, b) {
+        (Some(x), Some(y)) => Some(if x < y { x } else { y }),
+        (Some(x), None) | (None, Some(x)) => Some(x),
+        (None, None) => None,
+    }
+}
+
+/// Until when a message may be edited or deleted.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum EditDeadline {
+    /// Not an own 1:1 text: never editable.
+    NotOurs,
+    /// Ours, without end (both sides allow it always).
+    Never,
+    /// Ours, until this Unix ms.
+    At(u64),
+}
+
+impl EditDeadline {
+    /// The end, if there is one.
+    pub(super) const fn until(self) -> Option<u64> {
+        match self {
+            Self::At(t) => Some(t),
+            Self::NotOurs | Self::Never => None,
+        }
     }
 }
 
@@ -62,16 +101,45 @@ impl Agent {
             .unwrap_or(self.edit_limit)
     }
 
-    /// Whether our message `m` may still be edited: an own 1:1 text within the limit its
-    /// recipient told us (judged from our send time, which errs on the safe side).
+    /// The conversation's edit window: the stricter of our limit for `contact` and the one it
+    /// told us. Both sides compute the same, so both have the same right to edit and delete
+    /// their own messages.
+    fn conversation_window(&self, contact: ContactId) -> Option<u64> {
+        let theirs = self
+            .contacts
+            .get(&contact)
+            .map_or(0, |c| c.prefs.their_edit_limit);
+        shorter(
+            edit_window_ms(self.effective_edit_limit(contact)),
+            edit_window_ms(theirs),
+        )
+    }
+
+    /// Until when our message `m` may be edited or deleted. Judged from our send time, which
+    /// errs on the safe side (the recipient measures from the later arrival).
+    pub(super) fn edit_deadline(&self, m: &Message) -> EditDeadline {
+        if !own_text(m) {
+            return EditDeadline::NotOurs;
+        }
+        match self.conversation_window(m.contact) {
+            None => EditDeadline::Never,
+            Some(w) => EditDeadline::At(m.created_unix_ms.saturating_add(w)),
+        }
+    }
+
+    /// Whether our message `m` may still be edited or deleted now.
     pub(super) fn editable(&self, m: &Message) -> bool {
-        own_text(m)
-            && self.contacts.get(&m.contact).is_some_and(|c| {
-                edit_allowed(
-                    c.prefs.their_edit_limit,
-                    self.now_unix_ms.saturating_sub(m.created_unix_ms),
-                )
-            })
+        match self.edit_deadline(m) {
+            EditDeadline::NotOurs => false,
+            EditDeadline::Never => true,
+            EditDeadline::At(until) => self.now_unix_ms < until,
+        }
+    }
+
+    /// Whether a change from `contact` to a text that arrived at `arrived` is still accepted.
+    fn change_accepted(&self, contact: ContactId, arrived: u64) -> bool {
+        self.conversation_window(contact)
+            .is_none_or(|w| self.now_unix_ms.saturating_sub(arrived) < w)
     }
 
     /// The user corrects an own message: shown at once here, sent to the contact.
@@ -129,7 +197,7 @@ impl Agent {
         edit: Edit,
         edit_id: MsgId,
     ) -> Vec<Output> {
-        let limit = self.effective_edit_limit(contact);
+        let window = self.conversation_window(contact);
         let now = self.now_unix_ms;
         let Some(m) = self.messages.iter_mut().find(|m| {
             m.id.0 == edit.message_id
@@ -146,7 +214,8 @@ impl Agent {
             .map_or(m.created_unix_ms, |u| u.at_unix_ms);
         // UUIDv7 ids order by creation: a late copy of an older edit never wins.
         let newer = m.edit.is_none_or(|e| e.0 < edit_id.0);
-        if !newer || !edit_allowed(limit, now.saturating_sub(arrived)) {
+        let within = window.is_none_or(|w| now.saturating_sub(arrived) < w);
+        if !newer || !within {
             return Vec::new();
         }
         m.text = edit.text;
@@ -206,25 +275,24 @@ impl Agent {
         out
     }
 
-    /// Deletes a message here; with `for_both`, also at the contact (only our own text, within
-    /// the limit the contact told us, like an edit). A message not sent yet leaves the outbox.
+    /// Deletes an own text for both sides, within the conversation's limit (deleting counts as
+    /// editing; nobody changes the conversation on one side only). A message not sent yet
+    /// leaves the outbox.
     pub(super) fn delete_message(
         &mut self,
         message: MsgId,
-        for_both: bool,
         rng: &mut impl CryptoRng,
     ) -> Vec<Output> {
         let Some(m) = self.messages.iter().find(|m| m.id == message) else {
             return alloc::vec![Output::Rejected(RejectReason::UnknownMessage)];
         };
-        if for_both && !self.editable(m) {
+        if !self.editable(m) {
             return alloc::vec![Output::Rejected(RejectReason::UnknownMessage)];
         }
         let contact = m.contact;
         let mut out = Vec::new();
-        if for_both
-            && let Some(id) =
-                self.queue_hidden(contact, CONTENT_TYPE_DELETE, encode_delete(&message.0), rng)
+        if let Some(id) =
+            self.queue_hidden(contact, CONTENT_TYPE_DELETE, encode_delete(&message.0), rng)
         {
             out.extend(self.flush_message(id));
         }
@@ -246,8 +314,6 @@ impl Agent {
     /// The contact withdraws its earlier text: removed if it arrived within our limit,
     /// otherwise ignored silently (deleting counts as editing).
     fn received_delete(&mut self, contact: ContactId, message: [u8; 16]) -> Vec<Output> {
-        let limit = self.effective_edit_limit(contact);
-        let now = self.now_unix_ms;
         let Some(m) = self.messages.iter().find(|m| {
             m.id.0 == message
                 && m.contact == contact
@@ -261,10 +327,10 @@ impl Agent {
             .channels
             .first()
             .map_or(m.created_unix_ms, |u| u.at_unix_ms);
-        if !edit_allowed(limit, now.saturating_sub(arrived)) {
+        let id = m.id;
+        if !self.change_accepted(contact, arrived) {
             return Vec::new();
         }
-        let id = m.id;
         self.messages.retain(|m| m.id != id);
         alloc::vec![
             Output::Persist(StorageOp::SaveSnapshot),
@@ -484,6 +550,39 @@ mod tests {
         }
 
         #[test]
+        fn both_sides_share_the_stricter_limit() {
+            let mut p = paired();
+            // B accepts edits for 5 minutes, A for a day: both get 5 minutes.
+            let _ = p.b.handle(
+                Input::SetEditLimit {
+                    contact: Some(p.a_id),
+                    position: Some(1),
+                },
+                &mut p.rb,
+            );
+            let _ = p.a.handle(
+                Input::SetEditLimit {
+                    contact: Some(p.b_id),
+                    position: Some(8),
+                },
+                &mut p.ra,
+            );
+            p.carry(false);
+            p.carry(true);
+            assert_eq!(p.a.conversation_window(p.b_id), Some(5 * MINUTE));
+            assert_eq!(p.b.conversation_window(p.a_id), Some(5 * MINUTE));
+            let _ = p.b.handle(
+                Input::UserSend {
+                    contact: p.a_id,
+                    text: "hi".into(),
+                },
+                &mut p.rb,
+            );
+            let view = &p.b.messages(p.a_id)[0];
+            assert_eq!(view.edit_until_unix_ms, Some(NOW + 5 * MINUTE));
+        }
+
+        #[test]
         fn deleting_for_both_follows_the_same_limit() {
             let mut p = paired();
             let _ = p.b.handle(
@@ -506,24 +605,14 @@ mod tests {
             p.carry(true);
             let ids: Vec<MsgId> = p.a.messages(p.b_id).iter().map(|m| m.id).collect();
             // Within the limit: gone on both sides.
-            let _ = p.a.handle(
-                Input::DeleteMessage {
-                    message: ids[0],
-                    for_both: true,
-                },
-                &mut p.ra,
-            );
+            let _ =
+                p.a.handle(Input::DeleteMessage { message: ids[0] }, &mut p.ra);
             p.carry(true);
             assert_eq!(p.a.messages(p.b_id).len(), 1);
             assert_eq!(p.b.messages(p.a_id).len(), 1);
             // A deletion that reaches B after its limit leaves B's copy alone.
-            let _ = p.a.handle(
-                Input::DeleteMessage {
-                    message: ids[1],
-                    for_both: true,
-                },
-                &mut p.ra,
-            );
+            let _ =
+                p.a.handle(Input::DeleteMessage { message: ids[1] }, &mut p.ra);
             p.tick(NOW + 6 * MINUTE);
             p.carry(true);
             assert_eq!(p.a.messages(p.b_id).len(), 0);

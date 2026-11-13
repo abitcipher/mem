@@ -31,7 +31,7 @@ pub use agent::{
 pub use agent::{
     AttachmentSecret, DeviceJoin, JoinError, MAX_PENDING_PART_BYTES, PULL_WINDOW, SMALL_SEALED_MAX,
 };
-pub use agent::{CALL_LIFETIME_S, CallPolicy, MAX_OFFERS_PER_MINUTE, edit_allowed};
+pub use agent::{CALL_LIFETIME_S, CallPolicy, MAX_OFFERS_PER_MINUTE, edit_allowed, edit_window_ms};
 pub use backup::{BackupFailure, Restored};
 pub use mem_cla::{ClaId, PrivacyGrade};
 pub use mem_crypto::backup::{BackupError, KdfParams, PhraseForm};

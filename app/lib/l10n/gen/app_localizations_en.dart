@@ -510,19 +510,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteMessageTitle => 'Delete message?';
 
   @override
-  String deleteAlsoFor(String name) {
-    return 'Also delete for $name';
+  String deleteForBoth(String name) {
+    return 'It will be deleted for you and $name.';
   }
 
   @override
-  String get deleteForMeOnly => 'It will be deleted on this device only.';
+  String editTimeLeft(String time) {
+    return 'Time left to edit: $time';
+  }
+
+  @override
+  String get editTimeOver => 'The time to edit this message has run out.';
 
   @override
   String get editLimitTitle => 'Accept edits from contacts';
 
   @override
   String get editLimitHelp =>
-      'How long after a message arrives your contacts may still correct or delete it (typos, missed words). Deleting a message for both of you counts as editing. Their phones offer \"Edit\" and \"Delete for both\" only within this time; later changes are ignored. Each contact can have its own setting on its contact screen.';
+      'How long after a message arrives it may still be corrected or deleted (typos, missed words). One rule for both of you: each conversation uses the stricter of your setting and your contact\'s, so you both have the same rights. Deleting counts as editing and always removes the message for both. After the time runs out neither option is offered. Each contact can have its own setting on its contact screen.';
 
   @override
   String get editLimitContact => 'Edits from this contact';

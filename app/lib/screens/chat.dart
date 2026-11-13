@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_chat_core/flutter_chat_core.dart' as fc;
@@ -118,12 +120,14 @@ class _ChatScreenState extends State<ChatScreen> {
         if (item.editable && hasText)
           entry('edit', Icons.edit_outlined, l.menuEdit),
         if (hasText) entry('copy', Icons.copy_outlined, l.menuCopy),
-        entry(
-          'delete',
-          Icons.delete_outline,
-          l.menuDelete,
-          color: Theme.of(context).colorScheme.error,
-        ),
+        // Deleting counts as editing: for both sides, within the same limit.
+        if (item.editable && hasText)
+          entry(
+            'delete',
+            Icons.delete_outline,
+            l.menuDelete,
+            color: Theme.of(context).colorScheme.error,
+          ),
       ],
     );
     if (!context.mounted) return;
@@ -138,7 +142,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  /// Deletes a message here, and if the user wants and the limit allows, at the contact too.
+  /// Deletes one of our messages for both sides (only while the conversation's limit allows).
   Future<void> _delete(BuildContext context, MessageItem item) async {
     final l = AppLocalizations.of(context);
     final state = AppScope.read(context);
@@ -147,76 +151,44 @@ class _ChatScreenState extends State<ChatScreen> {
         .where((c) => c.id == widget.contactId)
         .firstOrNull;
     final name = contact == null ? '' : contactTitle(contact);
-    final canBoth = item.outgoing && item.editable && item.call == null;
-    var both = canBoth;
     final ok = await showDialog<bool>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(l.deleteMessageTitle),
-          content: canBoth
-              ? CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: both,
-                  title: Text(l.deleteAlsoFor(name)),
-                  onChanged: (v) => setState(() => both = v ?? false),
-                )
-              : Text(l.deleteForMeOnly),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(l.cancel),
+      builder: (context) => AlertDialog(
+        title: Text(l.deleteMessageTitle),
+        content: Text(l.deleteForBoth(name)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error,
-              ),
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(l.menuDelete),
-            ),
-          ],
-        ),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l.menuDelete),
+          ),
+        ],
       ),
     );
     if (ok != true || !context.mounted) return;
     try {
-      await state.node.deleteMessage(
-        messageId: item.id,
-        forBoth: canBoth && both,
-      );
+      await state.node.deleteMessage(messageId: item.id);
       state.changed();
     } on Object catch (e) {
       if (context.mounted) showSnack(context, reasonText(context, e));
     }
   }
 
-  /// Corrects one of our messages: the new text replaces it here and at the contact.
+  /// Corrects one of our messages: the new text replaces it here and at the contact. When the
+  /// conversation's limit has an end, the dialog counts down and Save turns off when it runs
+  /// out, so no correction is typed in vain.
   Future<void> _edit(BuildContext context, MessageItem item) async {
-    final l = AppLocalizations.of(context);
-    final controller = TextEditingController(text: item.text);
+    final until = item.editUntilUnixMs?.toInt();
     final text = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l.editMessage),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLines: null,
-          maxLength: 4000,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            child: Text(l.save),
-          ),
-        ],
-      ),
+      builder: (context) => _EditDialog(initial: item.text, untilUnixMs: until),
     );
-    controller.dispose();
     final next = text?.trim() ?? '';
     if (next.isEmpty || next == item.text || !context.mounted) return;
     final state = AppScope.read(context);
@@ -459,4 +431,91 @@ fc.ChatTheme chatTheme(ThemeData theme) {
       surfaceContainerHigh: c.surfaceContainerHigh,
     ),
   );
+}
+
+/// The edit dialog: the text, and while the limit has an end, the time left; Save turns off when
+/// it runs out.
+class _EditDialog extends StatefulWidget {
+  const _EditDialog({required this.initial, required this.untilUnixMs});
+
+  final String initial;
+  final int? untilUnixMs;
+
+  @override
+  State<_EditDialog> createState() => _EditDialogState();
+}
+
+class _EditDialogState extends State<_EditDialog> {
+  late final _controller = TextEditingController(text: widget.initial);
+  Timer? _tick;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.untilUnixMs != null) {
+      _tick = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) setState(() {});
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _tick?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final until = widget.untilUnixMs;
+    final left = until == null
+        ? null
+        : Duration(milliseconds: until - DateTime.now().millisecondsSinceEpoch);
+    final over = left != null && left <= Duration.zero;
+    if (over) _tick?.cancel();
+    String clock(Duration d) {
+      final h = d.inHours;
+      final m = (d.inMinutes % 60).toString().padLeft(2, '0');
+      final s = (d.inSeconds % 60).toString().padLeft(2, '0');
+      return h > 0 ? '$h:$m:$s' : '${d.inMinutes}:$s';
+    }
+
+    return AlertDialog(
+      title: Text(l.editMessage),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            maxLines: null,
+            maxLength: 4000,
+            enabled: !over,
+          ),
+          if (left != null)
+            Text(
+              over ? l.editTimeOver : l.editTimeLeft(clock(left)),
+              style: TextStyle(
+                color: over ? Theme.of(context).colorScheme.error : null,
+              ),
+            ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l.cancel),
+        ),
+        FilledButton(
+          onPressed: over
+              ? null
+              : () => Navigator.pop(context, _controller.text),
+          child: Text(l.save),
+        ),
+      ],
+    );
+  }
 }

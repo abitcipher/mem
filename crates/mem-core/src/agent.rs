@@ -73,7 +73,7 @@ pub use call::{CALL_LIFETIME_S, CallPolicy, MAX_OFFERS_PER_MINUTE};
 pub(crate) fn call_limits() -> call::OfferLimits {
     call::OfferLimits::default()
 }
-pub use edit::edit_allowed;
+pub use edit::{edit_allowed, edit_window_ms};
 pub use email::EmailAccount;
 pub(crate) use email::EmailState;
 pub(crate) use group::Group;
@@ -163,13 +163,10 @@ pub enum Input {
         /// Its whole new text.
         text: String,
     },
-    /// Deletes a message here, and with `for_both` also at the contact (own text within the
-    /// contact's edit limit only).
+    /// Deletes an own 1:1 text on both sides, within the conversation's edit limit.
     DeleteMessage {
         /// The message.
         message: MsgId,
-        /// Also at the contact.
-        for_both: bool,
     },
     /// How late we accept edits: globally (`contact` `None`) or for one conversation
     /// (`position` `None`: as global). A scale position, 0 always to 12 never.
@@ -800,6 +797,7 @@ impl From<&Message> for MessageView {
             attachments: Vec::new(),
             edited: m.edit.is_some(),
             editable: false,
+            edit_until_unix_ms: None,
         }
     }
 }
@@ -1306,9 +1304,7 @@ impl Agent {
             Input::BlobChecked { address, ok } => self.blob_checked(address, ok),
             Input::SendCallSignal { contact, signal } => self.send_call(contact, signal, rng),
             Input::EditMessage { message, text } => self.edit_message(message, &text, rng),
-            Input::DeleteMessage { message, for_both } => {
-                self.delete_message(message, for_both, rng)
-            }
+            Input::DeleteMessage { message } => self.delete_message(message, rng),
             Input::SetEditLimit { contact, position } => {
                 self.set_edit_limit(contact, position, rng)
             }
@@ -4895,6 +4891,7 @@ impl Agent {
             .map(|m| MessageView {
                 attachments: self.attachment_views(m),
                 editable: self.editable(m),
+                edit_until_unix_ms: self.edit_deadline(m).until(),
                 ..MessageView::from(m)
             })
             .collect()

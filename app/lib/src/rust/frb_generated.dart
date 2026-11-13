@@ -207,7 +207,6 @@ abstract class RustLibApi extends BaseApi {
   Future<void> crateApiMemNodeDeleteMessage({
     required MemNode that,
     required String messageId,
-    required bool forBoth,
   });
 
   Future<void> crateApiMemNodeDiscardRecoveryPhrase({required MemNode that});
@@ -1757,7 +1756,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Future<void> crateApiMemNodeDeleteMessage({
     required MemNode that,
     required String messageId,
-    required bool forBoth,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -1768,7 +1766,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_String(messageId, serializer);
-          sse_encode_bool(forBoth, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -1781,7 +1778,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_String,
         ),
         constMeta: kCrateApiMemNodeDeleteMessageConstMeta,
-        argValues: [that, messageId, forBoth],
+        argValues: [that, messageId],
         apiImpl: this,
       ),
     );
@@ -1790,7 +1787,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiMemNodeDeleteMessageConstMeta =>
       const TaskConstMeta(
         debugName: "MemNode_delete_message",
-        argNames: ["that", "messageId", "forBoth"],
+        argNames: ["that", "messageId"],
       );
 
   @override
@@ -5552,6 +5549,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  PlatformInt64 dco_decode_box_autoadd_i_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_i_64(raw);
+  }
+
+  @protected
   OpenedFile dco_decode_box_autoadd_opened_file(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_opened_file(raw);
@@ -6066,8 +6069,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   MessageItem dco_decode_message_item(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 14)
-      throw Exception('unexpected arr length: expect 14 but see ${arr.length}');
+    if (arr.length != 15)
+      throw Exception('unexpected arr length: expect 15 but see ${arr.length}');
     return MessageItem(
       id: dco_decode_String(arr[0]),
       outgoing: dco_decode_bool(arr[1]),
@@ -6083,6 +6086,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       call: dco_decode_opt_box_autoadd_call_item(arr[11]),
       edited: dco_decode_bool(arr[12]),
       editable: dco_decode_bool(arr[13]),
+      editUntilUnixMs: dco_decode_opt_box_autoadd_i_64(arr[14]),
     );
   }
 
@@ -6183,6 +6187,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   EmailAccountItem? dco_decode_opt_box_autoadd_email_account_item(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_box_autoadd_email_account_item(raw);
+  }
+
+  @protected
+  PlatformInt64? dco_decode_opt_box_autoadd_i_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_i_64(raw);
   }
 
   @protected
@@ -6919,6 +6929,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  PlatformInt64 sse_decode_box_autoadd_i_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_i_64(deserializer));
+  }
+
+  @protected
   OpenedFile sse_decode_box_autoadd_opened_file(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_opened_file(deserializer));
@@ -7608,6 +7624,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_call = sse_decode_opt_box_autoadd_call_item(deserializer);
     var var_edited = sse_decode_bool(deserializer);
     var var_editable = sse_decode_bool(deserializer);
+    var var_editUntilUnixMs = sse_decode_opt_box_autoadd_i_64(deserializer);
     return MessageItem(
       id: var_id,
       outgoing: var_outgoing,
@@ -7623,6 +7640,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       call: var_call,
       edited: var_edited,
       editable: var_editable,
+      editUntilUnixMs: var_editUntilUnixMs,
     );
   }
 
@@ -7758,6 +7776,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
     if (sse_decode_bool(deserializer)) {
       return (sse_decode_box_autoadd_email_account_item(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  PlatformInt64? sse_decode_opt_box_autoadd_i_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_i_64(deserializer));
     } else {
       return null;
     }
@@ -8587,6 +8616,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_box_autoadd_i_64(
+    PlatformInt64 self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_64(self, serializer);
+  }
+
+  @protected
   void sse_encode_box_autoadd_opened_file(
     OpenedFile self,
     SseSerializer serializer,
@@ -9190,6 +9228,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_opt_box_autoadd_call_item(self.call, serializer);
     sse_encode_bool(self.edited, serializer);
     sse_encode_bool(self.editable, serializer);
+    sse_encode_opt_box_autoadd_i_64(self.editUntilUnixMs, serializer);
   }
 
   @protected
@@ -9327,6 +9366,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_bool(self != null, serializer);
     if (self != null) {
       sse_encode_box_autoadd_email_account_item(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_i_64(
+    PlatformInt64? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_i_64(self, serializer);
     }
   }
 
@@ -10010,20 +10062,16 @@ class MemNodeImpl extends RustOpaque implements MemNode {
   int defaultFloor() =>
       RustLib.instance.api.crateApiMemNodeDefaultFloor(that: this);
 
-  /// Deletes a message here; with `for_both`, also at the contact (own text, while it is
-  /// `editable`: deleting counts as editing).
+  /// Deletes an own text on both sides, while it is `editable` (deleting counts as editing;
+  /// nobody changes the conversation on one side only).
   ///
   /// # Errors
   ///
-  /// `"unknown_message"` (also when the limit has passed for `for_both`), or a storage error.
-  Future<void> deleteMessage({
-    required String messageId,
-    required bool forBoth,
-  }) => RustLib.instance.api.crateApiMemNodeDeleteMessage(
-    that: this,
-    messageId: messageId,
-    forBoth: forBoth,
-  );
+  /// `"unknown_message"` (also when the limit has passed), or a storage error.
+  Future<void> deleteMessage({required String messageId}) => RustLib
+      .instance
+      .api
+      .crateApiMemNodeDeleteMessage(that: this, messageId: messageId);
 
   /// The user left without confirming: the new phrase is forgotten.
   ///

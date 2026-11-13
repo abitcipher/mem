@@ -277,16 +277,13 @@ abstract class MemNode implements RustOpaqueInterface {
   /// Only if the node lock is poisoned.
   int defaultFloor();
 
-  /// Deletes a message here; with `for_both`, also at the contact (own text, while it is
-  /// `editable`: deleting counts as editing).
+  /// Deletes an own text on both sides, while it is `editable` (deleting counts as editing;
+  /// nobody changes the conversation on one side only).
   ///
   /// # Errors
   ///
-  /// `"unknown_message"` (also when the limit has passed for `for_both`), or a storage error.
-  Future<void> deleteMessage({
-    required String messageId,
-    required bool forBoth,
-  });
+  /// `"unknown_message"` (also when the limit has passed), or a storage error.
+  Future<void> deleteMessage({required String messageId});
 
   /// The user left without confirming: the new phrase is forgotten.
   ///
@@ -2160,8 +2157,11 @@ class MessageItem {
   /// Corrected by its sender after sending.
   final bool edited;
 
-  /// Ours and still within the recipient's edit limit: offer "edit".
+  /// Ours and still within the conversation's edit limit: offer "edit" and "delete".
   final bool editable;
+
+  /// Ours: until when it may be edited or deleted, Unix ms (`None`: without end, or not ours).
+  final PlatformInt64? editUntilUnixMs;
 
   const MessageItem({
     required this.id,
@@ -2178,6 +2178,7 @@ class MessageItem {
     this.call,
     required this.edited,
     required this.editable,
+    this.editUntilUnixMs,
   });
 
   @override
@@ -2195,7 +2196,8 @@ class MessageItem {
       attachments.hashCode ^
       call.hashCode ^
       edited.hashCode ^
-      editable.hashCode;
+      editable.hashCode ^
+      editUntilUnixMs.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -2215,7 +2217,8 @@ class MessageItem {
           attachments == other.attachments &&
           call == other.call &&
           edited == other.edited &&
-          editable == other.editable;
+          editable == other.editable &&
+          editUntilUnixMs == other.editUntilUnixMs;
 }
 
 /// Message status.
