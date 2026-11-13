@@ -72,6 +72,13 @@ class MessageBubble extends StatelessWidget {
                   settings: settings,
                 ),
         ),
+        if (item?.edited ?? false) ...[
+          const SizedBox(width: 6),
+          Text(
+            AppLocalizations.of(context).messageEdited,
+            style: timeStyle.copyWith(fontStyle: FontStyle.italic),
+          ),
+        ],
         if (settings.showMessageTimes && time != null) ...[
           const SizedBox(width: 6),
           Text(

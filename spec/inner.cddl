@@ -53,6 +53,18 @@ sdp = tstr .size (1..12288)          ; carries the media's DTLS fingerprint
 candidate = tstr .size (1..512)       ; an ICE candidate line
 end-reason = 0..4                     ; hung up, declined, busy, failed, unanswered
 
+; Content type 11 (edit, envelope kind 0, acknowledged): the whole new text of an earlier 1:1
+; text by the same sender to the same recipient. The newest edit (by its own message id) wins.
+edit = {
+  0: bstr .size 16,          ; message_id of the original
+  1: tstr .size (1..4000),   ; new text
+}
+
+; Content type 12 (edit limit, envelope kind 0, acknowledged): how late the sender accepts the
+; recipient's edits in their conversation: 0 always, 1..11 5/15/30/60 min, 2/8/12/24 h,
+; 5/7/31 days, 12 never.
+edit-limit = { 0: 0..12 }
+
 ; The sender's current mailbox key; only a higher serial replaces a held key.
 key_update = {
   0: bstr .size 32,        ; mailbox public key (X25519)

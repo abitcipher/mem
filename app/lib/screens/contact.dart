@@ -4,6 +4,7 @@ import 'package:mem_calls/mem_calls.dart';
 
 import '../app_scope.dart';
 import '../l10n/gen/app_localizations.dart';
+import '../widgets/edit_limit.dart';
 import 'settings.dart' show toneName;
 import '../src/rust/api.dart';
 
@@ -96,6 +97,36 @@ class ContactScreen extends StatelessWidget {
           ),
           const Divider(height: 32),
           _ContactEmail(contactId: contactId, email: c.email),
+          const Divider(height: 32),
+          Text(
+            l.editLimitContact,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          DropdownButton<int>(
+            isExpanded: true,
+            // -1 stands for "as the global setting".
+            value: c.editLimit ?? -1,
+            items: [
+              DropdownMenuItem(
+                value: -1,
+                child: Text(
+                  l.editLimitAsGlobal(
+                    editLimitLabel(l, state.node.editLimit()),
+                  ),
+                ),
+              ),
+              for (var p = 0; p < editLimitPositions; p++)
+                DropdownMenuItem(value: p, child: Text(editLimitLabel(l, p))),
+            ],
+            onChanged: (v) async {
+              if (v == null) return;
+              await state.node.setEditLimit(
+                contactId: contactId,
+                position: v < 0 ? null : v,
+              );
+              state.changed();
+            },
+          ),
           if (state.calls.enabled) ...[
             const Divider(height: 32),
             _ContactRingtone(contactId: contactId, ringtone: c.ringtone),

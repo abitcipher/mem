@@ -992,6 +992,60 @@ abstract class AppLocalizations {
   /// **'Missed call'**
   String get callLineMissed;
 
+  /// No description provided for @editMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit message'**
+  String get editMessage;
+
+  /// No description provided for @messageEdited.
+  ///
+  /// In en, this message translates to:
+  /// **'edited'**
+  String get messageEdited;
+
+  /// No description provided for @editLimitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept edits from contacts'**
+  String get editLimitTitle;
+
+  /// No description provided for @editLimitHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'How long after a message arrives your contacts may still correct it (typos, missed words). Their phones offer \"Edit\" only within this time; later corrections are ignored. Each contact can have its own setting on its contact screen.'**
+  String get editLimitHelp;
+
+  /// No description provided for @editLimitContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Edits from this contact'**
+  String get editLimitContact;
+
+  /// No description provided for @editLimitAsGlobal.
+  ///
+  /// In en, this message translates to:
+  /// **'As in settings ({value})'**
+  String editLimitAsGlobal(String value);
+
+  /// No description provided for @editLimitAlways.
+  ///
+  /// In en, this message translates to:
+  /// **'Always allowed'**
+  String get editLimitAlways;
+
+  /// No description provided for @editLimitNever.
+  ///
+  /// In en, this message translates to:
+  /// **'Never allowed'**
+  String get editLimitNever;
+
+  /// No description provided for @durationDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, one{# day} other{# days}}'**
+  String durationDays(int n);
+
   /// No description provided for @reason_invalid_name.
   ///
   /// In en, this message translates to:

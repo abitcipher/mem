@@ -492,6 +492,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get callLineMissed => 'Missed call';
 
   @override
+  String get editMessage => 'Edit message';
+
+  @override
+  String get messageEdited => 'edited';
+
+  @override
+  String get editLimitTitle => 'Accept edits from contacts';
+
+  @override
+  String get editLimitHelp =>
+      'How long after a message arrives your contacts may still correct it (typos, missed words). Their phones offer \"Edit\" only within this time; later corrections are ignored. Each contact can have its own setting on its contact screen.';
+
+  @override
+  String get editLimitContact => 'Edits from this contact';
+
+  @override
+  String editLimitAsGlobal(String value) {
+    return 'As in settings ($value)';
+  }
+
+  @override
+  String get editLimitAlways => 'Always allowed';
+
+  @override
+  String get editLimitNever => 'Never allowed';
+
+  @override
+  String durationDays(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '# days',
+      one: '# day',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get reason_invalid_name => 'The name is too long.';
 
   @override

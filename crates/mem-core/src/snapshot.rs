@@ -19,8 +19,8 @@ use serde::{Deserialize, Serialize};
 use zeroize::Zeroizing;
 
 use crate::agent::{
-    Agent, Attachment, Contact, ContactRequest, DeliveredEntry, EmailAccount, Group, HeldMailbox,
-    Message, OutboxItem, PartialBlob, PendingIntro, Pull, Tombstone,
+    Agent, Attachment, Contact, ContactPrefs, ContactRequest, DeliveredEntry, EmailAccount, Group,
+    HeldMailbox, Message, OutboxItem, PartialBlob, PendingIntro, Pull, Tombstone,
 };
 use crate::model::{
     AttestLogEntry, AttestReturn, CallInfo, CallOutcome, ChannelUse, ConsentBasis, ConsentRule,
@@ -158,6 +158,9 @@ struct StateV1 {
     partials: Vec<PartialDto>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pulls: Vec<PullDto>,
+    /// How late we accept contacts' edits (a scale position; 0: always).
+    #[serde(default, skip_serializing_if = "is_zero")]
+    edit_limit: u8,
     /// The identity's public key (another device), this device's key, its
     /// certificate and our device list.
     #[serde(default)]
@@ -287,6 +290,11 @@ struct ContactDto {
     /// Its incoming-call tone (an app tone id).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     ringtone: Option<String>,
+    /// How late we accept its edits (when not global), and how late it accepts ours.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    edit_limit: Option<u8>,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    their_edit_limit: u8,
     /// The contact's X-Wing key (re-validated at load) and what they confirmed.
     #[serde(default)]
     xwing: Option<Vec<u8>>,
@@ -333,6 +341,9 @@ struct MessageDto {
     group: Option<[u8; 16]>,
     #[serde(default)]
     fanout: Option<[u8; 16]>,
+    /// The latest edit applied to this message.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    edited: Option<[u8; 16]>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     attachments: Vec<AttachmentDto>,
     /// A call line: its duration in seconds and outcome code.
@@ -638,6 +649,7 @@ impl Agent {
                         .collect(),
                     group: m.group.map(|g| g.0),
                     fanout: m.fanout.map(|f| f.0),
+                    edited: m.edit.map(|e| e.0),
                     attachments: m
                         .attachments
                         .iter()
@@ -729,6 +741,7 @@ impl Agent {
                 .map(|(c, d)| (*c.as_bytes(), d.contact.0, d.message.0, d.expires_unix_ms))
                 .collect(),
             blobs: self.blobs.iter().copied().collect(),
+            edit_limit: self.edit_limit,
             pulls: self
                 .pulls
                 .iter()
@@ -960,6 +973,7 @@ impl Agent {
                 channels,
                 group: m.group.map(GroupId),
                 fanout: m.fanout.map(MsgId),
+                edit: m.edited.map(MsgId),
                 attachments: m
                     .attachments
                     .iter()
@@ -1094,6 +1108,7 @@ impl Agent {
             partials,
             pulls,
             offer_limits: crate::agent::call_limits(),
+            edit_limit: s.edit_limit,
             identity: own_identity,
             own,
             own_sync: s
@@ -1328,8 +1343,10 @@ fn contact_dto(id: ContactId, c: &Contact) -> ContactDto {
         requested: c.requested,
         group_only: c.group_only,
         email: c.email.clone(),
-        alias: c.alias.clone(),
-        ringtone: c.ringtone.clone(),
+        alias: c.prefs.alias.clone(),
+        ringtone: c.prefs.ringtone.clone(),
+        edit_limit: c.prefs.edit_limit,
+        their_edit_limit: c.prefs.their_edit_limit,
         xwing: c.xwing.as_ref().map(|x| x.as_bytes().to_vec()),
         told_xwing: c.told_xwing,
         devices: c
@@ -1381,8 +1398,12 @@ fn contact_from_dto(
             requested: c.requested,
             group_only: c.group_only,
             email: c.email.clone(),
-            alias: c.alias.clone(),
-            ringtone: c.ringtone.clone(),
+            prefs: ContactPrefs {
+                alias: c.alias.clone(),
+                ringtone: c.ringtone.clone(),
+                edit_limit: c.edit_limit,
+                their_edit_limit: c.their_edit_limit,
+            },
             xwing: c
                 .xwing
                 .as_deref()
@@ -1417,6 +1438,15 @@ fn contact_from_dto(
             told_list: c.told_list,
         },
     ))
+}
+
+/// For `skip_serializing_if`: a zero field is left out (the default on load).
+#[allow(
+    clippy::trivially_copy_pass_by_ref,
+    reason = "serde passes fields by reference"
+)]
+const fn is_zero(v: &u8) -> bool {
+    *v == 0
 }
 
 #[cfg(test)]

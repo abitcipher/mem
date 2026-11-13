@@ -14,6 +14,8 @@ MessageItem _with(List<AttachmentItem> attachments) => MessageItem(
   channels: const [],
   senderId: 'peer',
   attachments: attachments,
+  edited: false,
+  editable: false,
 );
 
 AttachmentItem _file(AttachmentStatus state) => AttachmentItem(

@@ -199,6 +199,7 @@ impl Agent {
             channels: via.into_iter().collect(),
             group: None,
             fanout: None,
+            edit: None,
             attachments: Vec::new(),
         });
         alloc::vec![Output::Persist(super::StorageOp::SaveSnapshot)]

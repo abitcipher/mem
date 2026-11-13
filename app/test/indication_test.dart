@@ -36,6 +36,8 @@ MessageItem _message({
   isRequest: false,
   text: 'hello',
   attachments: const [],
+  edited: false,
+  editable: false,
   createdUnixMs: _now - arrivedAgo,
   status: outgoing ? MessageStatus.delivered : MessageStatus.received,
   channels: [

@@ -84,6 +84,44 @@ class _ChatScreenState extends State<ChatScreen> {
     if (mounted) setState(() {});
   }
 
+  /// Corrects one of our messages: the new text replaces it here and at the contact.
+  Future<void> _edit(BuildContext context, MessageItem item) async {
+    final l = AppLocalizations.of(context);
+    final controller = TextEditingController(text: item.text);
+    final text = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l.editMessage),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: null,
+          maxLength: 4000,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: Text(l.save),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    final next = text?.trim() ?? '';
+    if (next.isEmpty || next == item.text || !context.mounted) return;
+    final state = AppScope.read(context);
+    try {
+      await state.node.editMessage(messageId: item.id, text: next);
+      state.changed();
+    } on Object catch (e) {
+      if (context.mounted) showSnack(context, reasonText(context, e));
+    }
+  }
+
   Future<void> _send(String text) async {
     final state = AppScope.read(context);
     try {
@@ -184,6 +222,12 @@ class _ChatScreenState extends State<ChatScreen> {
       // Small files only in this version; groups do not take files yet.
       onAttachmentTap: () =>
           pickAndSendFiles(context, contactId: widget.contactId),
+      onMessageLongPress:
+          (context, message, {required index, required details}) {
+            final item = _items[message.id];
+            // Only our own texts, while the recipient still accepts edits.
+            if (item != null && item.editable) _edit(context, item);
+          },
       onMessageTap: (context, message, {required index, required details}) {
         final item = _items[message.id];
         // Unconfirmed messages can be sent again by any channel (one-tap resend).

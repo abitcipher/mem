@@ -7,6 +7,7 @@ use alloc::vec::Vec;
 mod attach;
 mod call;
 mod devices;
+mod edit;
 pub(crate) use devices::{ContactDevice, list_valid as device_list_valid};
 pub use own::{DeviceJoin, JoinError};
 pub(crate) use own::{Identity as OwnIdentity, OwnDevices};
@@ -34,6 +35,7 @@ use mem_crypto::{
 use mem_proto::attachment::{AttachmentPart, AttachmentRef, CONTENT_TYPE_ATTACHMENT_PART};
 use mem_proto::call::{CONTENT_TYPE_CALL, CallSignal};
 use mem_proto::card::{CARD_SIGNATURE_DOMAIN, CardFields, MAX_DISPLAY_NAME_LEN, PairingCard};
+use mem_proto::edit::{CONTENT_TYPE_EDIT, CONTENT_TYPE_EDIT_LIMIT, Edit, decode_edit_limit};
 use mem_proto::encounter::{
     BundleEntry, ENCOUNTER_VERSION, EncounterMsg, MAX_OFFER_TAGS, MAX_PURGE_TOKENS, MAX_TAGS,
 };
@@ -68,6 +70,7 @@ pub use call::{CALL_LIFETIME_S, CallPolicy, MAX_OFFERS_PER_MINUTE};
 pub(crate) fn call_limits() -> call::OfferLimits {
     call::OfferLimits::default()
 }
+pub use edit::edit_allowed;
 pub use email::EmailAccount;
 pub(crate) use email::EmailState;
 pub(crate) use group::Group;
@@ -149,6 +152,21 @@ pub enum Input {
         contact: ContactId,
         /// The message.
         signal: CallSignal,
+    },
+    /// The user corrects an own 1:1 text (only within the limit its recipient told us).
+    EditMessage {
+        /// The message.
+        message: MsgId,
+        /// Its whole new text.
+        text: String,
+    },
+    /// How late we accept edits: globally (`contact` `None`) or for one conversation
+    /// (`position` `None`: as global). A scale position, 0 always to 12 never.
+    SetEditLimit {
+        /// The conversation, or `None` for the global limit.
+        contact: Option<ContactId>,
+        /// The position, or `None` to follow the global limit.
+        position: Option<u8>,
     },
     /// Records a voice call as a line in the contact's chat (the app records only when the user
     /// keeps call history). Local only.
@@ -686,15 +704,27 @@ pub struct CardPreview {
     pub known: bool,
 }
 
+/// A contact's local settings: chosen by the user (or told by the contact), never part of the
+/// pairing. All default to "as usual".
+#[derive(Clone, Default, PartialEq, Eq)]
+pub(crate) struct ContactPrefs {
+    /// The name the user gave this contact.
+    pub(crate) alias: Option<String>,
+    /// The incoming-call tone the user chose for this contact (an app tone id).
+    pub(crate) ringtone: Option<String>,
+    /// How late we accept this contact's edits, when not the global limit (a scale position).
+    pub(crate) edit_limit: Option<u8>,
+    /// How late this contact accepts our edits, as they told us (0: always, the default).
+    pub(crate) their_edit_limit: u8,
+}
+
 pub(crate) struct Contact {
     pub(crate) identity: IdentityPublic,
     pub(crate) mailbox: MailboxPublic,
     pub(crate) secret: ContactSecret,
     pub(crate) display_name: Option<String>,
-    /// The name the user gave this contact; local only.
-    pub(crate) alias: Option<String>,
-    /// The incoming-call tone the user chose for this contact (an app tone id); local only.
-    pub(crate) ringtone: Option<String>,
+    /// The user's own settings for this contact, kept when it pairs again.
+    pub(crate) prefs: ContactPrefs,
     pub(crate) trust: TrustLevel,
     pub(crate) floor: PrivacyGrade,
     pub(crate) added_unix_ms: u64,
@@ -739,6 +769,8 @@ pub(crate) struct Message {
     pub(crate) fanout: Option<MsgId>,
     /// Attached files.
     pub(crate) attachments: Vec<Attachment>,
+    /// The latest edit applied (its own message id, for ordering); `None` if never edited.
+    pub(crate) edit: Option<MsgId>,
 }
 
 impl From<&Message> for MessageView {
@@ -755,6 +787,8 @@ impl From<&Message> for MessageView {
             group: m.group,
             recipients: None,
             attachments: Vec::new(),
+            edited: m.edit.is_some(),
+            editable: false,
         }
     }
 }
@@ -954,6 +988,10 @@ enum OpenedContent {
     Part(AttachmentPart),
     /// Call setup.
     Call(CallSignal),
+    /// An edit of the sender's earlier text.
+    Edit(Edit),
+    /// How late the sender accepts our edits.
+    EditLimit(u8),
     /// A standalone ack bundle (kind 1, content type 2).
     Ack,
     /// Group traffic.
@@ -1069,6 +1107,8 @@ pub struct Agent {
     pub(crate) pulls: BTreeMap<[u8; 32], attach::Pull>,
     /// Recent call offers per contact (volatile).
     pub(crate) offer_limits: call::OfferLimits,
+    /// How late we accept contacts' edits (a scale position; 0: always).
+    pub(crate) edit_limit: u8,
     pub(crate) seen: VecDeque<MsgId>,
     pub(crate) rules: Vec<ConsentRule>,
     pub(crate) privacy_log: Vec<PrivacyLogEntry>,
@@ -1196,6 +1236,7 @@ impl Agent {
             partials: BTreeMap::new(),
             pulls: BTreeMap::new(),
             offer_limits: call::OfferLimits::default(),
+            edit_limit: 0,
             delivered: BTreeMap::new(),
             message_lifetime_s: MESSAGE_LIFETIME_S,
             default_floor: DEFAULT_FLOOR,
@@ -1251,6 +1292,10 @@ impl Agent {
             }
             Input::BlobChecked { address, ok } => self.blob_checked(address, ok),
             Input::SendCallSignal { contact, signal } => self.send_call(contact, signal, rng),
+            Input::EditMessage { message, text } => self.edit_message(message, &text, rng),
+            Input::SetEditLimit { contact, position } => {
+                self.set_edit_limit(contact, position, rng)
+            }
             Input::RecordCall {
                 contact,
                 direction,
@@ -1529,6 +1574,7 @@ impl Agent {
             channels: Vec::new(),
             group: None,
             fanout: None,
+            edit: None,
             attachments: files.iter().map(attach::SealedFile::stored).collect(),
         });
         self.outbox.insert(
@@ -3984,7 +4030,11 @@ impl Agent {
     ) -> Result<(), RejectReason> {
         if matches!(
             content,
-            OpenedContent::Text { .. } | OpenedContent::Part(_) | OpenedContent::Call(_)
+            OpenedContent::Text { .. }
+                | OpenedContent::Part(_)
+                | OpenedContent::Call(_)
+                | OpenedContent::Edit(_)
+                | OpenedContent::EditLimit(_)
         ) && self.contacts.get(&contact).is_some_and(|c| c.group_only)
         {
             return Err(RejectReason::NotAContact);
@@ -4097,17 +4147,15 @@ impl Agent {
             out.extend(self.received_group(contact, id, created_unix_ms, content, via, rng));
             return out;
         }
-        if let OpenedContent::Call(signal) = content {
-            out.extend(self.received_call(contact, signal, cla, grade));
-            return out;
-        }
-        if let OpenedContent::Part(part) = content {
-            self.remember_delivered(commitment, contact, id, from_device);
-            self.owe_ack_from(contact, id, from_device);
-            // A completed blob is stored before the snapshot that records it.
-            let blob = self.received_part(contact, part);
-            out.splice(0..0, blob);
-            return out;
+        if matches!(
+            content,
+            OpenedContent::Edit(_)
+                | OpenedContent::EditLimit(_)
+                | OpenedContent::Call(_)
+                | OpenedContent::Part(_)
+        ) {
+            let from = (contact, id, commitment, from_device);
+            return self.received_hidden(from, content, cla, grade, out);
         }
         if let OpenedContent::Text {
             created_unix_ms,
@@ -4130,6 +4178,40 @@ impl Agent {
                 from_device,
             };
             out.extend(self.store_text(delivered, text, attachments, channel));
+        }
+        out
+    }
+
+    /// Hidden content from a contact (already tombstoned): an attachment part, call setup, an
+    /// edit or an edit limit. `out` holds what was produced so far.
+    fn received_hidden(
+        &mut self,
+        (contact, id, commitment, from_device): (
+            ContactId,
+            MsgId,
+            PurgeCommitment,
+            Option<[u8; 8]>,
+        ),
+        content: OpenedContent,
+        cla: ClaId,
+        grade: PrivacyGrade,
+        mut out: Vec<Output>,
+    ) -> Vec<Output> {
+        // Call setup is never acknowledged; everything else is, like a message.
+        if !matches!(content, OpenedContent::Call(_)) {
+            self.remember_delivered(commitment, contact, id, from_device);
+            self.owe_ack_from(contact, id, from_device);
+        }
+        match content {
+            OpenedContent::Call(signal) => {
+                out.extend(self.received_call(contact, signal, cla, grade));
+            }
+            // A completed blob is stored before the snapshot that records it.
+            OpenedContent::Part(part) => {
+                let blob = self.received_part(contact, part);
+                out.splice(0..0, blob);
+            }
+            other => out.extend(self.received_edit_content(contact, other, id)),
         }
         out
     }
@@ -4173,6 +4255,7 @@ impl Agent {
             channels: alloc::vec![channel],
             group: None,
             fanout: None,
+            edit: None,
             attachments: refs
                 .iter()
                 .cloned()
@@ -4616,8 +4699,11 @@ impl Agent {
                 let updated = self.contacts.contains_key(&id);
                 // A re-pairing keeps the address the user typed.
                 let kept_email = self.contacts.get(&id).and_then(|c| c.email.clone());
-                let kept_alias = self.contacts.get(&id).and_then(|c| c.alias.clone());
-                let kept_ringtone = self.contacts.get(&id).and_then(|c| c.ringtone.clone());
+                let kept_prefs = self
+                    .contacts
+                    .get(&id)
+                    .map(|c| c.prefs.clone())
+                    .unwrap_or_default();
                 let (floor, added, trust) = self
                     .contacts
                     .get(&id)
@@ -4643,8 +4729,7 @@ impl Agent {
                         requested: false,
                         group_only: false,
                         email: kept_email,
-                        alias: kept_alias,
-                        ringtone: kept_ringtone,
+                        prefs: kept_prefs,
                         xwing: None,
                         told_xwing: 0,
                         devices: Vec::new(),
@@ -4695,7 +4780,7 @@ impl Agent {
         }
         match self.contacts.get_mut(&contact) {
             Some(c) if !c.group_only => {
-                c.ringtone = ringtone;
+                c.prefs.ringtone = ringtone;
                 alloc::vec![Output::Persist(StorageOp::SaveSnapshot)]
             }
             _ => alloc::vec![Output::Rejected(RejectReason::UnknownContact)],
@@ -4714,7 +4799,7 @@ impl Agent {
         }
         match self.contacts.get_mut(&contact) {
             Some(c) if !c.group_only => {
-                c.alias = alias;
+                c.prefs.alias = alias;
                 alloc::vec![Output::Persist(StorageOp::SaveSnapshot)]
             }
             _ => alloc::vec![Output::Rejected(RejectReason::UnknownContact)],
@@ -4791,6 +4876,7 @@ impl Agent {
             .filter(|m| m.contact == contact && m.group.is_none())
             .map(|m| MessageView {
                 attachments: self.attachment_views(m),
+                editable: self.editable(m),
                 ..MessageView::from(m)
             })
             .collect()
@@ -4920,6 +5006,14 @@ fn opened_content(
         },
         // Only text names attachments.
         _ if !fields.attachments.is_empty() => return Err(RejectReason::Malformed),
+        (BundleKind::Message, CONTENT_TYPE_EDIT) if fields.ack_requested == Some(true) => {
+            OpenedContent::Edit(Edit::decode(&fields.content).map_err(|_| RejectReason::Malformed)?)
+        }
+        (BundleKind::Message, CONTENT_TYPE_EDIT_LIMIT) if fields.ack_requested == Some(true) => {
+            OpenedContent::EditLimit(
+                decode_edit_limit(&fields.content).map_err(|_| RejectReason::Malformed)?,
+            )
+        }
         // Call setup is never acknowledged: it is useless once late.
         (BundleKind::Message, CONTENT_TYPE_CALL) if fields.ack_requested == Some(false) => {
             OpenedContent::Call(
@@ -4976,7 +5070,9 @@ fn opened_content(
             | CONTENT_TYPE_GROUP_STATE
             | CONTENT_TYPE_GROUP_REPLY
             | CONTENT_TYPE_ATTACHMENT_PART
-            | CONTENT_TYPE_CALL,
+            | CONTENT_TYPE_CALL
+            | CONTENT_TYPE_EDIT
+            | CONTENT_TYPE_EDIT_LIMIT,
         ) => {
             return Err(RejectReason::Malformed);
         }
@@ -4996,8 +5092,9 @@ fn view(id: ContactId, c: &Contact) -> ContactView {
         added_unix_ms: c.added_unix_ms,
         requested: c.requested,
         email: c.email.clone(),
-        alias: c.alias.clone(),
-        ringtone: c.ringtone.clone(),
+        alias: c.prefs.alias.clone(),
+        ringtone: c.prefs.ringtone.clone(),
+        edit_limit: c.prefs.edit_limit,
     }
 }
 

@@ -21,8 +21,8 @@ use mem_proto::{Bundle, BundleKind, Pow};
 use rand_core::CryptoRng;
 
 use super::{
-    Agent, Contact, Message, MsgDirection, OutboxItem, Output, Recipient, Sealing, StorageOp,
-    uuid_v7, verify_card,
+    Agent, Contact, ContactPrefs, Message, MsgDirection, OutboxItem, Output, Recipient, Sealing,
+    StorageOp, uuid_v7, verify_card,
 };
 use crate::model::{
     ChannelUse, ContactId, DeliveryStatus, MessageKind, MsgId, RejectReason, RequestId,
@@ -189,8 +189,7 @@ impl Agent {
                 requested: true,
                 group_only: false,
                 email: None,
-                alias: None,
-                ringtone: None,
+                prefs: ContactPrefs::default(),
                 xwing: None,
                 told_xwing: 0,
                 devices: Vec::new(),
@@ -210,6 +209,7 @@ impl Agent {
             channels: Vec::new(),
             group: None,
             fanout: None,
+            edit: None,
             attachments: Vec::new(),
         });
         let mut bundle_id = [0u8; 16];
@@ -588,8 +588,7 @@ impl Agent {
                 requested: false,
                 group_only: false,
                 email: None,
-                alias: None,
-                ringtone: None,
+                prefs: ContactPrefs::default(),
                 xwing: None,
                 told_xwing: 0,
                 devices: Vec::new(),

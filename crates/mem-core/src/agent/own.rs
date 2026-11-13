@@ -73,7 +73,7 @@ use rand_core::CryptoRng;
 use zeroize::Zeroizing;
 
 use super::devices::ContactDevice;
-use super::{Agent, Contact, HeldMailbox, Output, StorageOp};
+use super::{Agent, Contact, ContactPrefs, HeldMailbox, Output, StorageOp};
 use crate::model::{ContactId, OwnDeviceView, RejectReason, TrustLevel};
 
 impl Agent {
@@ -370,8 +370,7 @@ impl Agent {
                 requested: false,
                 group_only: false,
                 email: None,
-                alias: None,
-                ringtone: None,
+                prefs: ContactPrefs::default(),
                 xwing: None,
                 told_xwing: u32::MAX,
                 devices: Vec::new(),

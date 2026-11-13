@@ -677,6 +677,8 @@ pub struct ContactItem {
     pub alias: Option<String>,
     /// Their incoming-call tone (an app tone id); `None` for the default.
     pub ringtone: Option<String>,
+    /// How late we accept their edits, when not the global limit (0 always … 12 never).
+    pub edit_limit: Option<u8>,
 }
 
 /// The mail account for the email bridge. The password goes in, never out.
@@ -776,6 +778,10 @@ pub struct MessageItem {
     pub attachments: Vec<AttachmentItem>,
     /// A voice call line instead of a message.
     pub call: Option<CallItem>,
+    /// Corrected by its sender after sending.
+    pub edited: bool,
+    /// Ours and still within the recipient's edit limit: offer "edit".
+    pub editable: bool,
 }
 
 /// A voice call, as a line in the chat.
@@ -1661,6 +1667,52 @@ impl MemNode {
             Some(r) => Err(reason_key(r)),
             None => Ok(()),
         }
+    }
+
+    /// Corrects an own 1:1 text (only while it is `editable`).
+    ///
+    /// # Errors
+    ///
+    /// `"invalid_text"`, `"unknown_message"` (also when the edit limit has passed), or a
+    /// storage error.
+    pub fn edit_message(&self, message_id: String, text: String) -> Result<(), String> {
+        let out = self.handle(Input::EditMessage {
+            message: msg(&message_id)?,
+            text,
+        })?;
+        match rejected(&out) {
+            Some(r) => Err(reason_key(r)),
+            None => Ok(()),
+        }
+    }
+
+    /// Sets how late edits are accepted: globally (`contact_id` `None`) or for one conversation
+    /// (`position` `None`: as global). Positions 0 (always) to 12 (never).
+    ///
+    /// # Errors
+    ///
+    /// `"malformed"` for a position off the scale, `"unknown_contact"`, or a storage error.
+    pub fn set_edit_limit(
+        &self,
+        contact_id: Option<String>,
+        position: Option<u8>,
+    ) -> Result<(), String> {
+        let contact = contact_id.as_deref().map(contact).transpose()?;
+        let out = self.handle(Input::SetEditLimit { contact, position })?;
+        match rejected(&out) {
+            Some(r) => Err(reason_key(r)),
+            None => Ok(()),
+        }
+    }
+
+    /// The global edit limit (0 always … 12 never).
+    ///
+    /// # Errors
+    ///
+    /// Only if the node lock is poisoned.
+    #[frb(sync)]
+    pub fn edit_limit(&self) -> Result<u8, String> {
+        self.with(|rt| rt.agent().edit_limit())
     }
 
     /// Sets or clears a contact's incoming-call tone (an app tone id; `None` for the default).
@@ -2584,6 +2636,7 @@ impl MemNode {
                         email: c.email.clone(),
                         alias: c.alias.clone(),
                         ringtone: c.ringtone.clone(),
+                        edit_limit: c.edit_limit,
                     }
                 })
                 .collect();
@@ -3324,6 +3377,8 @@ fn message_item(m: MessageView) -> MessageItem {
         id: hex::encode(m.id.as_bytes()),
         outgoing: m.direction == MsgDirection::Outgoing,
         is_request: m.kind == MessageKind::ContactRequest,
+        edited: m.edited,
+        editable: m.editable,
         call: match m.kind {
             MessageKind::Call(c) => Some(CallItem {
                 duration_s: c.duration_s,

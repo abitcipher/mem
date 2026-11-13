@@ -493,6 +493,46 @@ class AppLocalizationsUk extends AppLocalizations {
   String get callLineMissed => 'Пропущений дзвінок';
 
   @override
+  String get editMessage => 'Редагувати повідомлення';
+
+  @override
+  String get messageEdited => 'змінено';
+
+  @override
+  String get editLimitTitle => 'Приймати виправлення від контактів';
+
+  @override
+  String get editLimitHelp =>
+      'Скільки часу після надходження повідомлення контакти ще можуть його виправити (одруківки, пропущені слова). Їхні телефони пропонують «Редагувати» лише протягом цього часу; пізніші виправлення ігноруються. Кожен контакт може мати власне налаштування на своєму екрані.';
+
+  @override
+  String get editLimitContact => 'Виправлення від цього контакту';
+
+  @override
+  String editLimitAsGlobal(String value) {
+    return 'Як у налаштуваннях ($value)';
+  }
+
+  @override
+  String get editLimitAlways => 'Завжди дозволено';
+
+  @override
+  String get editLimitNever => 'Ніколи не дозволено';
+
+  @override
+  String durationDays(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '# дня',
+      many: '# днів',
+      few: '# дні',
+      one: '# день',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get reason_invalid_name => 'Ім\'я задовге.';
 
   @override

@@ -12,6 +12,7 @@ import '../src/rust/api.dart';
 import '../src/ui_settings.dart';
 import '../theme.dart';
 import '../widgets/grade_symbol.dart';
+import '../widgets/edit_limit.dart';
 import '../widgets/help.dart';
 import '../widgets/logo.dart';
 import 'backup.dart';
@@ -98,6 +99,22 @@ class SettingsScreen extends StatelessWidget {
                 state.updateSettings((s) => s.showMessageTimes = v),
           ),
           const _BadgeSettings(),
+          Explained(
+            help: l.editLimitHelp,
+            builder: (context, help) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                titleWithHelp(l.editLimitTitle, help),
+                EditLimitSlider(
+                  position: state.node.editLimit(),
+                  onChanged: (p) async {
+                    await state.node.setEditLimit(position: p);
+                    state.changed();
+                  },
+                ),
+              ],
+            ),
+          ),
           if (CallController.supported)
             Explained(
               help: l.voiceCallsHelp,

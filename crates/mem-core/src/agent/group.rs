@@ -25,8 +25,8 @@ use mem_proto::inner::MAX_TEXT_LEN;
 use rand_core::CryptoRng;
 
 use super::{
-    Agent, Contact, Message, MsgDirection, OutboxItem, Output, Recipient, Sealing, StorageOp,
-    verify_card,
+    Agent, Contact, ContactPrefs, Message, MsgDirection, OutboxItem, Output, Recipient, Sealing,
+    StorageOp, verify_card,
 };
 use crate::model::{
     ChannelUse, ContactId, DeliveryStatus, GroupId, GroupMemberView, GroupStatus, GroupView,
@@ -369,6 +369,7 @@ impl Agent {
                 channels: Vec::new(),
                 group: Some(group),
                 fanout: Some(first),
+                edit: None,
                 attachments: Vec::new(),
             });
             out.extend(self.flush_message(id));
@@ -590,6 +591,7 @@ impl Agent {
             channels: alloc::vec![via],
             group: Some(group),
             fanout: None,
+            edit: None,
             attachments: Vec::new(),
         });
         alloc::vec![
@@ -718,8 +720,7 @@ impl Agent {
                     requested: false,
                     group_only: true,
                     email: None,
-                    alias: None,
-                    ringtone: None,
+                    prefs: ContactPrefs::default(),
                     xwing: None,
                     told_xwing: 0,
                     devices: Vec::new(),
@@ -827,7 +828,7 @@ impl Agent {
             GroupMemberView {
                 contact: ContactId(*m),
                 display_name: c.and_then(|c| c.display_name.clone()),
-                alias: c.and_then(|c| c.alias.clone()),
+                alias: c.and_then(|c| c.prefs.alias.clone()),
                 fingerprint: mem_crypto::IdentityPublic::from_bytes(m)
                     .map(|p| p.fingerprint().to_string_grouped())
                     .unwrap_or_default(),

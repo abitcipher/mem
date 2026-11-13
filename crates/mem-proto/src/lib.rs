@@ -20,6 +20,7 @@ pub mod call;
 pub mod card;
 pub mod cbor;
 pub mod device;
+pub mod edit;
 pub mod encounter;
 pub mod envelope;
 mod error;

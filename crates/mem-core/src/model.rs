@@ -213,6 +213,8 @@ pub struct ContactView {
     pub alias: Option<String>,
     /// The incoming-call tone chosen for this contact (an app tone id).
     pub ringtone: Option<String>,
+    /// How late we accept this contact's edits, when not the global limit (a scale position).
+    pub edit_limit: Option<u8>,
 }
 
 /// A contact request waiting in quarantine. Never shown as a message.
@@ -354,6 +356,10 @@ pub struct MessageView {
     pub recipients: Option<(u16, u16)>,
     /// Attached files, in order.
     pub attachments: Vec<AttachmentView>,
+    /// Corrected by its sender after sending.
+    pub edited: bool,
+    /// Ours, and still within the limit its recipient told us: "edit" may be offered.
+    pub editable: bool,
 }
 
 /// A file to attach to a message. The core seals it; the bytes never leave in clear.

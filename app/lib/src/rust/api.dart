@@ -284,6 +284,21 @@ abstract class MemNode implements RustOpaqueInterface {
   /// Only if the node lock is poisoned.
   Future<void> discardRecoveryPhrase();
 
+  /// The global edit limit (0 always … 12 never).
+  ///
+  /// # Errors
+  ///
+  /// Only if the node lock is poisoned.
+  int editLimit();
+
+  /// Corrects an own 1:1 text (only while it is `editable`).
+  ///
+  /// # Errors
+  ///
+  /// `"invalid_text"`, `"unknown_message"` (also when the edit limit has passed), or a
+  /// storage error.
+  Future<void> editMessage({required String messageId, required String text});
+
   /// The mail account, without its password.
   ///
   /// # Errors
@@ -759,6 +774,14 @@ abstract class MemNode implements RustOpaqueInterface {
   ///
   /// `"invalid_name"` for a name over 64 bytes, or a storage error.
   Future<void> setDisplayName({String? name});
+
+  /// Sets how late edits are accepted: globally (`contact_id` `None`) or for one conversation
+  /// (`position` `None`: as global). Positions 0 (always) to 12 (never).
+  ///
+  /// # Errors
+  ///
+  /// `"malformed"` for a position off the scale, `"unknown_contact"`, or a storage error.
+  Future<void> setEditLimit({String? contactId, int? position});
 
   /// Sets the mail account (`None` removes it). A `None` password keeps the saved one.
   ///
@@ -1686,6 +1709,9 @@ class ContactItem {
   /// Their incoming-call tone (an app tone id); `None` for the default.
   final String? ringtone;
 
+  /// How late we accept their edits, when not the global limit (0 always … 12 never).
+  final int? editLimit;
+
   const ContactItem({
     required this.id,
     this.displayName,
@@ -1699,6 +1725,7 @@ class ContactItem {
     this.email,
     this.alias,
     this.ringtone,
+    this.editLimit,
   });
 
   @override
@@ -1714,7 +1741,8 @@ class ContactItem {
       lastUnixMs.hashCode ^
       email.hashCode ^
       alias.hashCode ^
-      ringtone.hashCode;
+      ringtone.hashCode ^
+      editLimit.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -1732,7 +1760,8 @@ class ContactItem {
           lastUnixMs == other.lastUnixMs &&
           email == other.email &&
           alias == other.alias &&
-          ringtone == other.ringtone;
+          ringtone == other.ringtone &&
+          editLimit == other.editLimit;
 }
 
 /// Courier mode: what this device carries for other people.
@@ -2117,6 +2146,12 @@ class MessageItem {
   /// A voice call line instead of a message.
   final CallItem? call;
 
+  /// Corrected by its sender after sending.
+  final bool edited;
+
+  /// Ours and still within the recipient's edit limit: offer "edit".
+  final bool editable;
+
   const MessageItem({
     required this.id,
     required this.outgoing,
@@ -2130,6 +2165,8 @@ class MessageItem {
     this.sentTo,
     required this.attachments,
     this.call,
+    required this.edited,
+    required this.editable,
   });
 
   @override
@@ -2145,7 +2182,9 @@ class MessageItem {
       deliveredTo.hashCode ^
       sentTo.hashCode ^
       attachments.hashCode ^
-      call.hashCode;
+      call.hashCode ^
+      edited.hashCode ^
+      editable.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -2163,7 +2202,9 @@ class MessageItem {
           deliveredTo == other.deliveredTo &&
           sentTo == other.sentTo &&
           attachments == other.attachments &&
-          call == other.call;
+          call == other.call &&
+          edited == other.edited &&
+          editable == other.editable;
 }
 
 /// Message status.
