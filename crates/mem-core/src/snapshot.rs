@@ -1079,6 +1079,7 @@ impl Agent {
             blobs: s.blobs.iter().copied().collect(),
             partials,
             pulls,
+            offer_limits: crate::agent::call_limits(),
             identity: own_identity,
             own,
             own_sync: s

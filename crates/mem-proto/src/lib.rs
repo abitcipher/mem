@@ -16,6 +16,7 @@ pub mod armor;
 pub mod attachment;
 pub mod attest;
 pub mod backup;
+pub mod call;
 pub mod card;
 pub mod cbor;
 pub mod device;

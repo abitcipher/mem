@@ -450,6 +450,25 @@ impl Agent {
         content: Vec<u8>,
         rng: &mut impl CryptoRng,
     ) -> Option<MsgId> {
+        let how = Hidden {
+            lifetime_s: self.message_lifetime_s,
+            ack: true,
+            copies: self.spray_copies,
+            device_copies: true,
+        };
+        self.queue_hidden_as(contact_id, content_type, content, how, rng)
+    }
+
+    /// As [`Self::queue_hidden`], with its lifetime, acknowledgement, copy budget and device
+    /// copies chosen by the caller.
+    pub(super) fn queue_hidden_as(
+        &mut self,
+        contact_id: ContactId,
+        content_type: u64,
+        content: Vec<u8>,
+        how: Hidden,
+        rng: &mut impl CryptoRng,
+    ) -> Option<MsgId> {
         if self.purge_key.is_none() {
             self.purge_key = Some(SenderPurgeKey::generate(rng));
         }
@@ -478,9 +497,9 @@ impl Agent {
                     content_type,
                     content: content.clone(),
                     attachments: Vec::new(),
-                    ack_requested: Some(true),
+                    ack_requested: Some(how.ack),
                     acks: acks.iter().map(|m| m.0).collect(),
-                    lifetime_s: self.message_lifetime_s,
+                    lifetime_s: how.lifetime_s,
                     key_update,
                     id: None,
                     recipient: Recipient::Mailbox,
@@ -498,7 +517,7 @@ impl Agent {
                 bundle,
                 created_unix_ms: self.now_unix_ms,
                 acks,
-                copies: self.spray_copies,
+                copies: how.copies,
                 courier_ok: false,
                 key_serial,
                 list_serial,
@@ -511,7 +530,12 @@ impl Agent {
             },
         );
         // The member's other devices get copies of it.
-        if let Some((t, c)) = self.outbox.get(&id).and_then(|i| i.content.clone()) {
+        if let Some((t, c)) = self
+            .outbox
+            .get(&id)
+            .filter(|_| how.device_copies)
+            .and_then(|i| i.content.clone())
+        {
             self.queue_device_copies(contact_id, id, BundleKind::Message, t, &c, rng);
         }
         Some(id)
@@ -992,4 +1016,17 @@ mod tests {
         assert_eq!(b.groups(), Vec::new());
         let _ = &mut rb;
     }
+}
+
+/// How a hidden item travels.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct Hidden {
+    /// Bundle lifetime.
+    pub(super) lifetime_s: u32,
+    /// Whether the recipient acknowledges it.
+    pub(super) ack: bool,
+    /// Spray-and-wait copy budget (1: direct only).
+    pub(super) copies: u8,
+    /// Whether the contact's other devices get copies.
+    pub(super) device_copies: bool,
 }

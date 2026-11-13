@@ -5,6 +5,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 mod attach;
+mod call;
 mod devices;
 pub(crate) use devices::{ContactDevice, list_valid as device_list_valid};
 pub use own::{DeviceJoin, JoinError};
@@ -31,6 +32,7 @@ use mem_crypto::{
     PurgeCommitment, PurgeToken, SUITE_ID, SUITE_XWING, SenderPurgeKey, XWingPublic,
 };
 use mem_proto::attachment::{AttachmentPart, AttachmentRef, CONTENT_TYPE_ATTACHMENT_PART};
+use mem_proto::call::{CONTENT_TYPE_CALL, CallSignal};
 use mem_proto::card::{CARD_SIGNATURE_DOMAIN, CardFields, MAX_DISPLAY_NAME_LEN, PairingCard};
 use mem_proto::encounter::{
     BundleEntry, ENCOUNTER_VERSION, EncounterMsg, MAX_OFFER_TAGS, MAX_PURGE_TOKENS, MAX_TAGS,
@@ -60,6 +62,12 @@ use crate::model::{
 };
 pub(crate) use attach::{Attachment, PartialBlob, Pull};
 pub use attach::{AttachmentSecret, MAX_PENDING_PART_BYTES, PULL_WINDOW, SMALL_SEALED_MAX};
+pub use call::{CALL_LIFETIME_S, CallPolicy, MAX_OFFERS_PER_MINUTE};
+
+/// Fresh offer limits (they are not persisted).
+pub(crate) fn call_limits() -> call::OfferLimits {
+    call::OfferLimits::default()
+}
 pub use email::EmailAccount;
 pub(crate) use email::EmailState;
 pub(crate) use group::Group;
@@ -132,6 +140,15 @@ pub enum Input {
         address: [u8; 32],
         /// Whether it matched.
         ok: bool,
+    },
+    /// Send a call setup message to a contact now (offer, answer, candidates, end). Candidates
+    /// the contact's floor does not allow are removed first; with no automatic channel open,
+    /// the core answers [`RejectReason::Unreachable`].
+    SendCallSignal {
+        /// Contact.
+        contact: ContactId,
+        /// The message.
+        signal: CallSignal,
     },
     /// The user sends files, with optional text.
     UserSendFiles {
@@ -486,6 +503,15 @@ pub enum Output {
         len: u64,
         /// Length of the whole blob.
         total: u64,
+    },
+    /// A call setup message arrived from an approved contact.
+    CallSignal {
+        /// Who calls or answers.
+        contact: ContactId,
+        /// The message.
+        signal: CallSignal,
+        /// The channel it came over.
+        via: ChannelUse,
     },
     /// Close the connection to a peer.
     EndEncounter {
@@ -902,6 +928,8 @@ enum OpenedContent {
     },
     /// One part of an attachment blob.
     Part(AttachmentPart),
+    /// Call setup.
+    Call(CallSignal),
     /// A standalone ack bundle (kind 1, content type 2).
     Ack,
     /// Group traffic.
@@ -1015,6 +1043,8 @@ pub struct Agent {
     pub(crate) partials: BTreeMap<[u8; 32], PartialBlob>,
     /// Incoming large blobs being pulled from their senders.
     pub(crate) pulls: BTreeMap<[u8; 32], attach::Pull>,
+    /// Recent call offers per contact (volatile).
+    pub(crate) offer_limits: call::OfferLimits,
     pub(crate) seen: VecDeque<MsgId>,
     pub(crate) rules: Vec<ConsentRule>,
     pub(crate) privacy_log: Vec<PrivacyLogEntry>,
@@ -1141,6 +1171,7 @@ impl Agent {
             blobs: BTreeSet::new(),
             partials: BTreeMap::new(),
             pulls: BTreeMap::new(),
+            offer_limits: call::OfferLimits::default(),
             delivered: BTreeMap::new(),
             message_lifetime_s: MESSAGE_LIFETIME_S,
             default_floor: DEFAULT_FLOOR,
@@ -1195,6 +1226,7 @@ impl Agent {
                 self.user_send_and_flush(contact, &text, Vec::new(), rng)
             }
             Input::BlobChecked { address, ok } => self.blob_checked(address, ok),
+            Input::SendCallSignal { contact, signal } => self.send_call(contact, signal, rng),
             Input::UserSendFiles {
                 contact,
                 text,
@@ -3916,8 +3948,10 @@ impl Agent {
         contact: ContactId,
         content: &OpenedContent,
     ) -> Result<(), RejectReason> {
-        if matches!(content, OpenedContent::Text { .. } | OpenedContent::Part(_))
-            && self.contacts.get(&contact).is_some_and(|c| c.group_only)
+        if matches!(
+            content,
+            OpenedContent::Text { .. } | OpenedContent::Part(_) | OpenedContent::Call(_)
+        ) && self.contacts.get(&contact).is_some_and(|c| c.group_only)
         {
             return Err(RejectReason::NotAContact);
         }
@@ -4027,6 +4061,10 @@ impl Agent {
                 at_unix_ms: self.now_unix_ms,
             };
             out.extend(self.received_group(contact, id, created_unix_ms, content, via, rng));
+            return out;
+        }
+        if let OpenedContent::Call(signal) = content {
+            out.extend(self.received_call(contact, signal, cla, grade));
             return out;
         }
         if let OpenedContent::Part(part) = content {
@@ -4826,6 +4864,12 @@ fn opened_content(
         },
         // Only text names attachments.
         _ if !fields.attachments.is_empty() => return Err(RejectReason::Malformed),
+        // Call setup is never acknowledged: it is useless once late.
+        (BundleKind::Message, CONTENT_TYPE_CALL) if fields.ack_requested == Some(false) => {
+            OpenedContent::Call(
+                CallSignal::decode(&fields.content).map_err(|_| RejectReason::Malformed)?,
+            )
+        }
         (BundleKind::Message, CONTENT_TYPE_ATTACHMENT_PART)
             if fields.ack_requested == Some(true) =>
         {
@@ -4875,7 +4919,8 @@ fn opened_content(
             | CONTENT_TYPE_GROUP_TEXT
             | CONTENT_TYPE_GROUP_STATE
             | CONTENT_TYPE_GROUP_REPLY
-            | CONTENT_TYPE_ATTACHMENT_PART,
+            | CONTENT_TYPE_ATTACHMENT_PART
+            | CONTENT_TYPE_CALL,
         ) => {
             return Err(RejectReason::Malformed);
         }
