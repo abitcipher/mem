@@ -277,6 +277,17 @@ abstract class MemNode implements RustOpaqueInterface {
   /// Only if the node lock is poisoned.
   int defaultFloor();
 
+  /// Deletes a message here; with `for_both`, also at the contact (own text, while it is
+  /// `editable`: deleting counts as editing).
+  ///
+  /// # Errors
+  ///
+  /// `"unknown_message"` (also when the limit has passed for `for_both`), or a storage error.
+  Future<void> deleteMessage({
+    required String messageId,
+    required bool forBoth,
+  });
+
   /// The user left without confirming: the new phrase is forgotten.
   ///
   /// # Errors

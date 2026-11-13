@@ -1004,6 +1004,42 @@ abstract class AppLocalizations {
   /// **'edited'**
   String get messageEdited;
 
+  /// No description provided for @menuEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get menuEdit;
+
+  /// No description provided for @menuCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get menuCopy;
+
+  /// No description provided for @menuDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get menuDelete;
+
+  /// No description provided for @deleteMessageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete message?'**
+  String get deleteMessageTitle;
+
+  /// No description provided for @deleteAlsoFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Also delete for {name}'**
+  String deleteAlsoFor(String name);
+
+  /// No description provided for @deleteForMeOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'It will be deleted on this device only.'**
+  String get deleteForMeOnly;
+
   /// No description provided for @editLimitTitle.
   ///
   /// In en, this message translates to:
@@ -1013,7 +1049,7 @@ abstract class AppLocalizations {
   /// No description provided for @editLimitHelp.
   ///
   /// In en, this message translates to:
-  /// **'How long after a message arrives your contacts may still correct it (typos, missed words). Their phones offer \"Edit\" only within this time; later corrections are ignored. Each contact can have its own setting on its contact screen.'**
+  /// **'How long after a message arrives your contacts may still correct or delete it (typos, missed words). Deleting a message for both of you counts as editing. Their phones offer \"Edit\" and \"Delete for both\" only within this time; later changes are ignored. Each contact can have its own setting on its contact screen.'**
   String get editLimitHelp;
 
   /// No description provided for @editLimitContact.

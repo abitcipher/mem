@@ -35,7 +35,10 @@ use mem_crypto::{
 use mem_proto::attachment::{AttachmentPart, AttachmentRef, CONTENT_TYPE_ATTACHMENT_PART};
 use mem_proto::call::{CONTENT_TYPE_CALL, CallSignal};
 use mem_proto::card::{CARD_SIGNATURE_DOMAIN, CardFields, MAX_DISPLAY_NAME_LEN, PairingCard};
-use mem_proto::edit::{CONTENT_TYPE_EDIT, CONTENT_TYPE_EDIT_LIMIT, Edit, decode_edit_limit};
+use mem_proto::edit::{
+    CONTENT_TYPE_DELETE, CONTENT_TYPE_EDIT, CONTENT_TYPE_EDIT_LIMIT, Edit, decode_delete,
+    decode_edit_limit,
+};
 use mem_proto::encounter::{
     BundleEntry, ENCOUNTER_VERSION, EncounterMsg, MAX_OFFER_TAGS, MAX_PURGE_TOKENS, MAX_TAGS,
 };
@@ -159,6 +162,14 @@ pub enum Input {
         message: MsgId,
         /// Its whole new text.
         text: String,
+    },
+    /// Deletes a message here, and with `for_both` also at the contact (own text within the
+    /// contact's edit limit only).
+    DeleteMessage {
+        /// The message.
+        message: MsgId,
+        /// Also at the contact.
+        for_both: bool,
     },
     /// How late we accept edits: globally (`contact` `None`) or for one conversation
     /// (`position` `None`: as global). A scale position, 0 always to 12 never.
@@ -992,6 +1003,8 @@ enum OpenedContent {
     Edit(Edit),
     /// How late the sender accepts our edits.
     EditLimit(u8),
+    /// The sender withdraws an earlier text.
+    Delete([u8; 16]),
     /// A standalone ack bundle (kind 1, content type 2).
     Ack,
     /// Group traffic.
@@ -1293,6 +1306,9 @@ impl Agent {
             Input::BlobChecked { address, ok } => self.blob_checked(address, ok),
             Input::SendCallSignal { contact, signal } => self.send_call(contact, signal, rng),
             Input::EditMessage { message, text } => self.edit_message(message, &text, rng),
+            Input::DeleteMessage { message, for_both } => {
+                self.delete_message(message, for_both, rng)
+            }
             Input::SetEditLimit { contact, position } => {
                 self.set_edit_limit(contact, position, rng)
             }
@@ -4035,6 +4051,7 @@ impl Agent {
                 | OpenedContent::Call(_)
                 | OpenedContent::Edit(_)
                 | OpenedContent::EditLimit(_)
+                | OpenedContent::Delete(_)
         ) && self.contacts.get(&contact).is_some_and(|c| c.group_only)
         {
             return Err(RejectReason::NotAContact);
@@ -4151,6 +4168,7 @@ impl Agent {
             content,
             OpenedContent::Edit(_)
                 | OpenedContent::EditLimit(_)
+                | OpenedContent::Delete(_)
                 | OpenedContent::Call(_)
                 | OpenedContent::Part(_)
         ) {
@@ -5009,6 +5027,11 @@ fn opened_content(
         (BundleKind::Message, CONTENT_TYPE_EDIT) if fields.ack_requested == Some(true) => {
             OpenedContent::Edit(Edit::decode(&fields.content).map_err(|_| RejectReason::Malformed)?)
         }
+        (BundleKind::Message, CONTENT_TYPE_DELETE) if fields.ack_requested == Some(true) => {
+            OpenedContent::Delete(
+                decode_delete(&fields.content).map_err(|_| RejectReason::Malformed)?,
+            )
+        }
         (BundleKind::Message, CONTENT_TYPE_EDIT_LIMIT) if fields.ack_requested == Some(true) => {
             OpenedContent::EditLimit(
                 decode_edit_limit(&fields.content).map_err(|_| RejectReason::Malformed)?,
@@ -5072,7 +5095,8 @@ fn opened_content(
             | CONTENT_TYPE_ATTACHMENT_PART
             | CONTENT_TYPE_CALL
             | CONTENT_TYPE_EDIT
-            | CONTENT_TYPE_EDIT_LIMIT,
+            | CONTENT_TYPE_EDIT_LIMIT
+            | CONTENT_TYPE_DELETE,
         ) => {
             return Err(RejectReason::Malformed);
         }

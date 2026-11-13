@@ -10,7 +10,8 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use mem_proto::edit::{
-    CONTENT_TYPE_EDIT, CONTENT_TYPE_EDIT_LIMIT, EDIT_LIMIT_POSITIONS, Edit, encode_edit_limit,
+    CONTENT_TYPE_DELETE, CONTENT_TYPE_EDIT, CONTENT_TYPE_EDIT_LIMIT, EDIT_LIMIT_POSITIONS, Edit,
+    encode_delete, encode_edit_limit,
 };
 use mem_proto::inner::MAX_TEXT_LEN;
 use rand_core::CryptoRng;
@@ -205,7 +206,76 @@ impl Agent {
         out
     }
 
-    /// An edit or an edit limit from `contact` (other content is ignored here).
+    /// Deletes a message here; with `for_both`, also at the contact (only our own text, within
+    /// the limit the contact told us, like an edit). A message not sent yet leaves the outbox.
+    pub(super) fn delete_message(
+        &mut self,
+        message: MsgId,
+        for_both: bool,
+        rng: &mut impl CryptoRng,
+    ) -> Vec<Output> {
+        let Some(m) = self.messages.iter().find(|m| m.id == message) else {
+            return alloc::vec![Output::Rejected(RejectReason::UnknownMessage)];
+        };
+        if for_both && !self.editable(m) {
+            return alloc::vec![Output::Rejected(RejectReason::UnknownMessage)];
+        }
+        let contact = m.contact;
+        let mut out = Vec::new();
+        if for_both
+            && let Some(id) =
+                self.queue_hidden(contact, CONTENT_TYPE_DELETE, encode_delete(&message.0), rng)
+        {
+            out.extend(self.flush_message(id));
+        }
+        self.messages.retain(|m| m.id != message);
+        self.outbox.remove(&message);
+        out.splice(
+            0..0,
+            [
+                Output::Persist(StorageOp::SaveSnapshot),
+                Output::StatusChanged {
+                    message,
+                    status: crate::model::DeliveryStatus::Failed,
+                },
+            ],
+        );
+        out
+    }
+
+    /// The contact withdraws its earlier text: removed if it arrived within our limit,
+    /// otherwise ignored silently (deleting counts as editing).
+    fn received_delete(&mut self, contact: ContactId, message: [u8; 16]) -> Vec<Output> {
+        let limit = self.effective_edit_limit(contact);
+        let now = self.now_unix_ms;
+        let Some(m) = self.messages.iter().find(|m| {
+            m.id.0 == message
+                && m.contact == contact
+                && m.direction == MsgDirection::Incoming
+                && m.kind == MessageKind::Text
+                && m.group.is_none()
+        }) else {
+            return Vec::new();
+        };
+        let arrived = m
+            .channels
+            .first()
+            .map_or(m.created_unix_ms, |u| u.at_unix_ms);
+        if !edit_allowed(limit, now.saturating_sub(arrived)) {
+            return Vec::new();
+        }
+        let id = m.id;
+        self.messages.retain(|m| m.id != id);
+        alloc::vec![
+            Output::Persist(StorageOp::SaveSnapshot),
+            Output::StatusChanged {
+                message: id,
+                status: crate::model::DeliveryStatus::Failed,
+            },
+        ]
+    }
+
+    /// An edit, a deletion or an edit limit from `contact` (other content is ignored here).
     pub(super) fn received_edit_content(
         &mut self,
         contact: ContactId,
@@ -215,6 +285,7 @@ impl Agent {
         match content {
             super::OpenedContent::Edit(edit) => self.received_edit(contact, edit, id),
             super::OpenedContent::EditLimit(p) => self.received_edit_limit(contact, p),
+            super::OpenedContent::Delete(m) => self.received_delete(contact, m),
             _ => Vec::new(),
         }
     }
@@ -410,6 +481,53 @@ mod tests {
                 out,
                 alloc::vec![Output::Rejected(RejectReason::UnknownMessage)]
             );
+        }
+
+        #[test]
+        fn deleting_for_both_follows_the_same_limit() {
+            let mut p = paired();
+            let _ = p.b.handle(
+                Input::SetEditLimit {
+                    contact: Some(p.a_id),
+                    position: Some(1),
+                },
+                &mut p.rb,
+            );
+            p.carry(false);
+            for text in ["one", "two"] {
+                let _ = p.a.handle(
+                    Input::UserSend {
+                        contact: p.b_id,
+                        text: text.into(),
+                    },
+                    &mut p.ra,
+                );
+            }
+            p.carry(true);
+            let ids: Vec<MsgId> = p.a.messages(p.b_id).iter().map(|m| m.id).collect();
+            // Within the limit: gone on both sides.
+            let _ = p.a.handle(
+                Input::DeleteMessage {
+                    message: ids[0],
+                    for_both: true,
+                },
+                &mut p.ra,
+            );
+            p.carry(true);
+            assert_eq!(p.a.messages(p.b_id).len(), 1);
+            assert_eq!(p.b.messages(p.a_id).len(), 1);
+            // A deletion that reaches B after its limit leaves B's copy alone.
+            let _ = p.a.handle(
+                Input::DeleteMessage {
+                    message: ids[1],
+                    for_both: true,
+                },
+                &mut p.ra,
+            );
+            p.tick(NOW + 6 * MINUTE);
+            p.carry(true);
+            assert_eq!(p.a.messages(p.b_id).len(), 0);
+            assert_eq!(p.b.messages(p.a_id)[0].text, "two");
         }
 
         #[test]

@@ -499,11 +499,31 @@ class AppLocalizationsUk extends AppLocalizations {
   String get messageEdited => 'змінено';
 
   @override
+  String get menuEdit => 'Редагувати';
+
+  @override
+  String get menuCopy => 'Копіювати';
+
+  @override
+  String get menuDelete => 'Видалити';
+
+  @override
+  String get deleteMessageTitle => 'Видалити повідомлення?';
+
+  @override
+  String deleteAlsoFor(String name) {
+    return 'Також видалити для $name';
+  }
+
+  @override
+  String get deleteForMeOnly => 'Його буде видалено лише на цьому пристрої.';
+
+  @override
   String get editLimitTitle => 'Приймати виправлення від контактів';
 
   @override
   String get editLimitHelp =>
-      'Скільки часу після надходження повідомлення контакти ще можуть його виправити (одруківки, пропущені слова). Їхні телефони пропонують «Редагувати» лише протягом цього часу; пізніші виправлення ігноруються. Кожен контакт може мати власне налаштування на своєму екрані.';
+      'Скільки часу після надходження повідомлення контакти ще можуть його виправити або видалити (одруківки, пропущені слова). Видалення повідомлення для обох вважається редагуванням. Їхні телефони пропонують «Редагувати» та «Видалити для обох» лише протягом цього часу; пізніші зміни ігноруються. Кожен контакт може мати власне налаштування на своєму екрані.';
 
   @override
   String get editLimitContact => 'Виправлення від цього контакту';

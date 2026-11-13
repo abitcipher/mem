@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_chat_core/flutter_chat_core.dart' as fc;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
@@ -82,6 +83,111 @@ class _ChatScreenState extends State<ChatScreen> {
     ];
     showMessages(_controller, next);
     if (mounted) setState(() {});
+  }
+
+  /// The actions for one message, at the finger: only those possible for it now (editing and
+  /// deleting for both only within the limit the recipient told us).
+  Future<void> _menu(BuildContext context, MessageItem item, Offset at) async {
+    final l = AppLocalizations.of(context);
+    final hasText =
+        item.text.isNotEmpty && item.call == null && !item.isRequest;
+    PopupMenuItem<String> entry(
+      String value,
+      IconData icon,
+      String label, {
+      Color? color,
+    }) => PopupMenuItem(
+      value: value,
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(width: 12),
+          Text(label, style: TextStyle(color: color)),
+        ],
+      ),
+    );
+    final overlay =
+        Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final choice = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromPoints(at, at),
+        Offset.zero & overlay.size,
+      ),
+      items: [
+        if (item.editable && hasText)
+          entry('edit', Icons.edit_outlined, l.menuEdit),
+        if (hasText) entry('copy', Icons.copy_outlined, l.menuCopy),
+        entry(
+          'delete',
+          Icons.delete_outline,
+          l.menuDelete,
+          color: Theme.of(context).colorScheme.error,
+        ),
+      ],
+    );
+    if (!context.mounted) return;
+    switch (choice) {
+      case 'edit':
+        await _edit(context, item);
+      case 'copy':
+        await Clipboard.setData(ClipboardData(text: item.text));
+        if (context.mounted) showSnack(context, l.copied);
+      case 'delete':
+        await _delete(context, item);
+    }
+  }
+
+  /// Deletes a message here, and if the user wants and the limit allows, at the contact too.
+  Future<void> _delete(BuildContext context, MessageItem item) async {
+    final l = AppLocalizations.of(context);
+    final state = AppScope.read(context);
+    final contact = state.node
+        .contacts()
+        .where((c) => c.id == widget.contactId)
+        .firstOrNull;
+    final name = contact == null ? '' : contactTitle(contact);
+    final canBoth = item.outgoing && item.editable && item.call == null;
+    var both = canBoth;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(l.deleteMessageTitle),
+          content: canBoth
+              ? CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: both,
+                  title: Text(l.deleteAlsoFor(name)),
+                  onChanged: (v) => setState(() => both = v ?? false),
+                )
+              : Text(l.deleteForMeOnly),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(l.cancel),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(l.menuDelete),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    try {
+      await state.node.deleteMessage(
+        messageId: item.id,
+        forBoth: canBoth && both,
+      );
+      state.changed();
+    } on Object catch (e) {
+      if (context.mounted) showSnack(context, reasonText(context, e));
+    }
   }
 
   /// Corrects one of our messages: the new text replaces it here and at the contact.
@@ -225,8 +331,7 @@ class _ChatScreenState extends State<ChatScreen> {
       onMessageLongPress:
           (context, message, {required index, required details}) {
             final item = _items[message.id];
-            // Only our own texts, while the recipient still accepts edits.
-            if (item != null && item.editable) _edit(context, item);
+            if (item != null) _menu(context, item, details.globalPosition);
           },
       onMessageTap: (context, message, {required index, required details}) {
         final item = _items[message.id];

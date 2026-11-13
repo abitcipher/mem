@@ -498,11 +498,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messageEdited => 'edited';
 
   @override
+  String get menuEdit => 'Edit';
+
+  @override
+  String get menuCopy => 'Copy';
+
+  @override
+  String get menuDelete => 'Delete';
+
+  @override
+  String get deleteMessageTitle => 'Delete message?';
+
+  @override
+  String deleteAlsoFor(String name) {
+    return 'Also delete for $name';
+  }
+
+  @override
+  String get deleteForMeOnly => 'It will be deleted on this device only.';
+
+  @override
   String get editLimitTitle => 'Accept edits from contacts';
 
   @override
   String get editLimitHelp =>
-      'How long after a message arrives your contacts may still correct it (typos, missed words). Their phones offer \"Edit\" only within this time; later corrections are ignored. Each contact can have its own setting on its contact screen.';
+      'How long after a message arrives your contacts may still correct or delete it (typos, missed words). Deleting a message for both of you counts as editing. Their phones offer \"Edit\" and \"Delete for both\" only within this time; later changes are ignored. Each contact can have its own setting on its contact screen.';
 
   @override
   String get editLimitContact => 'Edits from this contact';

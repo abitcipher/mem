@@ -1686,6 +1686,23 @@ impl MemNode {
         }
     }
 
+    /// Deletes a message here; with `for_both`, also at the contact (own text, while it is
+    /// `editable`: deleting counts as editing).
+    ///
+    /// # Errors
+    ///
+    /// `"unknown_message"` (also when the limit has passed for `for_both`), or a storage error.
+    pub fn delete_message(&self, message_id: String, for_both: bool) -> Result<(), String> {
+        let out = self.handle(Input::DeleteMessage {
+            message: msg(&message_id)?,
+            for_both,
+        })?;
+        match rejected(&out) {
+            Some(r) => Err(reason_key(r)),
+            None => Ok(()),
+        }
+    }
+
     /// Sets how late edits are accepted: globally (`contact_id` `None`) or for one conversation
     /// (`position` `None`: as global). Positions 0 (always) to 12 (never).
     ///

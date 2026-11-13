@@ -14,6 +14,9 @@ use crate::inner::MAX_TEXT_LEN;
 pub const CONTENT_TYPE_EDIT: u64 = 11;
 /// Content type: how late the sender accepts edits from this contact.
 pub const CONTENT_TYPE_EDIT_LIMIT: u64 = 12;
+/// Content type: the sender withdraws an earlier text (deleting counts as editing: the same
+/// limit applies).
+pub const CONTENT_TYPE_DELETE: u64 = 13;
 /// Positions of the edit-limit scale: 0 always, 1..=11 a duration, 12 never.
 pub const EDIT_LIMIT_POSITIONS: u8 = 13;
 
@@ -76,6 +79,31 @@ impl Edit {
     }
 }
 
+/// Encodes a deletion `{0: message_id}`.
+#[must_use]
+pub fn encode_delete(message_id: &[u8; 16]) -> Vec<u8> {
+    encode_with(20, |e| {
+        e.map(1)?.u8(0)?.bytes(message_id)?;
+        Ok(())
+    })
+}
+
+/// Decodes an untrusted deletion.
+///
+/// # Errors
+///
+/// [`ProtoError`] for malformed input.
+pub fn decode_delete(input: &[u8]) -> Result<[u8; 16], ProtoError> {
+    let limits = DecodeLimits {
+        max_input_len: 24,
+        max_container_len: 1,
+    };
+    let mut r = MapReader::new(input, &limits)?;
+    let id = r.array::<16>(0)?;
+    r.finish()?;
+    Ok(id)
+}
+
 /// Encodes an edit limit `{0: position}`.
 ///
 /// # Errors
@@ -134,5 +162,6 @@ mod tests {
         }
         assert!(encode_edit_limit(EDIT_LIMIT_POSITIONS).is_err());
         assert!(decode_edit_limit(&[0xa1, 0x00, 0x0d]).is_err());
+        assert_eq!(decode_delete(&encode_delete(&[9; 16])).unwrap(), [9; 16]);
     }
 }

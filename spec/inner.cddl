@@ -65,6 +65,10 @@ edit = {
 ; 5/7/31 days, 12 never.
 edit-limit = { 0: 0..12 }
 
+; Content type 13 (delete, envelope kind 0, acknowledged): the sender withdraws an earlier 1:1
+; text; the recipient applies the same limit as for edits.
+delete = { 0: bstr .size 16 }    ; message_id of the original
+
 ; The sender's current mailbox key; only a higher serial replaces a held key.
 key_update = {
   0: bstr .size 32,        ; mailbox public key (X25519)

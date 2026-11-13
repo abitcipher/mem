@@ -48,10 +48,11 @@ enum MemTone {
 /// Plays one call tone at a time. Incoming tones go to the phone's ringtone stream, so they
 /// follow its ring volume and silent mode; ringbacks go to the call stream.
 ///
-/// Starting takes several steps; [stop] cancels a start still under way, so a tone never
-/// begins after it was stopped.
+/// Every tone gets its own player, released on [stop]: a released player cannot start, even
+/// if the system was still preparing it (on older Android a stopped player could start once
+/// its preparation finished, and then ring on).
 class MemTonePlayer {
-  final _player = AudioPlayer()..audioCache = AudioCache(prefix: '');
+  AudioPlayer? _player;
 
   /// Counts starts and stops: a start whose number is no longer current gives up.
   int _generation = 0;
@@ -62,40 +63,54 @@ class MemTonePlayer {
     required double volume,
     bool loop = true,
   }) async {
-    final mine = ++_generation;
+    await stop();
+    final mine = _generation;
+    if (volume <= 0) return;
+    final player = AudioPlayer()..audioCache = AudioCache(prefix: '');
+    _player = player;
     bool stale() => mine != _generation;
-    await _player.stop();
-    if (volume <= 0 || stale()) return;
-    await _player.setAudioContext(
-      AudioContext(
-        android: tone.incoming
-            ? const AudioContextAndroid(
-                usageType: AndroidUsageType.notificationRingtone,
-                contentType: AndroidContentType.sonification,
-                audioFocus: AndroidAudioFocus.gainTransient,
-              )
-            : const AudioContextAndroid(
-                usageType: AndroidUsageType.voiceCommunicationSignalling,
-                contentType: AndroidContentType.sonification,
-                audioFocus: AndroidAudioFocus.gainTransient,
-              ),
-      ),
-    );
-    if (stale()) return;
-    await _player.setReleaseMode(loop ? ReleaseMode.loop : ReleaseMode.stop);
-    await _player.setVolume(volume.clamp(0, 1));
-    if (stale()) return;
-    await _player.play(AssetSource(tone._asset));
-    // A stop that came while play() was starting the sound.
-    if (stale()) await _player.stop();
+    try {
+      await player.setAudioContext(
+        AudioContext(
+          android: tone.incoming
+              ? const AudioContextAndroid(
+                  usageType: AndroidUsageType.notificationRingtone,
+                  contentType: AndroidContentType.sonification,
+                  audioFocus: AndroidAudioFocus.gainTransient,
+                )
+              : const AudioContextAndroid(
+                  usageType: AndroidUsageType.voiceCommunicationSignalling,
+                  contentType: AndroidContentType.sonification,
+                  audioFocus: AndroidAudioFocus.gainTransient,
+                ),
+        ),
+      );
+      if (stale()) return;
+      await player.setReleaseMode(
+        loop ? ReleaseMode.loop : ReleaseMode.release,
+      );
+      await player.setVolume(volume.clamp(0, 1));
+      if (stale()) return;
+      await player.play(AssetSource(tone._asset));
+    } finally {
+      // A stop that came while this one was starting: make sure it is gone.
+      if (stale()) await player.dispose();
+    }
   }
 
-  /// Stops whatever plays, and any start still under way.
-  Future<void> stop() {
+  /// Stops and releases whatever plays, and any start still under way.
+  Future<void> stop() async {
     _generation++;
-    return _player.stop();
+    final player = _player;
+    _player = null;
+    if (player == null) return;
+    try {
+      await player.stop();
+    } finally {
+      await player.dispose();
+    }
   }
 
   /// Releases the player.
-  Future<void> dispose() => _player.dispose();
+  Future<void> dispose() => stop();
 }
