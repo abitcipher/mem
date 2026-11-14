@@ -375,6 +375,93 @@ impl Runtime {
             .open_blob_to_file(&secret.address, &secret.key, secret.size, to)?)
     }
 
+    /// Device hub: takes a contact's upload, if it is a well-formed, live, unpurged bundle
+    /// that fits the quotas. `Err` carries the refusal for `put_err`.
+    ///
+    /// # Errors
+    ///
+    /// [`RuntimeError`] when the database fails.
+    pub fn hub_take(
+        &mut self,
+        contact: mem_core::model::ContactId,
+        bytes: &[u8],
+    ) -> Result<Result<Option<i64>, mem_proto::hub::PutError>, RuntimeError> {
+        use mem_proto::hub::PutError;
+        let Ok(bundle) = mem_proto::envelope::Bundle::decode(bytes) else {
+            return Ok(Err(PutError::Malformed));
+        };
+        let now = now_unix_ms();
+        let lifetime_ms = u64::from(bundle.lifetime_s()).saturating_mul(1000);
+        let left = lifetime_ms.saturating_sub(bundle.age_ms());
+        // Like the hub, this is the last stop before the recipient fetches: no hop is spent.
+        if left == 0 {
+            return Ok(Err(PutError::Expired));
+        }
+        let commitment = *bundle.purge_commitment();
+        if self.agent.is_purged(&commitment) {
+            return Ok(Err(PutError::Purged));
+        }
+        let settings = self.agent.device_hub_settings();
+        let put = self.courier.hub_put(
+            &mem_store::HubBundle {
+                bundle_id: *bundle.bundle_id().as_bytes(),
+                commitment,
+                dst_tag: *bundle.dst_tag().as_bytes(),
+                contact: *contact.as_bytes(),
+                expires_ms: now.saturating_add(left),
+                bytes,
+            },
+            now,
+            settings.total_bytes,
+            settings.per_contact_bytes,
+        )?;
+        Ok(match put {
+            mem_store::HubPut::Stored(seq) => Ok(Some(seq)),
+            mem_store::HubPut::Duplicate => Ok(None),
+            mem_store::HubPut::Purged => Err(PutError::Purged),
+            mem_store::HubPut::Quota => Err(PutError::Quota),
+        })
+    }
+
+    /// Device hub: held bundles after `after_seq` for these tag prefixes, oldest first.
+    ///
+    /// # Errors
+    ///
+    /// [`RuntimeError`] when the database fails.
+    pub fn hub_fetch(
+        &self,
+        prefixes: &[[u8; 2]],
+        after_seq: i64,
+    ) -> Result<Vec<(i64, Vec<u8>)>, RuntimeError> {
+        Ok(self.courier.hub_fetch(prefixes, after_seq, now_unix_ms())?)
+    }
+
+    /// Device hub: a contact presented purge tokens.
+    ///
+    /// # Errors
+    ///
+    /// [`RuntimeError`] when the database fails.
+    pub fn hub_purge(&mut self, tokens: &[[u8; 16]]) -> Result<(), RuntimeError> {
+        let commitments: Vec<[u8; 16]> = tokens
+            .iter()
+            .map(|t| {
+                *mem_crypto::purge::commit(&mem_crypto::purge::PurgeToken::from_bytes(*t))
+                    .as_bytes()
+            })
+            .collect();
+        let until = now_unix_ms().saturating_add(u64::from(mem_core::MESSAGE_LIFETIME_S) * 1000);
+        Ok(self.courier.hub_purge(&commitments, until)?)
+    }
+
+    /// Device hub: bytes and bundles held for contacts.
+    ///
+    /// # Errors
+    ///
+    /// [`RuntimeError`] when the database fails.
+    pub fn hub_usage(&self) -> Result<(u64, u64), RuntimeError> {
+        Ok(self.courier.hub_usage(now_unix_ms())?)
+    }
+
     /// Advances the clock alone (epoch rollover re-advertises tags to peers).
     ///
     /// # Errors

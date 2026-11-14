@@ -13,6 +13,8 @@ use tokio::sync::{broadcast, mpsc, oneshot};
 use crate::{Incoming, KeyGuard, RestoreSummary, Runtime, RuntimeError, TextInput, text_input};
 use mem_proto::encounter::BundleEntry;
 
+mod devhub;
+
 /// How often the clock ticks while a peer is connected: the ack delay and retransmission timers
 /// need about one-second resolution.
 const TICK_CONNECTED: Duration = Duration::from_secs(1);
@@ -186,6 +188,8 @@ struct Shared {
     calls: Mutex<std::collections::VecDeque<IncomingCallSignal>>,
     /// Shared files asked for, waiting for the app to read them.
     share_wants: Mutex<std::collections::VecDeque<ShareRequest>>,
+    /// Device hub sessions, both as a hub and with contacts' hubs.
+    devhub: devhub::DevHub,
     config: NodeConfig,
 }
 
@@ -231,6 +235,7 @@ impl Node {
                 events: broadcast::channel(64).0,
                 calls: Mutex::new(std::collections::VecDeque::new()),
                 share_wants: Mutex::new(std::collections::VecDeque::new()),
+                devhub: devhub::DevHub::default(),
                 config,
             }),
         };
@@ -1088,6 +1093,10 @@ impl Node {
                 IrohEvent::Disconnected(p) => Input::EncounterEnded {
                     peer: PeerHandle(p.0),
                 },
+                IrohEvent::HubIncoming(stream) => {
+                    tokio::spawn(Self::serve_hub(weak.clone(), stream, cla));
+                    continue;
+                }
             };
             // Agent work is CPU-bound and short; run it off the async workers.
             Self::with_node(weak.clone(), move |node| {
@@ -1128,6 +1137,14 @@ impl Node {
                     Some(c) => c.send(op.0, to.clone(), bytes.clone()),
                     None => self.fail_later(*op),
                 },
+                o @ (Output::Transmit {
+                    cla: ClaId::DeviceHub,
+                    ..
+                }
+                | Output::DeviceHubFetch { .. }
+                | Output::DeviceHubPurge { .. }
+                | Output::CloseDeviceHub { .. }
+                | Output::WantDeviceHub { .. }) => self.dispatch_devhub(o),
                 o @ (Output::HubWakeRegister { .. }
                 | Output::HubWakeUnregister { .. }
                 | Output::HubPurge { .. }
@@ -2012,6 +2029,80 @@ mod tests {
         drop((a, b));
         let _ = std::fs::remove_dir_all(da);
         let _ = std::fs::remove_dir_all(db);
+    }
+
+    /// A device hub over a real Iroh connection: C uploads a message for R to H's device while
+    /// R is away; later R meets H (H dials this time) and fetches it. C and R never connect.
+    #[test]
+    fn a_contacts_device_carries_a_message_as_a_hub() {
+        use mem_core::DeviceHubSettings;
+        let dirs = [tmp("dh-h"), tmp("dh-c"), tmp("dh-r")];
+        let h = Node::open(&dirs[0], direct()).unwrap();
+        let c = Node::open(&dirs[1], direct()).unwrap();
+        let r = Node::open(&dirs[2], direct()).unwrap();
+        for (x, y) in [(&h, &c), (&h, &r), (&c, &r)] {
+            let (cx, cy) = (
+                x.read(Runtime::own_card_text),
+                y.read(Runtime::own_card_text),
+            );
+            x.receive_text(&cy, ClaId::Qr).unwrap();
+            y.receive_text(&cx, ClaId::Qr).unwrap();
+        }
+        // Contact ids are the same from every side; find each by its fingerprint.
+        let id_of = |n: &Node, seen_by: &Node| {
+            let fp = n.read(|rt| rt.agent().fingerprint());
+            seen_by.read(|rt| {
+                rt.agent()
+                    .contacts()
+                    .into_iter()
+                    .find(|x| x.fingerprint == fp)
+                    .unwrap()
+                    .id
+            })
+        };
+        let (h_id, c_id, r_id) = (id_of(&h, &c), id_of(&c, &r), id_of(&r, &c));
+        // H carries nothing as a courier, so only its hub can bring the message to R.
+        h.handle(Input::SetCourierLimit { bytes: 0 }).unwrap();
+        h.handle(Input::SetDeviceHubSettings(DeviceHubSettings {
+            serve: true,
+            ..DeviceHubSettings::default()
+        }))
+        .unwrap();
+        for n in [&c, &r] {
+            n.handle(Input::SetUseDeviceHub {
+                contact: h_id,
+                enabled: true,
+            })
+            .unwrap();
+        }
+        c.handle(Input::UserSend {
+            contact: r_id,
+            text: "left at the tablet".into(),
+        })
+        .unwrap();
+        c.lan_connect(h.lan_addr().unwrap());
+        let deadline = std::time::Instant::now() + Duration::from_secs(20);
+        while !c
+            .read(|rt| rt.agent().messages(r_id))
+            .first()
+            .is_some_and(|m| m.channels.iter().any(|u| u.cla == ClaId::DeviceHub))
+        {
+            assert!(std::time::Instant::now() < deadline, "never uploaded");
+            std::thread::sleep(Duration::from_millis(50));
+        }
+        assert_eq!(h.read(|rt| rt.hub_usage().unwrap()).1, 1);
+
+        let mut evr = r.subscribe();
+        h.lan_connect(r.lan_addr().unwrap());
+        wait_for(&mut evr, |e| *e == NodeEvent::MessageReceived(c_id));
+        let got = r.read(|rt| rt.agent().messages(c_id));
+        assert_eq!(got[0].text, "left at the tablet");
+        assert_eq!(got[0].channels[0].cla, ClaId::DeviceHub);
+        assert_eq!(got[0].channels[0].grade, mem_core::PrivacyGrade::P3);
+        drop((h, c, r));
+        for d in dirs {
+            let _ = std::fs::remove_dir_all(d);
+        }
     }
 
     /// A shared file too large for parts: offered, asked for, read by the owner's app, pulled

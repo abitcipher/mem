@@ -13,8 +13,11 @@ use mem_core::courier::{CourierClass, CourierKey, CourierMeta, StoreWrite, Tombs
 use rusqlite::{Connection, OptionalExtension, params};
 use zeroize::Zeroizing;
 
+mod devhub;
+pub use devhub::{HubBundle, HubPut};
+
 /// Schema version written to `PRAGMA user_version`. Migrations are forward-only.
-const SCHEMA_VERSION: i64 = 3;
+const SCHEMA_VERSION: i64 = 4;
 
 /// Storage failures.
 #[derive(Debug, thiserror::Error)]
@@ -120,6 +123,9 @@ impl CourierDb {
                  PRAGMA user_version = 3;
                  COMMIT;",
             )?;
+        }
+        if version < 4 {
+            conn.execute_batch(devhub::SCHEMA_V4)?;
         }
         Ok(Self { conn })
     }

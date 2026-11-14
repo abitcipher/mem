@@ -11,6 +11,11 @@
 //!   messages (`u32` big-endian length, then the CBOR message, at most
 //!   [`MAX_MSG_LEN`] bytes).
 //!
+//! A second application protocol, [`HUB_ALPN`], carries the hub protocol (`spec/hub.cddl`) to
+//! a device acting as a hub for its owner's contacts: the same framing on one bidirectional
+//! stream, handed to the runtime as a [`HubStream`] (incoming) or opened to the device behind an
+//! encounter ([`IrohCla::dial_hub`]).
+//!
 //! The agent never sees endpoint ids or addresses, only a local [`PeerHandle`] per connection.
 //! Everything a peer sends is hostile: frames are size-checked before allocation and
 //! decoded by the bounded `mem-proto` decoder.
@@ -32,6 +37,8 @@ use tracing::debug;
 
 /// QUIC application protocol for MEM encounters.
 pub const ALPN: &[u8] = b"mem/encounter/1";
+/// QUIC application protocol for a device acting as a hub.
+pub const HUB_ALPN: &[u8] = b"mem/hub/1";
 /// mDNS service name: advertised as `_mem1._udp.local`.
 pub const SERVICE_NAME: &str = "mem1";
 /// QUIC keep-alive interval.
@@ -76,6 +83,93 @@ pub enum IrohEvent {
     Message(PeerHandle, EncounterMsg),
     /// The connection ended (closed, failed, or sent malformed data).
     Disconnected(PeerHandle),
+    /// Someone opened a hub session ([`HUB_ALPN`]); the runtime logs them in or drops it.
+    HubIncoming(HubStream),
+}
+
+/// One hub session: length-prefixed hub messages on one bidirectional stream. Dropping it
+/// closes the connection.
+pub struct HubStream {
+    conn: Connection,
+    send: SendStream,
+    recv: RecvStream,
+}
+
+impl std::fmt::Debug for HubStream {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("HubStream").finish_non_exhaustive()
+    }
+}
+
+impl HubStream {
+    /// Transport key of the other side.
+    #[must_use]
+    pub fn remote_id(&self) -> [u8; 32] {
+        *self.conn.remote_id().as_bytes()
+    }
+
+    /// Splits into a writer and a reader for concurrent use.
+    #[must_use]
+    pub fn split(self) -> (HubWriter, HubReader) {
+        (
+            HubWriter {
+                conn: self.conn.clone(),
+                send: self.send,
+            },
+            HubReader {
+                conn: self.conn,
+                recv: self.recv,
+            },
+        )
+    }
+}
+
+/// Sending half of a [`HubStream`].
+pub struct HubWriter {
+    conn: Connection,
+    send: SendStream,
+}
+
+impl std::fmt::Debug for HubWriter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("HubWriter").finish_non_exhaustive()
+    }
+}
+
+impl HubWriter {
+    /// Writes one encoded message; `false` once the session is gone.
+    pub async fn send(&mut self, bytes: &[u8]) -> bool {
+        bytes.len() <= MAX_MSG_LEN && write_frame(&mut self.send, bytes).await
+    }
+
+    /// Ends the session.
+    pub fn close(&self) {
+        self.conn.close(VarInt::from_u32(0), b"bye");
+    }
+}
+
+/// Receiving half of a [`HubStream`].
+pub struct HubReader {
+    conn: Connection,
+    recv: RecvStream,
+}
+
+impl std::fmt::Debug for HubReader {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("HubReader").finish_non_exhaustive()
+    }
+}
+
+impl HubReader {
+    /// The next message's bytes (size-checked before allocation, not decoded); `None` at the end
+    /// of the session or on an oversized frame.
+    pub async fn recv(&mut self) -> Option<Vec<u8>> {
+        let bytes = read_raw(&mut self.recv).await;
+        if bytes.is_none() {
+            self.conn.close(VarInt::from_u32(0), b"done");
+        }
+        bytes
+    }
 }
 
 /// Configuration.
@@ -142,7 +236,7 @@ impl IrohCla {
     ) -> Result<(Self, mpsc::UnboundedReceiver<IrohEvent>), IrohError> {
         // `Minimal`: crypto provider only. No relay transport, no DNS/pkarr publishing.
         let endpoint = Endpoint::builder(presets::Minimal)
-            .alpns(vec![ALPN.to_vec()])
+            .alpns(vec![ALPN.to_vec(), HUB_ALPN.to_vec()])
             .transport_config(transport_config())
             .bind()
             .await
@@ -269,6 +363,49 @@ impl IrohCla {
         p.tx.try_send((bytes, Some(done)))
             .map_err(|_| IrohError::PeerUnavailable)?;
         Ok(rx)
+    }
+
+    /// The transport key of the device behind encounter `peer`.
+    #[must_use]
+    pub fn remote_id(&self, peer: PeerHandle) -> Option<[u8; 32]> {
+        self.inner
+            .peers
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .get(&peer)
+            .map(|p| *p.remote.as_bytes())
+    }
+
+    /// This endpoint's transport key.
+    #[must_use]
+    pub fn id(&self) -> [u8; 32] {
+        *self.inner.endpoint.id().as_bytes()
+    }
+
+    /// Opens a hub session to the device behind encounter `peer` (the endpoint already knows
+    /// how to reach it). `None` if it is gone or does not serve a hub.
+    pub async fn dial_hub(&self, peer: PeerHandle) -> Option<HubStream> {
+        let remote = self
+            .inner
+            .peers
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .get(&peer)?
+            .remote;
+        let attempt = async {
+            let conn = self
+                .inner
+                .endpoint
+                .connect(EndpointAddr::from(remote), HUB_ALPN)
+                .await
+                .ok()?;
+            let (send, recv) = conn.open_bi().await.ok()?;
+            Some(HubStream { conn, send, recv })
+        };
+        tokio::time::timeout(DIAL_TIMEOUT, attempt)
+            .await
+            .ok()
+            .flatten()
     }
 
     /// Closes the connection to `peer` (after a `bye` or a protocol violation).
@@ -414,6 +551,18 @@ async fn accept(inner: Arc<Inner>) {
             let Ok(conn) = incoming.await else {
                 return;
             };
+            if conn.alpn() == HUB_ALPN {
+                // The dialler opens the stream and writes `hello` first.
+                if let Ok(Ok((send, recv))) =
+                    tokio::time::timeout(DIAL_TIMEOUT, conn.accept_bi()).await
+                {
+                    let _ =
+                        inner
+                            .events
+                            .send(IrohEvent::HubIncoming(HubStream { conn, send, recv }));
+                }
+                return;
+            }
             if conn.alpn() != ALPN {
                 conn.close(VarInt::from_u32(1), b"alpn");
                 return;
@@ -502,6 +651,11 @@ async fn reader(inner: Arc<Inner>, peer: PeerHandle, conn: Connection, mut recv:
 
 /// Reads one length-prefixed message. `None` on EOF, I/O error, oversize or malformed input.
 async fn read_frame(recv: &mut RecvStream) -> Option<EncounterMsg> {
+    EncounterMsg::decode(&read_raw(recv).await?).ok()
+}
+
+/// Reads one length-prefixed frame. `None` on EOF, I/O error or oversize.
+async fn read_raw(recv: &mut RecvStream) -> Option<Vec<u8>> {
     let mut len = [0u8; 4];
     recv.read_exact(&mut len).await.ok()?;
     let len = usize::try_from(u32::from_be_bytes(len)).ok()?;
@@ -511,7 +665,7 @@ async fn read_frame(recv: &mut RecvStream) -> Option<EncounterMsg> {
     }
     let mut buf = vec![0u8; len];
     recv.read_exact(&mut buf).await.ok()?;
-    EncounterMsg::decode(&buf).ok()
+    Some(buf)
 }
 
 #[cfg(test)]
