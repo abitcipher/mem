@@ -114,7 +114,8 @@ Future<void> _send(WidgetTester tester, String text) async {
 
 /// Opens the home screen's menu and picks [label].
 Future<void> _menu(WidgetTester tester, String label) async {
-  await tester.tap(find.byIcon(Icons.more_vert));
+  // By its tooltip: the button shows the MEM logo, not a stock icon.
+  await tester.tap(find.byTooltip('Show menu'));
   await _calm(tester);
   await tester.tap(find.text(label).last);
 }
