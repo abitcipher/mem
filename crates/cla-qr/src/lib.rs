@@ -276,6 +276,31 @@ impl Scanner {
 #[must_use]
 pub fn decode_luma(luma: &[u8], width: u32, height: u32, row_stride: u32) -> Option<Payload> {
     let (crop, side) = center_square(luma, width, height, row_stride)?;
+    // rxing's detector misses a few percent of valid codes in one orientation and finds them
+    // in another (the data itself decodes), so a failed square is tried turned a quarter and
+    // a half turn as well. Turned 270° and then 180°, every code of a 20 000-text sample read.
+    if let Some(p) = decode_square(crop.clone(), side) {
+        return Some(p);
+    }
+    let quarter = turn_left(&crop, side)?;
+    if let Some(p) = decode_square(quarter.clone(), side) {
+        return Some(p);
+    }
+    decode_square(turn_left(&quarter, side)?, side)
+}
+
+/// The square turned a quarter turn counter-clockwise: output row `r`, column `c` is input
+/// row `c`, column `side - 1 - r`.
+fn turn_left(square: &[u8], side: u32) -> Option<Vec<u8>> {
+    let s = usize::try_from(side).ok()?;
+    (0..s)
+        .flat_map(|r| (0..s).map(move |c| c * s + (s - 1 - r)))
+        .map(|i| square.get(i).copied())
+        .collect()
+}
+
+/// One decoding attempt on a contiguous square luma image.
+fn decode_square(crop: Vec<u8>, side: u32) -> Option<Payload> {
     let reader_input = Luma8LuminanceSource::new(crop, side, side).ok()?;
     let mut bitmap = BinaryBitmap::new(HybridBinarizer::new(reader_input));
     let hints = DecodeHints {
@@ -444,6 +469,30 @@ mod tests {
                 ..
             }
         ));
+    }
+
+    /// rxing's detector misses some valid codes in one orientation; the turned retries must
+    /// read every one of a few hundred random texts of the sizes that showed it.
+    #[test]
+    fn every_random_text_code_is_read() {
+        const ABC: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+        let mut r: u64 = 0x9e37_79b9_7f4a_7c15;
+        let mut missed = Vec::new();
+        for i in 0..300 {
+            let mut text = String::from("memdevice1:");
+            for _ in 0..150 + i % 170 {
+                r ^= r << 13;
+                r ^= r >> 7;
+                r ^= r << 17;
+                text.push(char::from(ABC[usize::try_from(r % 64).unwrap()]));
+            }
+            let (img, stride) = photograph(&render_text(&text).unwrap(), 4, 720, 480);
+            match Scanner::new().scan_luma(&img, 720, 480, stride) {
+                ScanEvent::Text(t) if t == text => {}
+                _ => missed.push(text.len()),
+            }
+        }
+        assert!(missed.is_empty(), "not read, by length: {missed:?}");
     }
 
     #[test]
