@@ -95,8 +95,8 @@ struct Link {
 pub(crate) struct DeviceHubs {
     pub(crate) settings: DeviceHubSettings,
     links: BTreeMap<PeerHandle, Link>,
-    /// Encounters we already asked the runtime to dial for a hub.
-    asked: BTreeSet<PeerHandle>,
+    /// Encounters we already asked the runtime to dial for a contact's hub.
+    asked: BTreeSet<(PeerHandle, ContactId)>,
     /// Recent purge tokens, passed on to every device hub we use.
     tokens: VecDeque<[u8; 16]>,
 }
@@ -215,6 +215,8 @@ impl Agent {
             return alloc::vec![Output::Rejected(RejectReason::UnknownContact)];
         };
         c.prefs.use_as_hub = enabled;
+        // Turned on again within the same encounter: dial again.
+        self.devhub.asked.retain(|(_, c)| *c != contact);
         let mut out = alloc::vec![Output::Persist(StorageOp::SaveSnapshot)];
         if enabled {
             out.extend(self.want_device_hubs());
@@ -250,7 +252,7 @@ impl Agent {
         for contact in wanted {
             for cla in [ClaId::Iroh, ClaId::WifiDirect] {
                 if let Some(peer) = self.peer_for(contact, cla)
-                    && self.devhub.asked.insert(peer)
+                    && self.devhub.asked.insert((peer, contact))
                 {
                     out.push(Output::WantDeviceHub { peer, contact });
                 }
@@ -270,7 +272,7 @@ impl Agent {
 
     /// An encounter ended: it may be dialled again in a later one.
     pub(super) fn device_hub_encounter_ended(&mut self, peer: PeerHandle) {
-        self.devhub.asked.remove(&peer);
+        self.devhub.asked.retain(|(p, _)| *p != peer);
     }
 
     /// Remembers a purge token to pass on to the device hubs we use.
@@ -322,9 +324,11 @@ impl Agent {
     }
 
     pub(super) fn device_hub_down(&mut self, peer: PeerHandle) -> Vec<Output> {
-        if self.devhub.links.remove(&peer).is_none() {
+        let Some(link) = self.devhub.links.remove(&peer) else {
             return Vec::new();
-        }
+        };
+        // A later encounter, or the next tags in this one, may dial again.
+        self.devhub.asked.retain(|(_, c)| *c != link.contact);
         self.forget_peer_ops(peer);
         alloc::vec![Output::ReachabilityChanged]
     }
@@ -671,5 +675,61 @@ mod tests {
             enabled: false,
         });
         assert!(out.contains(&Output::CloseDeviceHub { peer: link }));
+    }
+
+    #[test]
+    fn turning_the_hub_on_again_in_the_same_encounter_dials_again() {
+        let (mut h, mut c, _) = three();
+        // C meets H over the local network: hellos and tags both ways.
+        let (pc, ph) = (PeerHandle(1), PeerHandle(2));
+        let mut to_h = c.run(Input::EncounterStarted {
+            peer: pc,
+            cla: ClaId::Iroh,
+        });
+        let mut to_c = h.run(Input::EncounterStarted {
+            peer: ph,
+            cla: ClaId::Iroh,
+        });
+        for _ in 0..3 {
+            let msgs = |out: &[Output]| -> Vec<mem_proto::encounter::EncounterMsg> {
+                out.iter()
+                    .filter_map(|o| match o {
+                        Output::Encounter { msg, .. } => Some(msg.clone()),
+                        _ => None,
+                    })
+                    .collect()
+            };
+            let (a, b) = (msgs(&to_h), msgs(&to_c));
+            to_h.clear();
+            to_c.clear();
+            for msg in a {
+                to_c.extend(h.run(Input::EncounterMessage { peer: ph, msg }));
+            }
+            for msg in b {
+                to_h.extend(c.run(Input::EncounterMessage { peer: pc, msg }));
+            }
+        }
+        let want = |out: &[Output]| {
+            out.iter()
+                .any(|o| matches!(o, Output::WantDeviceHub { peer, .. } if *peer == pc))
+        };
+        assert!(want(&c.run(Input::SetUseDeviceHub {
+            contact: h.id(),
+            enabled: true,
+        })));
+        let link = PeerHandle(1 << 40);
+        let _ = c.run(Input::DeviceHubUp {
+            peer: link,
+            contact: h.id(),
+        });
+        let _ = c.run(Input::SetUseDeviceHub {
+            contact: h.id(),
+            enabled: false,
+        });
+        let _ = c.run(Input::DeviceHubDown { peer: link });
+        assert!(want(&c.run(Input::SetUseDeviceHub {
+            contact: h.id(),
+            enabled: true,
+        })));
     }
 }
