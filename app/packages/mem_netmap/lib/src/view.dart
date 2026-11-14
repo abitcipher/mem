@@ -39,6 +39,7 @@ class NetMapView extends StatefulWidget {
     this.layout = const RadialLayout(),
     this.onTapNode,
     this.onDropNode,
+    this.onDragChanged,
     super.key,
   });
 
@@ -56,6 +57,9 @@ class NetMapView extends StatefulWidget {
 
   /// Node [dragged] was dropped on node [target] (which accepts drops).
   final void Function(String dragged, String target)? onDropNode;
+
+  /// A drag started (the node's id) or ended (`null`), e.g. to show a hint.
+  final void Function(String? dragged)? onDragChanged;
 
   @override
   State<NetMapView> createState() => _NetMapViewState();
@@ -257,6 +261,8 @@ class _NetMapViewState extends State<NetMapView>
       clock: _clock,
       centre: centre,
       highlighted: _hover == n.id,
+      // While dragging, every place the node may be dropped on lights up.
+      candidate: _dragFrom != null && n.acceptsDrop && n.id != _dragFrom,
     );
     card = GestureDetector(
       onTap: widget.onTapNode == null ? null : () => widget.onTapNode!(n.id),
@@ -267,6 +273,7 @@ class _NetMapViewState extends State<NetMapView>
                 _dragFrom = n.id;
                 _dragTo = topLeft + d.localPosition;
               });
+              widget.onDragChanged?.call(n.id);
               _wake();
             },
       onLongPressMoveUpdate: !n.draggable
@@ -288,6 +295,7 @@ class _NetMapViewState extends State<NetMapView>
                 _dragTo = null;
                 _hover = null;
               });
+              widget.onDragChanged?.call(null);
               if (target != null && from != null) {
                 widget.onDropNode?.call(from, target);
               }
@@ -346,9 +354,11 @@ class _NodeCard extends StatelessWidget {
     required this.clock,
     required this.centre,
     required this.highlighted,
+    this.candidate = false,
   });
 
   final NetNode node;
+  final bool candidate;
   final NetMapTheme theme;
   final ValueNotifier<double> clock;
   final bool centre;
@@ -364,8 +374,12 @@ class _NodeCard extends StatelessWidget {
         color: theme.nodeFill,
         borderRadius: BorderRadius.circular(centre ? 60 : 14),
         border: Border.all(
-          color: highlighted ? ring : theme.nodeBorder,
-          width: highlighted ? 2.5 : 1.5,
+          color: highlighted
+              ? ring
+              : candidate
+              ? ring.withValues(alpha: 0.7)
+              : theme.nodeBorder,
+          width: highlighted || candidate ? 2.5 : 1.5,
         ),
         boxShadow: [
           BoxShadow(
@@ -373,6 +387,12 @@ class _NodeCard extends StatelessWidget {
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
+          if (highlighted || candidate)
+            BoxShadow(
+              color: ring.withValues(alpha: highlighted ? 0.45 : 0.25),
+              blurRadius: 18,
+              spreadRadius: 2,
+            ),
         ],
       ),
       padding: const EdgeInsets.all(6),

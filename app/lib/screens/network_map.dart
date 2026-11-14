@@ -44,6 +44,7 @@ class _NetworkMapScreenState extends State<NetworkMapScreen> {
   NetworkSnapshot? _last;
   final _events = <String>[];
   Set<String> _edges = {};
+  bool _dragging = false;
 
   @override
   void didChangeDependencies() {
@@ -151,9 +152,9 @@ class _NetworkMapScreenState extends State<NetworkMapScreen> {
         title: Text(l.netmapTitle),
         actions: [
           IconButton(
-            tooltip: l.netmapHint,
+            tooltip: l.netmapHelpTitle,
             icon: const Icon(Icons.help_outline),
-            onPressed: () => showSnack(context, l.netmapHint),
+            onPressed: () => _help(context),
           ),
         ],
       ),
@@ -165,9 +166,16 @@ class _NetworkMapScreenState extends State<NetworkMapScreen> {
               controller: _controller,
               onTapNode: (id) => _tap(context, id, snapshot),
               onDropNode: (dragged, target) => _drop(context, dragged, target),
+              onDragChanged: (id) => setState(() => _dragging = id != null),
             ),
           ),
-          Positioned(left: 12, top: 8, right: 12, child: _Legend(l: l)),
+          if (_dragging)
+            Positioned(
+              left: 12,
+              top: 8,
+              right: 12,
+              child: _Hint(text: l.netmapDragHint),
+            ),
           if (_events.isNotEmpty)
             Positioned(
               left: 12,
@@ -195,7 +203,11 @@ class _NetworkMapScreenState extends State<NetworkMapScreen> {
         id: _me,
         ring: NetRing.centre,
         label: l.netmapThisDevice,
-        subtitle: s.serving ? l.netmapServing(clients) : null,
+        subtitle: !s.serving
+            ? null
+            : clients > 0
+            ? l.netmapServing(clients)
+            : l.netmapServingIdle,
         icon: Icons.smartphone,
         state: NetNodeState.up,
         badge: s.serving && s.hubHolding > BigInt.zero
@@ -410,6 +422,8 @@ class _NetworkMapScreenState extends State<NetworkMapScreen> {
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
+      // As tall as its content (up to the screen), scrolling only when it does not fit.
+      isScrollControlled: true,
       builder: (context) => SafeArea(
         child: StatefulBuilder(
           builder: (context, setSheet) {
@@ -421,6 +435,7 @@ class _NetworkMapScreenState extends State<NetworkMapScreen> {
                 c;
             return ListView(
               shrinkWrap: true,
+              padding: const EdgeInsets.only(bottom: 8),
               children: [
                 ListTile(
                   title: Text(
@@ -453,6 +468,18 @@ class _NetworkMapScreenState extends State<NetworkMapScreen> {
                     );
                   },
                 ),
+                ListTile(
+                  leading: const Icon(Icons.folder_shared_outlined),
+                  title: Text(l.sharesMine(contactTitle(now))),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => SharesScreen(contactId: contactId),
+                      ),
+                    );
+                  },
+                ),
                 SwitchListTile(
                   secondary: const Icon(Icons.tablet_android_outlined),
                   title: Text(l.deviceHubUse),
@@ -467,10 +494,76 @@ class _NetworkMapScreenState extends State<NetworkMapScreen> {
                     setSheet(() {});
                   },
                 ),
+                const Divider(),
+                ListTile(
+                  leading: Icon(
+                    Icons.person_remove_outlined,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  title: Text(
+                    l.removeContact,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _remove(this.context, contactId);
+                  },
+                ),
               ],
             );
           },
         ),
+      ),
+    );
+  }
+
+  /// Removes a contact after the same confirmation as the contact screen.
+  Future<void> _remove(BuildContext context, String contactId) async {
+    final l = AppLocalizations.of(context);
+    final state = AppScope.read(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l.removeContactTitle),
+        content: Text(l.removeContactBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l.removeContact),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    try {
+      await state.node.removeContact(contactId: contactId);
+      state.changed();
+    } on Object catch (e) {
+      if (context.mounted) showSnack(context, reasonText(context, e));
+    }
+  }
+
+  /// What the map shows and how to use it, with its own scrolling.
+  Future<void> _help(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.92,
+        builder: (context, scroll) => _HelpBody(l: l, scroll: scroll),
       ),
     );
   }
@@ -515,39 +608,102 @@ class _NetworkMapScreenState extends State<NetworkMapScreen> {
   }
 }
 
-/// What the line styles mean.
-class _Legend extends StatelessWidget {
-  const _Legend({required this.l});
+/// The help text: what the map is, the lines, taps, dragging and zoom.
+class _HelpBody extends StatelessWidget {
+  const _HelpBody({required this.l, required this.scroll});
 
   final AppLocalizations l;
+  final ScrollController scroll;
 
   @override
   Widget build(BuildContext context) {
-    final style = Theme.of(context).textTheme.labelSmall;
+    final text = Theme.of(context).textTheme;
     final color = Theme.of(context).colorScheme.onSurfaceVariant;
-    Widget item(Widget line, String text) => Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        line,
-        const SizedBox(width: 4),
-        Text(text, style: style),
-      ],
+    Widget heading(String s) => Padding(
+      padding: const EdgeInsets.only(top: 16, bottom: 6),
+      child: Text(s, style: text.titleSmall),
     );
-    Widget line({bool dashed = false, double opacity = 1}) => SizedBox(
-      width: 22,
-      height: 8,
-      child: CustomPaint(
-        painter: _LegendLine(color.withValues(alpha: opacity), dashed),
+    Widget line(String label, {bool dashed = false, double opacity = 1}) =>
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 36,
+                height: 10,
+                child: CustomPaint(
+                  painter: _LegendLine(
+                    color.withValues(alpha: opacity),
+                    dashed,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Text(label, style: text.bodyMedium)),
+            ],
+          ),
+        );
+    return Scrollbar(
+      controller: scroll,
+      thumbVisibility: true,
+      child: ListView(
+        controller: scroll,
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        children: [
+          Text(l.netmapHelpTitle, style: text.titleLarge),
+          const SizedBox(height: 8),
+          Text(l.netmapHelpWhat, style: text.bodyMedium),
+          heading(l.netmapHelpLines),
+          line(l.netmapLegendLive),
+          line(l.netmapLegendLater, dashed: true),
+          line(l.netmapLegendOff, opacity: 0.35),
+          const SizedBox(height: 6),
+          Text(l.netmapHelpColours, style: text.bodyMedium),
+          const SizedBox(height: 6),
+          Text(l.netmapHelpEvents, style: text.bodyMedium),
+          heading(l.netmapHelpTapTitle),
+          Text(l.netmapHelpTap, style: text.bodyMedium),
+          heading(l.netmapHelpDragTitle),
+          Text(l.netmapHelpDrag, style: text.bodyMedium),
+          const SizedBox(height: 12),
+          Text(l.netmapHelpZoom, style: text.bodySmall),
+        ],
       ),
     );
-    return Wrap(
-      spacing: 12,
-      runSpacing: 4,
-      children: [
-        item(line(), l.netmapLegendLive),
-        item(line(dashed: true), l.netmapLegendLater),
-        item(line(opacity: 0.35), l.netmapLegendOff),
-      ],
+  }
+}
+
+/// A line of guidance over the map while dragging.
+class _Hint extends StatelessWidget {
+  const _Hint({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: scheme.inverseSurface,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Row(
+          children: [
+            Icon(
+              Icons.pan_tool_alt_outlined,
+              size: 18,
+              color: scheme.onInverseSurface,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(color: scheme.onInverseSurface),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -2172,9 +2172,48 @@ class AppLocalizationsUk extends AppLocalizations {
   String get netmapOpenChat => 'Відкрити чат';
 
   @override
-  String get netmapHint =>
-      'Торкніться вузла, щоб побачити налаштування. Утримуйте контакт і перетягніть на «Хаби контактів», щоб використовувати його пристрій як хаб.';
+  String get netmapOnYourHub => 'на вашому хабі';
 
   @override
-  String get netmapOnYourHub => 'на вашому хабі';
+  String get netmapHelpTitle => 'Про карту мережі';
+
+  @override
+  String get netmapHelpWhat =>
+      'Як цей телефон з\'єднаний просто зараз: способи доставки — навколо нього, ваші контакти — назовні. Показано лише власні зв\'язки цього телефона, ніколи — з ким спілкуються ваші контакти.';
+
+  @override
+  String get netmapHelpLines => 'Лінії';
+
+  @override
+  String get netmapHelpColours =>
+      'Колір — це рівень приватності зв\'язку (P0 найприватніший, далі P1–P4); мітка на лінії його називає.';
+
+  @override
+  String get netmapHelpEvents =>
+      'Крапка, що біжить лінією, — це повідомлення, підтвердження чи частина файлу. Коло розходиться там, де щось з\'єднується чи від\'єднується, а останні події показано внизу.';
+
+  @override
+  String get netmapHelpTapTitle => 'Дотик';
+
+  @override
+  String get netmapHelpTap =>
+      'Торкніться каналу, щоб побачити перемикач і що він розкриває, — так само, як у «Каналах». Торкніться контакту: чат, спільні файли, хаб або видалення.';
+
+  @override
+  String get netmapHelpDragTitle => 'Утримання й перетягування';
+
+  @override
+  String get netmapHelpDrag =>
+      'Утримуйте контакт, перетягніть на «Хаби контактів» і відпустіть: MEM спитає, чи використовувати пристрій цього контакту як хаб. Місця, куди можна відпустити, підсвічуються під час перетягування. Нічого не зміниться, доки ви не підтвердите.';
+
+  @override
+  String get netmapHelpZoom =>
+      'Зводьте пальці, щоб масштабувати; тягніть порожнє місце, щоб рухати карту.';
+
+  @override
+  String get netmapDragHint =>
+      'Відпустіть на «Хаби контактів», щоб використовувати пристрій цього контакту як хаб';
+
+  @override
+  String get netmapServingIdle => 'Хаб увімкнено';
 }

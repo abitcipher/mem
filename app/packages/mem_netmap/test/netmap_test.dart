@@ -106,6 +106,7 @@ void main() {
     NetMapController? controller,
     void Function(String)? onTap,
     void Function(String, String)? onDrop,
+    void Function(String?)? onDrag,
     Brightness brightness = Brightness.dark,
   }) => tester.pumpWidget(
     MaterialApp(
@@ -116,6 +117,7 @@ void main() {
           controller: controller,
           onTapNode: onTap,
           onDropNode: onDrop,
+          onDragChanged: onDrag,
         ),
       ),
     ),
@@ -134,7 +136,8 @@ void main() {
     tester,
   ) async {
     (String, String)? dropped;
-    await pump(tester, onDrop: (a, b) => dropped = (a, b));
+    final drags = <String?>[];
+    await pump(tester, onDrop: (a, b) => dropped = (a, b), onDrag: drags.add);
     final from = tester.getCenter(find.text('Olena'));
     final to = tester.getCenter(find.text('Hub'));
     final g = await tester.startGesture(from);
@@ -146,6 +149,8 @@ void main() {
     await g.up();
     await tester.pump();
     expect(dropped, ('olena', 'hub'));
+    // Start and end are reported (for a hint while dragging).
+    expect(drags, ['olena', null]);
     await tester.pumpWidget(const SizedBox());
   });
 

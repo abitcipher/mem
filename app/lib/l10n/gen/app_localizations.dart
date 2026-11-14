@@ -3716,17 +3716,83 @@ abstract class AppLocalizations {
   /// **'Open chat'**
   String get netmapOpenChat;
 
-  /// No description provided for @netmapHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap a node for its settings. Long-press a contact and drop it on Contacts\' hubs to use their device as a hub.'**
-  String get netmapHint;
-
   /// No description provided for @netmapOnYourHub.
   ///
   /// In en, this message translates to:
   /// **'uses your hub'**
   String get netmapOnYourHub;
+
+  /// No description provided for @netmapHelpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About the network map'**
+  String get netmapHelpTitle;
+
+  /// No description provided for @netmapHelpWhat.
+  ///
+  /// In en, this message translates to:
+  /// **'How this phone is connected right now: the ways it can deliver messages are around it, your contacts are outside. Only this phone\'s own links are shown, never who your contacts talk to.'**
+  String get netmapHelpWhat;
+
+  /// No description provided for @netmapHelpLines.
+  ///
+  /// In en, this message translates to:
+  /// **'Lines'**
+  String get netmapHelpLines;
+
+  /// No description provided for @netmapHelpColours.
+  ///
+  /// In en, this message translates to:
+  /// **'The colour is the privacy grade of the link (P0 most private, then P1 to P4); the label on a line names it.'**
+  String get netmapHelpColours;
+
+  /// No description provided for @netmapHelpEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'A dot running along a line is a message, a confirmation or a file part. A ring spreads where something connects or disconnects, and the latest events are listed at the bottom.'**
+  String get netmapHelpEvents;
+
+  /// No description provided for @netmapHelpTapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap'**
+  String get netmapHelpTapTitle;
+
+  /// No description provided for @netmapHelpTap.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a channel for its switch and what it exposes, the same as in Channels. Tap a contact for its chat, shared files, the hub option, or to remove it.'**
+  String get netmapHelpTap;
+
+  /// No description provided for @netmapHelpDragTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-press and drag'**
+  String get netmapHelpDragTitle;
+
+  /// No description provided for @netmapHelpDrag.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-press a contact, drag it onto “Contacts\' hubs” and let go: MEM asks whether to use that contact\'s device as a hub. Places you can drop on light up while you drag. Nothing changes until you confirm.'**
+  String get netmapHelpDrag;
+
+  /// No description provided for @netmapHelpZoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinch to zoom; drag an empty spot to move the map.'**
+  String get netmapHelpZoom;
+
+  /// No description provided for @netmapDragHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop on “Contacts\' hubs” to use this contact\'s device as a hub'**
+  String get netmapDragHint;
+
+  /// No description provided for @netmapServingIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hub on'**
+  String get netmapServingIdle;
 }
 
 class _AppLocalizationsDelegate
