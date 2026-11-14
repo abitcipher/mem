@@ -6,7 +6,11 @@ enum MemCallPath {
   /// Directly over the local network.
   localNetwork,
 
-  /// Through STUN/TURN servers.
+  /// Directly between the two devices over a network, at an address learned on the way (a NAT
+  /// mapping found during the connection checks, or through STUN). No server carries the media.
+  direct,
+
+  /// Relayed through a TURN server.
   servers,
 }
 
@@ -19,7 +23,9 @@ MemCallPath? pathOf(String? candidateType, String? address) {
       return (address ?? '').startsWith('192.168.49.')
           ? MemCallPath.wifiDirect
           : MemCallPath.localNetwork;
-    case 'srflx' || 'prflx' || 'relay':
+    case 'srflx' || 'prflx':
+      return MemCallPath.direct;
+    case 'relay':
       return MemCallPath.servers;
     default:
       return null;

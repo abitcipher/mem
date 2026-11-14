@@ -64,7 +64,13 @@ class ActiveCall {
 /// One call at a time, carried end to end over MEM: setup messages through the node, media
 /// through [MemCallSession]. Navigation to the call screen goes through [navigator].
 class CallController extends ChangeNotifier {
-  CallController(this.node, this.settings, this.navigator, this.openScreen);
+  CallController(
+    this.node,
+    this.settings,
+    this.navigator,
+    this.openScreen, {
+    this.onHistoryChanged,
+  });
 
   final MemNode node;
   final UiSettings settings;
@@ -72,6 +78,9 @@ class CallController extends ChangeNotifier {
 
   /// Pushes the call screen (the app's own widget, so this class needs no screen imports).
   final Route<void> Function() openScreen;
+
+  /// Called after a finished call was added to a chat, so open chats show it at once.
+  final VoidCallback? onHistoryChanged;
 
   /// A call nobody answers ends after this long.
   static const ringFor = Duration(seconds: 45);
@@ -366,11 +375,13 @@ class CallController extends ChangeNotifier {
             ? null
             : switch (c.path) {
                 MemCallPath.wifiDirect => Channel.wifiDirect,
-                MemCallPath.localNetwork => Channel.lan,
+                // Direct between the devices, no server: the same grade as the local network.
+                MemCallPath.localNetwork || MemCallPath.direct => Channel.lan,
                 MemCallPath.servers => Channel.hub,
                 null => null,
               },
       );
+      onHistoryChanged?.call();
     } on Object {
       // History is a convenience; a failure must not disturb the call.
     }

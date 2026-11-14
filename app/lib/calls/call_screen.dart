@@ -68,7 +68,8 @@ class _CallScreenState extends State<CallScreen> {
         };
         final (label, grade) = switch (c.path) {
           MemCallPath.wifiDirect => (l.channelWifiDirect, 'P0'),
-          MemCallPath.localNetwork => (l.channelLan, 'P1'),
+          MemCallPath.localNetwork ||
+          MemCallPath.direct => (l.channelLan, 'P1'),
           MemCallPath.servers => (l.channelHub, 'P2'),
           null => ('', ''),
         };

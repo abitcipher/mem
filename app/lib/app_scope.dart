@@ -38,6 +38,7 @@ class AppState extends ChangeNotifier {
       settings,
       appNavigator,
       () => MaterialPageRoute<void>(builder: (_) => const CallScreen()),
+      onHistoryChanged: notifyListeners,
     );
     var contacts = node.contacts().length;
     _events = node.events().listen((e) {

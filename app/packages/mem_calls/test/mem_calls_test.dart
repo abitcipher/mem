@@ -6,7 +6,9 @@ void main() {
     expect(pathOf('host', '192.168.49.1'), MemCallPath.wifiDirect);
     expect(pathOf('host', '10.0.0.5'), MemCallPath.localNetwork);
     expect(pathOf('relay', '144.31.216.27'), MemCallPath.servers);
-    expect(pathOf('srflx', null), MemCallPath.servers);
+    // Learned addresses are still a direct path; only a relay goes through a server.
+    expect(pathOf('srflx', null), MemCallPath.direct);
+    expect(pathOf('prflx', '192.168.1.20'), MemCallPath.direct);
     expect(pathOf('unknown', '10.0.0.5'), isNull);
   });
 
