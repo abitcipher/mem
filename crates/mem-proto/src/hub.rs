@@ -38,6 +38,9 @@ const KIND_BYE: u8 = 4;
 const KIND_WAKE_REGISTER: u8 = 5;
 const KIND_WAKE_UNREGISTER: u8 = 6;
 const KIND_GET_HUBS: u8 = 7;
+const KIND_HUB_AUTH: u8 = 8;
+const KIND_HUB_CHALLENGE: u8 = 22;
+const KIND_HUB_AUTH_OK: u8 = 23;
 const KIND_HUBS: u8 = 21;
 const KIND_PEER_HELLO: u8 = 32;
 const KIND_PEER_AUTH: u8 = 33;
@@ -199,6 +202,23 @@ pub enum HubMsg {
     GetHubs,
     /// Hub sends the signed hub list (`spec/hublist.cddl` bytes, checked by the client).
     Hubs(Vec<u8>),
+    /// Device hub to client, right after `welcome`: prove you are one of my contacts.
+    HubChallenge {
+        /// Random per connection.
+        server_nonce: [u8; 16],
+    },
+    /// Client to device hub: the contact's proof (no `put` or `fetch` before it is accepted).
+    HubAuth {
+        /// Random per connection.
+        client_nonce: [u8; 16],
+        /// HMAC over the hub's endpoint key and both nonces, client domain.
+        mac: [u8; 32],
+    },
+    /// Device hub to client: the hub's proof, same input, hub domain.
+    HubAuthOk {
+        /// HMAC.
+        mac: [u8; 32],
+    },
     /// Hub to hub: my hub key and a fresh nonce.
     PeerHello {
         /// Hub public key (Ed25519).
@@ -250,6 +270,9 @@ impl fmt::Debug for HubMsg {
             Self::FetchDone => f.write_str("FetchDone"),
             Self::GetHubs => f.write_str("GetHubs"),
             Self::Hubs(b) => write!(f, "Hubs({} B)", b.len()),
+            Self::HubChallenge { .. } => f.write_str("HubChallenge"),
+            Self::HubAuth { .. } => f.write_str("HubAuth"),
+            Self::HubAuthOk { .. } => f.write_str("HubAuthOk"),
             Self::PeerHello { .. } => f.write_str("PeerHello"),
             Self::PeerAuth(_) => f.write_str("PeerAuth"),
             Self::SyncFrom(n) => write!(f, "SyncFrom({n})"),
@@ -405,6 +428,24 @@ impl HubMsg {
             }
             Self::FetchDone => Ok(encode_with(4, |e| {
                 e.array(2)?.u8(KIND_FETCH_DONE)?.map(0)?;
+                Ok(())
+            })),
+            Self::HubChallenge { server_nonce } => Ok(encode_with(24, |e| {
+                e.array(2)?.u8(KIND_HUB_CHALLENGE)?.map(1)?;
+                e.u8(0)?.bytes(server_nonce)?;
+                Ok(())
+            })),
+            Self::HubAuth { client_nonce, mac } => Ok(encode_with(64, |e| {
+                e.array(2)?.u8(KIND_HUB_AUTH)?.map(2)?;
+                e.u8(0)?.bytes(client_nonce)?.u8(1)?.bytes(mac)?;
+                Ok(())
+            })),
+            Self::HubAuthOk { mac } => Ok(encode_with(40, |e| {
+                e.array(2)?
+                    .u8(KIND_HUB_AUTH_OK)?
+                    .map(1)?
+                    .u8(0)?
+                    .bytes(mac)?;
                 Ok(())
             })),
             Self::GetHubs => Ok(encode_with(4, |e| {
@@ -613,6 +654,27 @@ impl HubMsg {
                 }
                 Self::Hubs(b.to_vec())
             }
+            (KIND_HUB_CHALLENGE, 1) => {
+                key(&mut d, 0)?;
+                Self::HubChallenge {
+                    server_nonce: fixed::<16>(&mut d, 0)?,
+                }
+            }
+            (KIND_HUB_AUTH, 2) => {
+                key(&mut d, 0)?;
+                let client_nonce = fixed::<16>(&mut d, 0)?;
+                key(&mut d, 1)?;
+                Self::HubAuth {
+                    client_nonce,
+                    mac: fixed::<32>(&mut d, 1)?,
+                }
+            }
+            (KIND_HUB_AUTH_OK, 1) => {
+                key(&mut d, 0)?;
+                Self::HubAuthOk {
+                    mac: fixed::<32>(&mut d, 0)?,
+                }
+            }
             (KIND_PEER_HELLO, 2) => {
                 key(&mut d, 0)?;
                 let k = fixed::<32>(&mut d, 0)?;
@@ -671,8 +733,9 @@ impl HubMsg {
             (
                 KIND_HELLO | KIND_PUT | KIND_FETCH | KIND_PURGE | KIND_BYE | KIND_WAKE_REGISTER
                 | KIND_WAKE_UNREGISTER | KIND_WELCOME | KIND_PUT_OK | KIND_PUT_ERR | KIND_BUNDLES
-                | KIND_FETCH_DONE | KIND_GET_HUBS | KIND_HUBS | KIND_PEER_HELLO | KIND_PEER_AUTH
-                | KIND_SYNC_FROM | KIND_REPLICATE | KIND_REPLICATE_PURGE,
+                | KIND_FETCH_DONE | KIND_GET_HUBS | KIND_HUBS | KIND_HUB_CHALLENGE | KIND_HUB_AUTH
+                | KIND_HUB_AUTH_OK | KIND_PEER_HELLO | KIND_PEER_AUTH | KIND_SYNC_FROM
+                | KIND_REPLICATE | KIND_REPLICATE_PURGE,
                 _,
             ) => return Err(SchemaError::MapShape.into()),
             _ => return Err(SchemaError::UnknownValue { key: 0 }.into()),
@@ -834,6 +897,14 @@ mod tests {
                 foreign: false,
                 may_cross: true,
             },
+            HubMsg::HubChallenge {
+                server_nonce: [8; 16],
+            },
+            HubMsg::HubAuth {
+                client_nonce: [9; 16],
+                mac: [10; 32],
+            },
+            HubMsg::HubAuthOk { mac: [11; 32] },
         ]
     }
 

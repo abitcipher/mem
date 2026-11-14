@@ -241,6 +241,52 @@ impl ContactSecret {
         out
     }
 
+    /// Proof in a device hub login (`spec/hub.cddl` `hub_auth` / `hub_auth_ok`):
+    /// `HMAC-SHA256(contact_secret, domain || hub_endpoint_id || server_nonce || client_nonce)`
+    /// with the client's or the hub's domain.
+    ///
+    /// # Security
+    ///
+    /// Binding to the hub's transport key (the one the client dialled) and both nonces means a
+    /// third party relaying the exchange between a contact and the hub fails both checks, and a
+    /// recorded login cannot be replayed. The two directions use different domains, so one side's
+    /// proof never passes as the other's. Compare with [`ContactSecret::verify_device_hub_proof`].
+    #[must_use]
+    pub fn device_hub_proof(
+        &self,
+        side: DeviceHubSide,
+        hub_endpoint_id: &[u8; 32],
+        server_nonce: &[u8; 16],
+        client_nonce: &[u8; 16],
+    ) -> [u8; 32] {
+        let domain: &[u8] = match side {
+            DeviceHubSide::Client => b"MEM/v1/device-hub-client",
+            DeviceHubSide::Hub => b"MEM/v1/device-hub-server",
+        };
+        hmac_sha256(
+            &self.0,
+            &[domain, hub_endpoint_id, server_nonce, client_nonce],
+        )
+    }
+
+    /// Checks a device hub login proof in constant time.
+    #[must_use]
+    pub fn verify_device_hub_proof(
+        &self,
+        side: DeviceHubSide,
+        hub_endpoint_id: &[u8; 32],
+        server_nonce: &[u8; 16],
+        client_nonce: &[u8; 16],
+        proof: &[u8; 32],
+    ) -> bool {
+        let expected = self.device_hub_proof(side, hub_endpoint_id, server_nonce, client_nonce);
+        expected
+            .iter()
+            .zip(proof)
+            .fold(0u8, |acc, (a, b)| acc | (a ^ b))
+            == 0
+    }
+
     /// Checks a blob request proof in constant time.
     #[must_use]
     pub fn verify_blob_proof(
@@ -291,6 +337,15 @@ fn hkdf_expand(ikm: &[u8], info: &[u8], okm: &mut [u8]) {
     if hk.expand(info, okm).is_err() {
         okm.fill(0);
     }
+}
+
+/// Which side of a device hub login a proof comes from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DeviceHubSide {
+    /// The contact connecting to the hub.
+    Client,
+    /// The device acting as a hub.
+    Hub,
 }
 
 #[cfg(test)]
@@ -381,6 +436,43 @@ mod tests {
         reference.update(b"abc");
         let expected: [u8; 32] = reference.finalize().into_bytes().into();
         assert_eq!(hmac_sha256(&key, &[b"a", b"bc"]), expected);
+    }
+
+    #[test]
+    fn device_hub_proofs_bind_both_nonces_the_hub_and_the_side() {
+        let s = ContactSecret(Zeroizing::new([5; 32]));
+        let c = s.device_hub_proof(DeviceHubSide::Client, &[1; 32], &[2; 16], &[3; 16]);
+        assert!(s.verify_device_hub_proof(DeviceHubSide::Client, &[1; 32], &[2; 16], &[3; 16], &c));
+        assert!(!s.verify_device_hub_proof(DeviceHubSide::Hub, &[1; 32], &[2; 16], &[3; 16], &c));
+        assert!(!s.verify_device_hub_proof(
+            DeviceHubSide::Client,
+            &[9; 32],
+            &[2; 16],
+            &[3; 16],
+            &c
+        ));
+        assert!(!s.verify_device_hub_proof(
+            DeviceHubSide::Client,
+            &[1; 32],
+            &[9; 16],
+            &[3; 16],
+            &c
+        ));
+        assert!(!s.verify_device_hub_proof(
+            DeviceHubSide::Client,
+            &[1; 32],
+            &[2; 16],
+            &[9; 16],
+            &c
+        ));
+        let other = ContactSecret(Zeroizing::new([6; 32]));
+        assert!(!other.verify_device_hub_proof(
+            DeviceHubSide::Client,
+            &[1; 32],
+            &[2; 16],
+            &[3; 16],
+            &c
+        ));
     }
 
     #[test]

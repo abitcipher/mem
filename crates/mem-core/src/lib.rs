@@ -20,6 +20,9 @@ pub mod disclosure;
 pub mod model;
 mod snapshot;
 
+pub use agent::devhub::{
+    DEFAULT_HUB_PER_CONTACT_BYTES, DEFAULT_HUB_TOTAL_BYTES, DeviceHubProofs, DeviceHubSettings,
+};
 pub use agent::{
     ACK_DELAY_MS, ACK_LIFETIME_S, Agent, CONTACT_KEY_STALE_MS, CardPreview, ClaError, EmailAccount,
     INTRO_COPIES, INTRO_LIFETIME_S, Input, KEY_UPDATE_AFTER_MS, MAILBOX_RETAIN_MS,

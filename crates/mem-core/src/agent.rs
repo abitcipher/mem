@@ -11,6 +11,7 @@ mod edit;
 pub(crate) use devices::{ContactDevice, list_valid as device_list_valid};
 pub use own::{DeviceJoin, JoinError};
 pub(crate) use own::{Identity as OwnIdentity, OwnDevices};
+pub(crate) mod devhub;
 mod email;
 mod group;
 mod hub;
@@ -441,6 +442,40 @@ pub enum Input {
     /// Remove a contact: its pairing secret, conversation, queued messages and rules go. If it is
     /// in a group with us it stays only a fellow group member (its 1:1 messages are refused).
     RemoveContact(ContactId),
+    /// Whether this device acts as a hub for its contacts, and how much it keeps for them
+    /// (bounded; values out of range are brought within).
+    SetDeviceHubSettings(devhub::DeviceHubSettings),
+    /// Whether we use `contact`'s device as a hub when we meet it over Iroh (off by default).
+    SetUseDeviceHub {
+        /// Contact.
+        contact: ContactId,
+        /// On or off.
+        enabled: bool,
+    },
+    /// Logged in to a contact's device hub (both proofs checked); `peer` names the connection.
+    DeviceHubUp {
+        /// The connection (distinct from encounter handles).
+        peer: PeerHandle,
+        /// Whose device it is.
+        contact: ContactId,
+    },
+    /// A device hub connection ended.
+    DeviceHubDown {
+        /// The connection.
+        peer: PeerHandle,
+    },
+    /// A device hub sent its backlog for our last fetch.
+    DeviceHubFetchDone {
+        /// The connection.
+        peer: PeerHandle,
+    },
+    /// Bundles from a device hub (untrusted).
+    DeviceHubBundles {
+        /// The connection.
+        peer: PeerHandle,
+        /// Encoded bundles.
+        bundles: Vec<Vec<u8>>,
+    },
     /// Set or clear the incoming-call tone for a contact (an app tone id, at most 32 bytes;
     /// `None` uses the default). Stays local.
     SetContactRingtone {
@@ -719,6 +754,35 @@ pub enum Output {
     HubGetList,
     /// The hubs to try changed ([`Agent::hub_candidates`]); reconnect if needed.
     HubCandidatesChanged,
+    /// Dial the hub of `contact`'s device met in encounter `peer` (same address, hub protocol),
+    /// log in, then report [`Input::DeviceHubUp`].
+    WantDeviceHub {
+        /// The encounter with that device.
+        peer: PeerHandle,
+        /// Whose device it is.
+        contact: ContactId,
+    },
+    /// Close this device hub connection.
+    CloseDeviceHub {
+        /// The connection.
+        peer: PeerHandle,
+    },
+    /// Fetch these prefixes from a device hub (replaces the last fetch on it).
+    DeviceHubFetch {
+        /// The connection.
+        peer: PeerHandle,
+        /// Tag prefixes, padded with decoys.
+        prefixes: Vec<[u8; 2]>,
+    },
+    /// Present purge tokens to a device hub.
+    DeviceHubPurge {
+        /// The connection.
+        peer: PeerHandle,
+        /// Tokens.
+        tokens: Vec<[u8; 16]>,
+    },
+    /// This device's hub settings changed: start or stop serving, apply quotas.
+    DeviceHubSettingsChanged,
     /// Withdraw a wake-up registration.
     HubWakeUnregister {
         /// Push endpoint URL.
@@ -782,6 +846,8 @@ pub(crate) struct ContactPrefs {
     pub(crate) edit_limit: Option<u8>,
     /// How late this contact accepts our edits, as they told us (0: always, the default).
     pub(crate) their_edit_limit: u8,
+    /// We use this contact's device as a hub when we meet it.
+    pub(crate) use_as_hub: bool,
 }
 
 pub(crate) struct Contact {
@@ -1216,6 +1282,8 @@ pub struct Agent {
     pub(crate) edit_limit: u8,
     /// Shares we offer and shares offered to us.
     pub(crate) shares: share::Shares,
+    /// A contact's device as a hub: our links, and whether we serve as one.
+    pub(crate) devhub: devhub::DeviceHubs,
     pub(crate) seen: VecDeque<MsgId>,
     pub(crate) rules: Vec<ConsentRule>,
     pub(crate) privacy_log: Vec<PrivacyLogEntry>,
@@ -1345,6 +1413,7 @@ impl Agent {
             offer_limits: call::OfferLimits::default(),
             edit_limit: 0,
             shares: share::Shares::default(),
+            devhub: devhub::DeviceHubs::default(),
             delivered: BTreeMap::new(),
             message_lifetime_s: MESSAGE_LIFETIME_S,
             default_floor: DEFAULT_FLOOR,
@@ -1448,6 +1517,16 @@ impl Agent {
             }
             Input::SetDisplayName(name) => self.set_display_name(name),
             Input::SetContactAlias { contact, alias } => self.set_contact_alias(contact, alias),
+            Input::SetDeviceHubSettings(settings) => self.set_device_hub_settings(settings),
+            Input::SetUseDeviceHub { contact, enabled } => {
+                self.set_use_device_hub(contact, enabled)
+            }
+            Input::DeviceHubUp { peer, contact } => self.device_hub_up(peer, contact, rng),
+            Input::DeviceHubDown { peer } => self.device_hub_down(peer),
+            Input::DeviceHubFetchDone { peer } => self.device_hub_fetch_done(peer),
+            Input::DeviceHubBundles { peer, bundles } => {
+                self.device_hub_bundles(peer, bundles, rng)
+            }
             Input::SetContactRingtone { contact, ringtone } => {
                 self.set_contact_ringtone(contact, ringtone)
             }
@@ -1558,6 +1637,7 @@ impl Agent {
             | Input::HubBundles { .. }) => self.hub_input(input, rng),
             Input::EncounterEnded { peer } => {
                 self.forget_peer_ops(peer);
+                self.device_hub_encounter_ended(peer);
                 if self.peers.remove(&peer).is_some() {
                     alloc::vec![Output::ReachabilityChanged]
                 } else {
@@ -1984,7 +2064,8 @@ impl Agent {
             .map_or(DEFAULT_FLOOR, |c| c.floor);
         ClaId::ALL
             .into_iter()
-            .filter(|cla| !self.disabled.contains(cla))
+            // A contact's device hub takes uploads only on its own, when connected.
+            .filter(|cla| !self.disabled.contains(cla) && *cla != ClaId::DeviceHub)
             .map(|cla| {
                 let grade = cla.grade();
                 ChannelOption {
@@ -2334,13 +2415,13 @@ impl Agent {
         op: OpId,
         result: Result<(), crate::agent::ClaError>,
     ) -> Vec<Output> {
-        let (message, cla, grade) = match self.ops.remove(&op) {
+        let (message, cla, grade, peer) = match self.ops.remove(&op) {
             Some(Op::Message {
                 message,
                 cla,
                 grade,
-                ..
-            }) => (message, cla, grade),
+                peer,
+            }) => (message, cla, grade, peer),
             Some(Op::Ack { contact, ids, .. }) => {
                 // Handed over: those acks are no longer owed. On failure they stay owed.
                 if result.is_ok() {
@@ -2354,6 +2435,10 @@ impl Agent {
         let now = self.now_unix_ms;
         if cla == ClaId::Hub && result.is_ok() {
             self.hub.uploaded.insert(message);
+        }
+        // A refusal counts too: the same bundle would be refused again on this link.
+        if cla == ClaId::DeviceHub && result != Err(ClaError::Cancelled) {
+            self.device_hub_uploaded(peer, message);
         }
         // A per-device copy shows on the message it copies.
         let shown = self
@@ -2539,6 +2624,7 @@ impl Agent {
                 let mut out = alloc::vec![Output::ReachabilityChanged];
                 out.extend(self.flush_peer(peer));
                 out.extend(self.request_blobs(peer));
+                out.extend(self.want_device_hubs());
                 out
             }
             EncounterMsg::BlobWant {
@@ -2681,6 +2767,7 @@ impl Agent {
         // Acks first: one going via couriers is then handed on in this same tick.
         out.extend(self.standalone_acks(rng));
         out.extend(self.hub_tick(rng));
+        out.extend(self.flush_device_hubs());
         out.extend(self.flush_email());
         let peers: Vec<PeerHandle> = self.peers.keys().copied().collect();
         for peer in peers {
@@ -3110,6 +3197,7 @@ impl Agent {
             // No one nearby: the hub, if connected, takes it, and email where a
             // standing rule allows it.
             let mut out = self.flush_hub();
+            out.extend(self.flush_device_hubs());
             out.extend(self.flush_email());
             return out;
         };
@@ -3997,6 +4085,9 @@ impl Agent {
         if cla == ClaId::Email && !enabled {
             self.email.online = false;
         }
+        if cla == ClaId::DeviceHub && !enabled {
+            out.extend(self.close_device_hubs());
+        }
         if enabled {
             self.disabled.remove(&cla);
         } else {
@@ -4790,6 +4881,7 @@ impl Agent {
     /// only re-admit a copy. Returns the database writes.
     fn tombstone(&mut self, commitment: PurgeCommitment, token: PurgeToken) -> Vec<StoreWrite> {
         self.queue_hub_token(*token.as_bytes());
+        self.note_device_hub_token(*token.as_bytes());
         let mut writes: Vec<StoreWrite> = self.courier.purge(&commitment).into_iter().collect();
         let now = self.now_unix_ms;
         let mut gone: Vec<[u8; 16]> = self
@@ -4921,6 +5013,7 @@ impl Agent {
                     | ClaId::Hub
                     | ClaId::Share
                     | ClaId::Courier
+                    | ClaId::DeviceHub
                     | ClaId::Email
                     | ClaId::Plain => TrustLevel::Remote,
                 };

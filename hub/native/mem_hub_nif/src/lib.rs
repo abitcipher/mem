@@ -110,6 +110,11 @@ fn decode_msg<'a>(env: Env<'a>, data: Binary<'a>) -> Term<'a> {
             may_cross,
         )
             .encode(env),
+        // A device hub's login is not part of this hub's protocol: same answer as before
+        // these messages existed.
+        HubMsg::HubChallenge { .. } | HubMsg::HubAuth { .. } | HubMsg::HubAuthOk { .. } => {
+            return (atoms::error(), atoms::malformed()).encode(env);
+        }
         HubMsg::ReplicatePurge { seq, tokens } => (
             atoms::replicate_purge(),
             seq,

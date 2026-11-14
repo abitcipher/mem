@@ -5,6 +5,7 @@
 hub_msg = hello / put / fetch / purge / bye / wake_register / wake_unregister / get_hubs
         / welcome / put_ok / put_err / bundles / fetch_done / hubs
         / peer_hello / peer_auth / sync_from / replicate / replicate_purge
+        / hub_challenge / hub_auth / hub_auth_ok
 
 ; client -> hub
 hello           = [0, {0: uint .le 255}]                       ; protocol version (1)
@@ -27,6 +28,15 @@ bundles    = [19, {0: [0*16 bundle_bytes], ? 1: [1*16 uint .le 15]}]  ; position
                                                               ; another operator, increasing
 fetch_done = [20, {}]
 hubs       = [21, {0: bstr .size (1..20000)}]                 ; signed hub list (spec/hublist.cddl)
+
+; A device acting as a hub for its owner's contacts, over a direct link: right after welcome
+; it sends hub_challenge; the client answers hub_auth and sends nothing else until hub_auth_ok
+; checks. Both proofs are HMAC-SHA256(contact_secret, domain || hub endpoint key (32) ||
+; server_nonce || client_nonce), domains "MEM/v1/device-hub-client" and
+; "MEM/v1/device-hub-server".
+hub_challenge = [22, {0: bstr .size 16}]                      ; server nonce
+hub_auth      = [8, {0: bstr .size 16, 1: bstr .size 32}]     ; client nonce, client proof
+hub_auth_ok   = [23, {0: bstr .size 32}]                      ; hub proof
 
 ; hub <-> hub; peer_hello and peer_auth come first
 peer_hello      = [32, {0: bstr .size 32, 1: bstr .size 16}]  ; hub key, nonce

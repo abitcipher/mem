@@ -32,7 +32,7 @@ use super::{Agent, Ask, Output, RECEIVE_TAG_DAYS, StorageOp};
 use crate::model::{MsgId, RejectReason};
 
 /// Real prefixes per fetch batch; decoys fill the rest up to a power of two (at most 64).
-const REAL_PER_BATCH: usize = MAX_PREFIXES / 2;
+pub(super) const REAL_PER_BATCH: usize = MAX_PREFIXES / 2;
 /// How often the backlog pass repeats while connected.
 const REFETCH_EVERY_MS: u64 = 60 * 60 * 1000;
 /// Purge tokens kept for the hub while it is unreachable.
@@ -490,7 +490,10 @@ impl Agent {
 
     /// Prefixes of our receiving tags (every contact, every day in `epochs`), and of our intro
     /// tag while contact requests are on.
-    fn receiving_prefixes(&self, epochs: core::ops::RangeInclusive<u32>) -> Vec<[u8; 2]> {
+    pub(super) fn receiving_prefixes(
+        &self,
+        epochs: core::ops::RangeInclusive<u32>,
+    ) -> Vec<[u8; 2]> {
         let me = self.identity.public();
         let mut out: BTreeSet<[u8; 2]> = BTreeSet::new();
         for e in epochs {
@@ -509,7 +512,7 @@ impl Agent {
 
 /// Real prefixes plus random decoys, padded to a power of two between 8 and 64, sorted so the
 /// order reveals nothing.
-fn padded(real: &[[u8; 2]], rng: &mut impl CryptoRng) -> Vec<[u8; 2]> {
+pub(super) fn padded(real: &[[u8; 2]], rng: &mut impl CryptoRng) -> Vec<[u8; 2]> {
     let target = real
         .len()
         .next_power_of_two()

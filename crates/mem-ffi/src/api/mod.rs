@@ -58,6 +58,8 @@ pub enum Channel {
     WifiDirect,
     /// Sound in the same room: pairing cards only, never messages (P0).
     Audio,
+    /// A contact's device acting as a hub, over a direct link (P3).
+    DeviceHub,
 }
 
 impl From<Channel> for ClaId {
@@ -73,6 +75,7 @@ impl From<Channel> for ClaId {
             Channel::Courier => Self::Courier,
             Channel::WifiDirect => Self::WifiDirect,
             Channel::Audio => Self::Audio,
+            Channel::DeviceHub => Self::DeviceHub,
         }
     }
 }
@@ -90,6 +93,7 @@ impl From<ClaId> for Channel {
             ClaId::Courier => Self::Courier,
             ClaId::WifiDirect => Self::WifiDirect,
             ClaId::Audio => Self::Audio,
+            ClaId::DeviceHub => Self::DeviceHub,
         }
     }
 }

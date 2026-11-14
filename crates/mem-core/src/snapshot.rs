@@ -161,6 +161,12 @@ struct StateV1 {
     /// Shares we offer and shares offered to us.
     #[serde(default, skip_serializing_if = "crate::agent::share::Shares::is_empty")]
     shares: crate::agent::share::Shares,
+    /// Whether this device acts as a hub for its contacts, and its quotas.
+    #[serde(
+        default,
+        skip_serializing_if = "crate::agent::devhub::DeviceHubSettings::is_default"
+    )]
+    device_hub: crate::agent::devhub::DeviceHubSettings,
     /// How late we accept contacts' edits (a scale position; 0: always).
     #[serde(default, skip_serializing_if = "is_zero")]
     edit_limit: u8,
@@ -298,6 +304,9 @@ struct ContactDto {
     edit_limit: Option<u8>,
     #[serde(default, skip_serializing_if = "is_zero")]
     their_edit_limit: u8,
+    /// We use this contact's device as a hub.
+    #[serde(default, skip_serializing_if = "core::ops::Not::not")]
+    use_as_hub: bool,
     /// The contact's X-Wing key (re-validated at load) and what they confirmed.
     #[serde(default)]
     xwing: Option<Vec<u8>>,
@@ -761,6 +770,7 @@ impl Agent {
                 .collect(),
             blobs: self.blobs.iter().copied().collect(),
             shares: self.shares.clone(),
+            device_hub: self.devhub.settings,
             edit_limit: self.edit_limit,
             pulls: self
                 .pulls
@@ -1131,6 +1141,7 @@ impl Agent {
         Ok(Self {
             blobs: s.blobs.iter().copied().collect(),
             shares: s.shares.clone(),
+            devhub: crate::agent::devhub::DeviceHubs::with_settings(s.device_hub),
             partials,
             pulls,
             offer_limits: crate::agent::call_limits(),
@@ -1373,6 +1384,7 @@ fn contact_dto(id: ContactId, c: &Contact) -> ContactDto {
         ringtone: c.prefs.ringtone.clone(),
         edit_limit: c.prefs.edit_limit,
         their_edit_limit: c.prefs.their_edit_limit,
+        use_as_hub: c.prefs.use_as_hub,
         xwing: c.xwing.as_ref().map(|x| x.as_bytes().to_vec()),
         told_xwing: c.told_xwing,
         devices: c
@@ -1429,6 +1441,7 @@ fn contact_from_dto(
                 ringtone: c.ringtone.clone(),
                 edit_limit: c.edit_limit,
                 their_edit_limit: c.their_edit_limit,
+                use_as_hub: c.use_as_hub,
             },
             xwing: c
                 .xwing

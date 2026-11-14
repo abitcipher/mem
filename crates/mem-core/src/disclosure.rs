@@ -104,6 +104,8 @@ pub const fn channel_name(cla: ClaId, locale: Locale) -> &'static str {
         (ClaId::Courier, Locale::Uk) => "Через пристрої MEM поруч",
         (ClaId::Audio, Locale::En) => "Sound: phones in the same room",
         (ClaId::Audio, Locale::Uk) => "Звук: телефони в одній кімнаті",
+        (ClaId::DeviceHub, Locale::En) => "A contact's device acting as a hub",
+        (ClaId::DeviceHub, Locale::Uk) => "Пристрій контакту як хаб",
     }
 }
 
@@ -127,6 +129,12 @@ const fn observer_name(o: Observer, locale: Locale) -> &'static str {
         (Observer::MobileCarrier, Locale::Uk) => "ваш мобільний оператор",
         (Observer::PushProvider, Locale::En) => "the push service you chose (for example ntfy)",
         (Observer::PushProvider, Locale::Uk) => "обраний вами push-сервіс (наприклад, ntfy)",
+        (Observer::DeviceHubOwner, Locale::En) => {
+            "the contact whose device is the hub (they see which of their contacts send and fetch)"
+        }
+        (Observer::DeviceHubOwner, Locale::Uk) => {
+            "контакт, чий пристрій є хабом (бачить, хто з їхніх контактів надсилає й отримує)"
+        }
     }
 }
 

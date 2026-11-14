@@ -2091,7 +2091,10 @@ mod tests {
             {
                 break o;
             }
-            assert!(std::time::Instant::now() < deadline, "never arrived: {state:?}");
+            assert!(
+                std::time::Instant::now() < deadline,
+                "never arrived: {state:?}"
+            );
             std::thread::sleep(Duration::from_millis(50));
         };
         assert_eq!(&opened.data[..], &body[..]);

@@ -23,7 +23,7 @@ pub mod mailbox;
 pub mod purge;
 pub mod storage;
 
-pub use contact::{ContactSecret, Direction, PairingNonce};
+pub use contact::{ContactSecret, DeviceHubSide, Direction, PairingNonce};
 pub use error::CryptoError;
 pub use identity::{Fingerprint, IdentityKey, IdentityPublic};
 pub use mailbox::{

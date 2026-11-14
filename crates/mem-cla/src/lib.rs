@@ -94,6 +94,9 @@ pub enum Observer {
     MobileCarrier,
     /// A push notification provider.
     PushProvider,
+    /// The owner of a contact's device acting as a hub: knows which of their contacts uploaded
+    /// and fetched, when, and how much.
+    DeviceHubOwner,
 }
 
 /// The exposure dimensions.
@@ -178,7 +181,7 @@ impl ExposureProfile {
             PrivacyGrade::P5
         } else if watched_by(Observer::ThirdPartyPlatform) || watched_by(Observer::MobileCarrier) {
             PrivacyGrade::P4
-        } else if watched_by(Observer::Courier) {
+        } else if watched_by(Observer::Courier) || watched_by(Observer::DeviceHubOwner) {
             PrivacyGrade::P3
         } else if watched_by(Observer::OurHub) || watched_by(Observer::IrohRelayOperator) {
             PrivacyGrade::P2
@@ -233,18 +236,22 @@ pub enum ClaId {
     /// **pairing cards only**, never bundles, so it is not in [`ClaId::ALL`] and no message can
     /// pick it.
     Audio,
+    /// A contact's device acting as a hub for its owner's contacts, over a direct link (Iroh on
+    /// the local network or Wi-Fi Direct). Used for a contact only after the user turns it on.
+    DeviceHub,
 }
 
 impl ClaId {
     /// All channels that carry bundles, most private first. [`ClaId::Audio`] carries only pairing
     /// cards and is deliberately absent.
-    pub const ALL: [Self; 9] = [
+    pub const ALL: [Self; 10] = [
         Self::Qr,
         Self::Ble,
         Self::WifiDirect,
         Self::Iroh,
         Self::Hub,
         Self::Courier,
+        Self::DeviceHub,
         Self::Email,
         Self::Share,
         Self::Plain,
@@ -268,7 +275,7 @@ impl ClaId {
                 needs_user_action: true,
                 needs_peer: false,
             },
-            Self::Iroh | Self::Ble | Self::WifiDirect => ClaCaps {
+            Self::Iroh | Self::Ble | Self::WifiDirect | Self::DeviceHub => ClaCaps {
                 max_bundle_len: 65_536,
                 needs_user_action: false,
                 needs_peer: true,
@@ -419,6 +426,20 @@ impl ClaId {
                     Observer::NearbyPeople,
                 ],
             },
+            // The hub device's owner is a contact who learns which of their contacts uploaded
+            // and fetched, the tags, timing and sizes, and so who exchanges with whom among
+            // their contacts; the local network sees the connection.
+            Self::DeviceHub => ExposureProfile {
+                content: Level::None,
+                identity: Level::Exposed,
+                social_graph: Level::Exposed,
+                timing: Level::Exposed,
+                size: Level::Limited,
+                network_addr: Level::Exposed,
+                proximity: Level::Exposed,
+                existence: Level::Exposed,
+                observers: &[Observer::DeviceHubOwner, Observer::LocalNetwork],
+            },
         }
     }
 
@@ -460,6 +481,7 @@ impl ClaId {
             Self::Plain => "plain",
             Self::Email => "email",
             Self::Courier => "courier",
+            Self::DeviceHub => "device-hub",
         }
     }
 
@@ -526,6 +548,7 @@ mod tests {
         assert!(!ClaId::Email.grade().within(DEFAULT_FLOOR));
         assert!(!ClaId::Email.on_by_default());
         assert_eq!(ClaId::Courier.grade(), PrivacyGrade::P3);
+        assert_eq!(ClaId::DeviceHub.grade(), PrivacyGrade::P3);
         assert!(ClaId::Courier.grade().within(DEFAULT_FLOOR));
         assert!(!ClaId::Courier.grade().within(LEGACY_DEFAULT_FLOOR));
         assert!(ClaId::Qr.grade().within(DEFAULT_FLOOR));
