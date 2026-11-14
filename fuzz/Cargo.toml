@@ -126,3 +126,10 @@ path = "fuzz_targets/attest_decode.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "call_decode"
+path = "fuzz_targets/call_decode.rs"
+test = false
+doc = false
+bench = false

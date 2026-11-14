@@ -26,6 +26,7 @@ const KIND_OFFER: u8 = 0;
 const KIND_ANSWER: u8 = 1;
 const KIND_CANDIDATES: u8 = 2;
 const KIND_END: u8 = 3;
+const KIND_RINGING: u8 = 4;
 
 /// Why a call ended.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -89,6 +90,11 @@ pub enum CallSignal {
         /// 1..=[`MAX_CANDIDATES`] candidate lines, each 1..=[`MAX_CANDIDATE_LEN`] bytes.
         candidates: Vec<String>,
     },
+    /// The callee's phone shows the incoming call: the caller may play its ringback now.
+    Ringing {
+        /// The call.
+        call_id: [u8; 16],
+    },
     /// The call is over.
     End {
         /// The call.
@@ -107,6 +113,7 @@ impl fmt::Debug for CallSignal {
             Self::Candidates { candidates, .. } => {
                 write!(f, "CallSignal::Candidates({})", candidates.len())
             }
+            Self::Ringing { .. } => f.write_str("CallSignal::Ringing"),
             Self::End { reason, .. } => write!(f, "CallSignal::End({reason:?})"),
         }
     }
@@ -129,11 +136,12 @@ impl CallSignal {
             Self::Offer { call_id, .. }
             | Self::Answer { call_id, .. }
             | Self::Candidates { call_id, .. }
+            | Self::Ringing { call_id }
             | Self::End { call_id, .. } => call_id,
         }
     }
 
-    /// Canonical CBOR: `[kind, call_id, ...]`.
+    /// Canonical CBOR: `[kind, call_id, ...]` (`ringing` has nothing after the id).
     ///
     /// # Errors
     ///
@@ -174,6 +182,10 @@ impl CallSignal {
                     Ok(())
                 }))
             }
+            Self::Ringing { call_id } => Ok(encode_with(24, |e| {
+                e.array(2)?.u8(KIND_RINGING)?.bytes(call_id)?;
+                Ok(())
+            })),
             Self::End { call_id, reason } => Ok(encode_with(24, |e| {
                 e.array(3)?
                     .u8(KIND_END)?
@@ -202,10 +214,13 @@ impl CallSignal {
         }
         cbor::scan(input, &limits)?;
         let mut d = Decoder::new(input);
-        if d.array().ok() != Some(Some(3)) {
+        let len = d.array().ok().flatten();
+        let kind = d.u8().map_err(|_| SchemaError::WrongType { key: 0 })?;
+        // `ringing` is `[4, call_id]`; every other kind has one more item.
+        let want = if kind == KIND_RINGING { 2 } else { 3 };
+        if len != Some(want) {
             return Err(SchemaError::MapShape.into());
         }
-        let kind = d.u8().map_err(|_| SchemaError::WrongType { key: 0 })?;
         let call_id = d
             .bytes()
             .ok()
@@ -244,6 +259,7 @@ impl CallSignal {
                     candidates,
                 }
             }
+            KIND_RINGING => Self::Ringing { call_id },
             KIND_END => {
                 let code = d.u8().map_err(|_| wrong)?;
                 Self::End {
@@ -289,6 +305,24 @@ mod tests {
             call_id: id,
             reason: EndReason::Busy,
         });
+        round_trip(&CallSignal::Ringing { call_id: id });
+        // Exactly `[4, call_id]`.
+        let ringing = CallSignal::Ringing { call_id: id }.encode().unwrap();
+        assert_eq!(&ringing[..3], &[0x82, 0x04, 0x50]);
+    }
+
+    #[test]
+    fn ringing_has_no_third_item_and_others_need_one() {
+        let id = [7; 16];
+        // `[4, id, 0]`: refused.
+        let mut long = vec![0x83, 0x04, 0x50];
+        long.extend(id);
+        long.push(0x00);
+        assert!(CallSignal::decode(&long).is_err());
+        // `[3, id]` (an end without a reason): refused.
+        let mut short = vec![0x82, 0x03, 0x50];
+        short.extend(id);
+        assert!(CallSignal::decode(&short).is_err());
     }
 
     #[test]

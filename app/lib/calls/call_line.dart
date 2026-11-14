@@ -26,6 +26,7 @@ class CallLine extends StatelessWidget {
       CallOutcomeItem.busy => l.callBusy,
       CallOutcomeItem.failed => l.callFailed,
       CallOutcomeItem.unanswered => l.callUnanswered,
+      CallOutcomeItem.unreachable => l.callUnreachable,
     };
     final s = call.durationS;
     final length = s == 0

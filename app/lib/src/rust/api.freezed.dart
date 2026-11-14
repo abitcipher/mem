@@ -776,13 +776,14 @@ extension CallSignalItemPatterns on CallSignalItem {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( CallSignalItem_Offer value)?  offer,TResult Function( CallSignalItem_Answer value)?  answer,TResult Function( CallSignalItem_Candidates value)?  candidates,TResult Function( CallSignalItem_End value)?  end,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( CallSignalItem_Offer value)?  offer,TResult Function( CallSignalItem_Answer value)?  answer,TResult Function( CallSignalItem_Candidates value)?  candidates,TResult Function( CallSignalItem_Ringing value)?  ringing,TResult Function( CallSignalItem_End value)?  end,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case CallSignalItem_Offer() when offer != null:
 return offer(_that);case CallSignalItem_Answer() when answer != null:
 return answer(_that);case CallSignalItem_Candidates() when candidates != null:
-return candidates(_that);case CallSignalItem_End() when end != null:
+return candidates(_that);case CallSignalItem_Ringing() when ringing != null:
+return ringing(_that);case CallSignalItem_End() when end != null:
 return end(_that);case _:
   return orElse();
 
@@ -801,13 +802,14 @@ return end(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( CallSignalItem_Offer value)  offer,required TResult Function( CallSignalItem_Answer value)  answer,required TResult Function( CallSignalItem_Candidates value)  candidates,required TResult Function( CallSignalItem_End value)  end,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( CallSignalItem_Offer value)  offer,required TResult Function( CallSignalItem_Answer value)  answer,required TResult Function( CallSignalItem_Candidates value)  candidates,required TResult Function( CallSignalItem_Ringing value)  ringing,required TResult Function( CallSignalItem_End value)  end,}){
 final _that = this;
 switch (_that) {
 case CallSignalItem_Offer():
 return offer(_that);case CallSignalItem_Answer():
 return answer(_that);case CallSignalItem_Candidates():
-return candidates(_that);case CallSignalItem_End():
+return candidates(_that);case CallSignalItem_Ringing():
+return ringing(_that);case CallSignalItem_End():
 return end(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
@@ -822,13 +824,14 @@ return end(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( CallSignalItem_Offer value)?  offer,TResult? Function( CallSignalItem_Answer value)?  answer,TResult? Function( CallSignalItem_Candidates value)?  candidates,TResult? Function( CallSignalItem_End value)?  end,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( CallSignalItem_Offer value)?  offer,TResult? Function( CallSignalItem_Answer value)?  answer,TResult? Function( CallSignalItem_Candidates value)?  candidates,TResult? Function( CallSignalItem_Ringing value)?  ringing,TResult? Function( CallSignalItem_End value)?  end,}){
 final _that = this;
 switch (_that) {
 case CallSignalItem_Offer() when offer != null:
 return offer(_that);case CallSignalItem_Answer() when answer != null:
 return answer(_that);case CallSignalItem_Candidates() when candidates != null:
-return candidates(_that);case CallSignalItem_End() when end != null:
+return candidates(_that);case CallSignalItem_Ringing() when ringing != null:
+return ringing(_that);case CallSignalItem_End() when end != null:
 return end(_that);case _:
   return null;
 
@@ -846,12 +849,13 @@ return end(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String callId,  String sdp)?  offer,TResult Function( String callId,  String sdp)?  answer,TResult Function( String callId,  List<String> candidates)?  candidates,TResult Function( String callId,  CallEndReason reason)?  end,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String callId,  String sdp)?  offer,TResult Function( String callId,  String sdp)?  answer,TResult Function( String callId,  List<String> candidates)?  candidates,TResult Function( String callId)?  ringing,TResult Function( String callId,  CallEndReason reason)?  end,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case CallSignalItem_Offer() when offer != null:
 return offer(_that.callId,_that.sdp);case CallSignalItem_Answer() when answer != null:
 return answer(_that.callId,_that.sdp);case CallSignalItem_Candidates() when candidates != null:
-return candidates(_that.callId,_that.candidates);case CallSignalItem_End() when end != null:
+return candidates(_that.callId,_that.candidates);case CallSignalItem_Ringing() when ringing != null:
+return ringing(_that.callId);case CallSignalItem_End() when end != null:
 return end(_that.callId,_that.reason);case _:
   return orElse();
 
@@ -870,12 +874,13 @@ return end(_that.callId,_that.reason);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String callId,  String sdp)  offer,required TResult Function( String callId,  String sdp)  answer,required TResult Function( String callId,  List<String> candidates)  candidates,required TResult Function( String callId,  CallEndReason reason)  end,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String callId,  String sdp)  offer,required TResult Function( String callId,  String sdp)  answer,required TResult Function( String callId,  List<String> candidates)  candidates,required TResult Function( String callId)  ringing,required TResult Function( String callId,  CallEndReason reason)  end,}) {final _that = this;
 switch (_that) {
 case CallSignalItem_Offer():
 return offer(_that.callId,_that.sdp);case CallSignalItem_Answer():
 return answer(_that.callId,_that.sdp);case CallSignalItem_Candidates():
-return candidates(_that.callId,_that.candidates);case CallSignalItem_End():
+return candidates(_that.callId,_that.candidates);case CallSignalItem_Ringing():
+return ringing(_that.callId);case CallSignalItem_End():
 return end(_that.callId,_that.reason);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -890,12 +895,13 @@ return end(_that.callId,_that.reason);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String callId,  String sdp)?  offer,TResult? Function( String callId,  String sdp)?  answer,TResult? Function( String callId,  List<String> candidates)?  candidates,TResult? Function( String callId,  CallEndReason reason)?  end,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String callId,  String sdp)?  offer,TResult? Function( String callId,  String sdp)?  answer,TResult? Function( String callId,  List<String> candidates)?  candidates,TResult? Function( String callId)?  ringing,TResult? Function( String callId,  CallEndReason reason)?  end,}) {final _that = this;
 switch (_that) {
 case CallSignalItem_Offer() when offer != null:
 return offer(_that.callId,_that.sdp);case CallSignalItem_Answer() when answer != null:
 return answer(_that.callId,_that.sdp);case CallSignalItem_Candidates() when candidates != null:
-return candidates(_that.callId,_that.candidates);case CallSignalItem_End() when end != null:
+return candidates(_that.callId,_that.candidates);case CallSignalItem_Ringing() when ringing != null:
+return ringing(_that.callId);case CallSignalItem_End() when end != null:
 return end(_that.callId,_that.reason);case _:
   return null;
 
@@ -1121,6 +1127,75 @@ class _$CallSignalItem_CandidatesCopyWithImpl<$Res>
 callId: null == callId ? _self.callId : callId // ignore: cast_nullable_to_non_nullable
 as String,candidates: null == candidates ? _self._candidates : candidates // ignore: cast_nullable_to_non_nullable
 as List<String>,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class CallSignalItem_Ringing extends CallSignalItem {
+  const CallSignalItem_Ringing({required this.callId}): super._();
+  
+
+/// Hex call id.
+@override final  String callId;
+
+/// Create a copy of CallSignalItem
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$CallSignalItem_RingingCopyWith<CallSignalItem_Ringing> get copyWith => _$CallSignalItem_RingingCopyWithImpl<CallSignalItem_Ringing>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CallSignalItem_Ringing&&(identical(other.callId, callId) || other.callId == callId));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,callId);
+}
+
+@override
+String toString() {
+    return 'CallSignalItem.ringing(callId: $callId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $CallSignalItem_RingingCopyWith<$Res> implements $CallSignalItemCopyWith<$Res> {
+  factory $CallSignalItem_RingingCopyWith(CallSignalItem_Ringing value, $Res Function(CallSignalItem_Ringing) _then) = _$CallSignalItem_RingingCopyWithImpl;
+@override @useResult
+$Res call({
+ String callId
+});
+
+
+
+
+}
+/// @nodoc
+class _$CallSignalItem_RingingCopyWithImpl<$Res>
+    implements $CallSignalItem_RingingCopyWith<$Res> {
+  _$CallSignalItem_RingingCopyWithImpl(this._self, this._then);
+
+  final CallSignalItem_Ringing _self;
+  final $Res Function(CallSignalItem_Ringing) _then;
+
+/// Create a copy of CallSignalItem
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? callId = null,}) {
+  return _then(CallSignalItem_Ringing(
+callId: null == callId ? _self.callId : callId // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 

@@ -1373,6 +1373,9 @@ enum CallOutcomeItem {
 
   /// Our call rang there and nobody answered.
   unanswered,
+
+  /// Our call never reached the other phone.
+  unreachable,
 }
 
 /// The media paths a call with a contact may use (its floor and standing rules).
@@ -1436,6 +1439,12 @@ sealed class CallSignalItem with _$CallSignalItem {
     /// Candidate lines.
     required List<String> candidates,
   }) = CallSignalItem_Candidates;
+
+  /// The callee's phone is ringing: the caller plays its ringback now.
+  const factory CallSignalItem.ringing({
+    /// Hex call id.
+    required String callId,
+  }) = CallSignalItem_Ringing;
 
   /// The call is over.
   const factory CallSignalItem.end({

@@ -282,6 +282,8 @@ pub enum CallOutcome {
     Failed,
     /// Our call rang there and nobody answered.
     Unanswered,
+    /// Our call never reached the other phone (it did not ring there).
+    Unreachable,
 }
 
 impl CallOutcome {
@@ -293,6 +295,7 @@ impl CallOutcome {
             Self::Busy => 3,
             Self::Failed => 4,
             Self::Unanswered => 5,
+            Self::Unreachable => 6,
         }
     }
 
@@ -304,6 +307,7 @@ impl CallOutcome {
             3 => Self::Busy,
             4 => Self::Failed,
             5 => Self::Unanswered,
+            6 => Self::Unreachable,
             _ => return None,
         })
     }

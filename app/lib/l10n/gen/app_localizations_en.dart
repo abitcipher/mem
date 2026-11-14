@@ -2190,4 +2190,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get netmapServingIdle => 'Hub on';
+
+  @override
+  String get callRingingThere => 'Ringing…';
+
+  @override
+  String get callUnreachable => 'Not reachable';
+
+  @override
+  String get callStartNearby => 'Call (nearby now)';
+
+  @override
+  String get callStartViaHub =>
+      'Call (through the hub; their phone may be off)';
 }

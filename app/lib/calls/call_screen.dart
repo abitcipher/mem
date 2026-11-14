@@ -60,11 +60,15 @@ class _CallScreenState extends State<CallScreen> {
             .firstOrNull;
         final name = contact == null ? '' : contactTitle(contact);
         final status = switch (c.phase) {
-          CallPhase.calling => l.callCalling,
+          CallPhase.dialing => l.callConnecting,
+          CallPhase.calling => l.callRingingThere,
           CallPhase.ringing => l.callIncoming,
           CallPhase.connecting => l.callConnecting,
           CallPhase.talking => _elapsed(c.talkingSince),
-          CallPhase.ended => _ended(l, c.endReason),
+          CallPhase.ended =>
+            c.outgoing && !c.reached
+                ? l.callUnreachable
+                : _ended(l, c.endReason),
         };
         final (label, grade) = switch (c.path) {
           MemCallPath.wifiDirect => (l.channelWifiDirect, 'P0'),

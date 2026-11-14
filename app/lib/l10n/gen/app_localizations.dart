@@ -3793,6 +3793,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hub on'**
   String get netmapServingIdle;
+
+  /// No description provided for @callRingingThere.
+  ///
+  /// In en, this message translates to:
+  /// **'Ringing…'**
+  String get callRingingThere;
+
+  /// No description provided for @callUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not reachable'**
+  String get callUnreachable;
+
+  /// No description provided for @callStartNearby.
+  ///
+  /// In en, this message translates to:
+  /// **'Call (nearby now)'**
+  String get callStartNearby;
+
+  /// No description provided for @callStartViaHub.
+  ///
+  /// In en, this message translates to:
+  /// **'Call (through the hub; their phone may be off)'**
+  String get callStartViaHub;
 }
 
 class _AppLocalizationsDelegate

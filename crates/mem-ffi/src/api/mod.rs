@@ -474,6 +474,11 @@ pub enum CallSignalItem {
         /// Candidate lines.
         candidates: Vec<String>,
     },
+    /// The callee's phone is ringing: the caller plays its ringback now.
+    Ringing {
+        /// Hex call id.
+        call_id: String,
+    },
     /// The call is over.
     End {
         /// Hex call id.
@@ -548,6 +553,9 @@ impl CallSignalItem {
                 call_id: call_id_bytes(&call_id)?,
                 candidates,
             },
+            Self::Ringing { call_id } => S::Ringing {
+                call_id: call_id_bytes(&call_id)?,
+            },
             Self::End { call_id, reason } => S::End {
                 call_id: call_id_bytes(&call_id)?,
                 reason: match reason {
@@ -578,6 +586,9 @@ impl CallSignalItem {
             } => Self::Candidates {
                 call_id: call_id_hex(&call_id),
                 candidates,
+            },
+            S::Ringing { call_id } => Self::Ringing {
+                call_id: call_id_hex(&call_id),
             },
             S::End { call_id, reason } => Self::End {
                 call_id: call_id_hex(&call_id),
@@ -892,6 +903,8 @@ pub enum CallOutcomeItem {
     Failed,
     /// Our call rang there and nobody answered.
     Unanswered,
+    /// Our call never reached the other phone.
+    Unreachable,
 }
 
 /// An attached file as shown.
@@ -3571,6 +3584,7 @@ impl MemNode {
                     CallOutcomeItem::Busy => CallOutcome::Busy,
                     CallOutcomeItem::Failed => CallOutcome::Failed,
                     CallOutcomeItem::Unanswered => CallOutcome::Unanswered,
+                    CallOutcomeItem::Unreachable => CallOutcome::Unreachable,
                 },
             },
             via,
@@ -4043,6 +4057,7 @@ fn message_item(m: MessageView) -> MessageItem {
                     CallOutcome::Busy => CallOutcomeItem::Busy,
                     CallOutcome::Failed => CallOutcomeItem::Failed,
                     CallOutcome::Unanswered => CallOutcomeItem::Unanswered,
+                    CallOutcome::Unreachable => CallOutcomeItem::Unreachable,
                 },
             }),
             _ => None,

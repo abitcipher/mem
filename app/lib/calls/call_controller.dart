@@ -12,6 +12,9 @@ import '../src/ui_settings.dart';
 
 /// Where a call stands, as the user sees it.
 enum CallPhase {
+  /// We are calling; the other phone has not confirmed that it rings yet.
+  dialing,
+
   /// We are calling; the other phone rings.
   calling,
 
@@ -54,6 +57,10 @@ class ActiveCall {
   /// Why it ended, when it did.
   CallEndReason? endReason;
 
+  /// Ours: the other phone confirmed it rang (or answered). A call that never got there
+  /// ends as "not reachable".
+  bool reached = false;
+
   /// The caller's description, kept until the user accepts.
   String? offerSdp;
 
@@ -85,6 +92,9 @@ class CallController extends ChangeNotifier {
   /// A call nobody answers ends after this long.
   static const ringFor = Duration(seconds: 45);
 
+  /// A call whose other phone does not confirm ringing within this long is not reachable.
+  static const reachFor = Duration(seconds: 20);
+
   ActiveCall? call;
   MemCallSession? _session;
   final _tones = MemTonePlayer();
@@ -112,7 +122,7 @@ class CallController extends ChangeNotifier {
       contactId: contactId,
       callId: _newCallId(),
       outgoing: true,
-      phase: CallPhase.calling,
+      phase: CallPhase.dialing,
     );
     call = c;
     notifyListeners();
@@ -127,10 +137,36 @@ class CallController extends ChangeNotifier {
       await _finish(CallEndReason.failed, tell: false);
       return e.toString();
     }
-    _startRinging();
-    unawaited(_playTone(incoming: false, contactId: contactId));
+    // Until the other phone says it rings: a soft dial pulse, and a limit.
+    _ring?.cancel();
+    _ring = Timer(reachFor, () {
+      if (identical(call, c) && !c.reached) {
+        unawaited(_finish(CallEndReason.unanswered));
+      }
+    });
+    unawaited(_playCue(MemTone.dial, loop: true));
     unawaited(navigator.currentState?.push(openScreen()));
     return null;
+  }
+
+  /// The other phone rings: the ringback, and the time it may ring.
+  Future<void> _reached(ActiveCall c) async {
+    if (c.reached) return;
+    c
+      ..reached = true
+      ..phase = CallPhase.calling;
+    notifyListeners();
+    _startRinging();
+    await _playTone(incoming: false, contactId: c.contactId);
+  }
+
+  /// A fixed cue at the outgoing volume.
+  Future<void> _playCue(MemTone cue, {required bool loop}) async {
+    try {
+      await _tones.play(cue, volume: settings.outgoingVolume, loop: loop);
+    } on Object {
+      // A cue that cannot play must not stop the call.
+    }
   }
 
   /// The tone for an incoming call from [contactId] (its own choice, else the default), or
@@ -201,7 +237,7 @@ class CallController extends ChangeNotifier {
 
   /// Ends the call (or stops calling).
   Future<void> hangUp() => _finish(
-    call?.phase == CallPhase.calling
+    call?.phase == CallPhase.calling || call?.phase == CallPhase.dialing
         ? CallEndReason.unanswered
         : CallEndReason.hungUp,
   );
@@ -254,8 +290,21 @@ class CallController extends ChangeNotifier {
         unawaited(_playTone(incoming: true, contactId: s.contactId));
         notifyListeners();
         unawaited(navigator.currentState?.push(openScreen()));
+        // Tell the caller it rings here, so it plays its ringback only now.
+        unawaited(_send(s.contactId, CallSignalItem.ringing(callId: callId)));
+      case CallSignalItem_Ringing(:final callId):
+        if (c == null ||
+            c.callId != callId ||
+            !c.outgoing ||
+            c.contactId != s.contactId ||
+            c.phase != CallPhase.dialing) {
+          return;
+        }
+        await _reached(c);
       case CallSignalItem_Answer(:final callId, :final sdp):
         if (c == null || c.callId != callId || !c.outgoing) return;
+        // An answer also proves it got there (an older app sends no "ringing").
+        c.reached = true;
         _ring?.cancel();
         await _stopTone();
         c.phase = CallPhase.connecting;
@@ -335,6 +384,12 @@ class CallController extends ChangeNotifier {
     c
       ..phase = CallPhase.ended
       ..endReason = reason;
+    // A cue when the call did not happen or broke off, not when someone just hung up.
+    final broke =
+        (c.outgoing && !c.reached) ||
+        reason == CallEndReason.failed ||
+        (!tell && reason != CallEndReason.hungUp);
+    if (broke) unawaited(_playCue(MemTone.unavailable, loop: false));
     final session = _session;
     _session = null;
     await session?.close();
@@ -354,6 +409,8 @@ class CallController extends ChangeNotifier {
     final talked = c.talkingSince;
     final outcome = talked != null
         ? CallOutcomeItem.answered
+        : c.outgoing && !c.reached
+        ? CallOutcomeItem.unreachable
         : switch (reason) {
             CallEndReason.declined => CallOutcomeItem.declined,
             CallEndReason.busy => CallOutcomeItem.busy,

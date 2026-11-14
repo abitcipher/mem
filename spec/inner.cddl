@@ -47,7 +47,7 @@ attachment-part = {
 ; Content type 10 (call setup, envelope kind 0, never acknowledged, lifetime 60 s, one copy,
 ; never handed to couriers): an offer, answer, ICE candidates or the end of a call.
 call-setup = [0, call-id, sdp] / [1, call-id, sdp] / [2, call-id, [1*32 candidate]] /
-             [3, call-id, end-reason]
+             [3, call-id, end-reason] / [4, call-id]   ; 4: the callee's phone is ringing
 call-id = bstr .size 16
 sdp = tstr .size (1..12288)          ; carries the media's DTLS fingerprint
 candidate = tstr .size (1..512)       ; an ICE candidate line

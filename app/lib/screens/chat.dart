@@ -11,6 +11,7 @@ import '../src/rust/api.dart';
 import '../calls/call_line.dart';
 import '../widgets/attachments.dart';
 import '../widgets/chat_sync.dart';
+import '../theme.dart';
 import '../widgets/message_bubble.dart';
 import 'contact.dart';
 import 'shares.dart';
@@ -228,6 +229,7 @@ class _ChatScreenState extends State<ChatScreen> {
         .firstOrNull;
     final title = contact == null ? '' : contactTitle(contact);
     final nearby = _state!.node.nearby().contains(widget.contactId);
+    final hubOnline = _state!.node.hubOnline();
     return Scaffold(
       appBar: AppBar(
         title: Column(
@@ -247,8 +249,19 @@ class _ChatScreenState extends State<ChatScreen> {
         actions: [
           if (_state!.calls.enabled)
             IconButton(
-              tooltip: l.callStart,
-              icon: const Icon(Icons.call_outlined),
+              // What is known before calling: nearby (a direct link is open), or only
+              // through the hub, where the other phone may well be off.
+              tooltip: nearby
+                  ? l.callStartNearby
+                  : hubOnline
+                  ? l.callStartViaHub
+                  : l.callStart,
+              icon: Badge(
+                isLabelVisible: nearby || hubOnline,
+                smallSize: 8,
+                backgroundColor: MemColors.grade(context, nearby ? 'P1' : 'P2'),
+                child: const Icon(Icons.call_outlined),
+              ),
               onPressed: () async {
                 final error = await _state!.calls.start(widget.contactId);
                 if (error != null && context.mounted) {

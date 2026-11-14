@@ -2216,4 +2216,17 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get netmapServingIdle => 'Хаб увімкнено';
+
+  @override
+  String get callRingingThere => 'Іде виклик…';
+
+  @override
+  String get callUnreachable => 'Недосяжний';
+
+  @override
+  String get callStartNearby => 'Подзвонити (поруч)';
+
+  @override
+  String get callStartViaHub =>
+      'Подзвонити (через хаб; їхній телефон може бути вимкнений)';
 }

@@ -18,7 +18,14 @@ enum MemTone {
   ringback,
 
   /// A short beep every three seconds (outgoing).
-  beep;
+  beep,
+
+  /// A soft pulse every two seconds while a call is connecting, before the other phone rings
+  /// (a cue, not offered as a ringback).
+  dial,
+
+  /// Three falling notes, once: the call did not reach the other phone, or it dropped (a cue).
+  unavailable;
 
   /// Stable id for settings.
   String get id => name;
@@ -40,9 +47,12 @@ enum MemTone {
   static List<MemTone> get forIncoming =>
       MemTone.values.where((t) => t.incoming).toList();
 
+  /// Whether this is a fixed cue rather than a tone the user picks.
+  bool get cue => this == dial || this == unavailable;
+
   /// Tones for outgoing calls, in the order offered.
   static List<MemTone> get forOutgoing =>
-      MemTone.values.where((t) => !t.incoming).toList();
+      MemTone.values.where((t) => !t.incoming && !t.cue).toList();
 }
 
 /// Plays one call tone at a time. Incoming tones go to the phone's ringtone stream, so they

@@ -829,4 +829,7 @@ String toneName(AppLocalizations l, MemTone t) => switch (t) {
   MemTone.soft => l.toneSoft,
   MemTone.ringback => l.toneRingback,
   MemTone.beep => l.toneBeep,
+  // Fixed cues, never offered in the list.
+  MemTone.dial => l.callConnecting,
+  MemTone.unavailable => l.callUnreachable,
 };

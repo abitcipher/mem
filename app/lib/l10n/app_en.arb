@@ -825,5 +825,9 @@
  "netmapHelpDrag": "Long-press a contact, drag it onto “Contacts' hubs” and let go: MEM asks whether to use that contact's device as a hub. Places you can drop on light up while you drag. Nothing changes until you confirm.",
  "netmapHelpZoom": "Pinch to zoom; drag an empty spot to move the map.",
  "netmapDragHint": "Drop on “Contacts' hubs” to use this contact's device as a hub",
- "netmapServingIdle": "Hub on"
+ "netmapServingIdle": "Hub on",
+ "callRingingThere": "Ringing…",
+ "callUnreachable": "Not reachable",
+ "callStartNearby": "Call (nearby now)",
+ "callStartViaHub": "Call (through the hub; their phone may be off)"
 }

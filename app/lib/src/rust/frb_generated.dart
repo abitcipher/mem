@@ -6228,6 +6228,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           candidates: dco_decode_list_String(raw[2]),
         );
       case 3:
+        return CallSignalItem_Ringing(callId: dco_decode_String(raw[1]));
+      case 4:
         return CallSignalItem_End(
           callId: dco_decode_String(raw[1]),
           reason: dco_decode_call_end_reason(raw[2]),
@@ -7909,6 +7911,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           candidates: var_candidates,
         );
       case 3:
+        var var_callId = sse_decode_String(deserializer);
+        return CallSignalItem_Ringing(callId: var_callId);
+      case 4:
         var var_callId = sse_decode_String(deserializer);
         var var_reason = sse_decode_call_end_reason(deserializer);
         return CallSignalItem_End(callId: var_callId, reason: var_reason);
@@ -10015,8 +10020,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_i_32(2, serializer);
         sse_encode_String(callId, serializer);
         sse_encode_list_String(candidates, serializer);
-      case CallSignalItem_End(callId: final callId, reason: final reason):
+      case CallSignalItem_Ringing(callId: final callId):
         sse_encode_i_32(3, serializer);
+        sse_encode_String(callId, serializer);
+      case CallSignalItem_End(callId: final callId, reason: final reason):
+        sse_encode_i_32(4, serializer);
         sse_encode_String(callId, serializer);
         sse_encode_call_end_reason(reason, serializer);
     }

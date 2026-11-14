@@ -105,7 +105,7 @@ impl CallPolicy {
                     candidates,
                 })
             }
-            end @ CallSignal::End { .. } => Some(end),
+            other @ (CallSignal::Ringing { .. } | CallSignal::End { .. }) => Some(other),
         }
     }
 }

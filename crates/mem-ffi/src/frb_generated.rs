@@ -7531,6 +7531,7 @@ impl SseDecode for crate::api::CallOutcomeItem {
             3 => crate::api::CallOutcomeItem::Busy,
             4 => crate::api::CallOutcomeItem::Failed,
             5 => crate::api::CallOutcomeItem::Unanswered,
+            6 => crate::api::CallOutcomeItem::Unreachable,
             _ => unreachable!("Invalid variant for CallOutcomeItem: {}", inner),
         };
     }
@@ -7580,6 +7581,12 @@ impl SseDecode for crate::api::CallSignalItem {
                 };
             }
             3 => {
+                let mut var_callId = <String>::sse_decode(deserializer);
+                return crate::api::CallSignalItem::Ringing {
+                    call_id: var_callId,
+                };
+            }
+            4 => {
                 let mut var_callId = <String>::sse_decode(deserializer);
                 let mut var_reason = <crate::api::CallEndReason>::sse_decode(deserializer);
                 return crate::api::CallSignalItem::End {
@@ -9706,6 +9713,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::CallOutcomeItem {
             Self::Busy => 3.into_dart(),
             Self::Failed => 4.into_dart(),
             Self::Unanswered => 5.into_dart(),
+            Self::Unreachable => 6.into_dart(),
             _ => unreachable!(),
         }
     }
@@ -9760,8 +9768,11 @@ impl flutter_rust_bridge::IntoDart for crate::api::CallSignalItem {
                 candidates.into_into_dart().into_dart(),
             ]
             .into_dart(),
+            crate::api::CallSignalItem::Ringing { call_id } => {
+                [3.into_dart(), call_id.into_into_dart().into_dart()].into_dart()
+            }
             crate::api::CallSignalItem::End { call_id, reason } => [
-                3.into_dart(),
+                4.into_dart(),
                 call_id.into_into_dart().into_dart(),
                 reason.into_into_dart().into_dart(),
             ]
@@ -11167,6 +11178,7 @@ impl SseEncode for crate::api::CallOutcomeItem {
                 crate::api::CallOutcomeItem::Busy => 3,
                 crate::api::CallOutcomeItem::Failed => 4,
                 crate::api::CallOutcomeItem::Unanswered => 5,
+                crate::api::CallOutcomeItem::Unreachable => 6,
                 _ => {
                     unimplemented!("");
                 }
@@ -11207,8 +11219,12 @@ impl SseEncode for crate::api::CallSignalItem {
                 <String>::sse_encode(call_id, serializer);
                 <Vec<String>>::sse_encode(candidates, serializer);
             }
-            crate::api::CallSignalItem::End { call_id, reason } => {
+            crate::api::CallSignalItem::Ringing { call_id } => {
                 <i32>::sse_encode(3, serializer);
+                <String>::sse_encode(call_id, serializer);
+            }
+            crate::api::CallSignalItem::End { call_id, reason } => {
+                <i32>::sse_encode(4, serializer);
                 <String>::sse_encode(call_id, serializer);
                 <crate::api::CallEndReason>::sse_encode(reason, serializer);
             }
