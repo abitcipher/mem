@@ -151,6 +151,15 @@ class CallController extends ChangeNotifier {
     );
     call = c;
     notifyListeners();
+    // Dial cue and limit first: the other phone may confirm ringing before the offer call
+    // returns, and that confirmation must not be overtaken by them.
+    _ring?.cancel();
+    _ring = Timer(reachFor, () {
+      if (identical(call, c) && !c.reached) {
+        unawaited(_finish(CallEndReason.unanswered));
+      }
+    });
+    unawaited(_playCue(MemTone.dial, loop: true));
     try {
       final session = await _open(c);
       final sdp = await session.offer();
@@ -162,14 +171,6 @@ class CallController extends ChangeNotifier {
       await _finish(CallEndReason.failed, tell: false);
       return e.toString();
     }
-    // Until the other phone says it rings: a soft dial pulse, and a limit.
-    _ring?.cancel();
-    _ring = Timer(reachFor, () {
-      if (identical(call, c) && !c.reached) {
-        unawaited(_finish(CallEndReason.unanswered));
-      }
-    });
-    unawaited(_playCue(MemTone.dial, loop: true));
     unawaited(navigator.currentState?.push(openScreen()));
     return null;
   }

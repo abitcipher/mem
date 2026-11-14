@@ -67,13 +67,48 @@ class MemTonePlayer {
   /// Counts starts and stops: a start whose number is no longer current gives up.
   int _generation = 0;
 
+  /// Requests run one after another, never interleaved; a request superseded before its
+  /// turn is skipped, so the latest one always wins (switching quickly from one tone to the
+  /// next, e.g. when the other phone confirms ringing at once, must not lose the second).
+  Future<void> _queue = Future<void>.value();
+  int _latest = 0;
+
+  Future<void> _enqueue(Future<void> Function() op, {required int ticket}) {
+    final next = _queue.then((_) async {
+      if (ticket != _latest) return;
+      try {
+        await op();
+      } on Object {
+        // A tone that cannot play or stop must not break the queue.
+      }
+    });
+    _queue = next;
+    return next;
+  }
+
   /// Plays [tone] at [volume] (0..1), in a loop or once.
-  Future<void> play(
+  Future<void> play(MemTone tone, {required double volume, bool loop = true}) {
+    final ticket = ++_latest;
+    _generation++;
+    return _enqueue(
+      () => _play(tone, volume: volume, loop: loop),
+      ticket: ticket,
+    );
+  }
+
+  /// Stops and releases whatever plays, and any start still under way.
+  Future<void> stop() {
+    final ticket = ++_latest;
+    _generation++;
+    return _enqueue(_stop, ticket: ticket);
+  }
+
+  Future<void> _play(
     MemTone tone, {
     required double volume,
-    bool loop = true,
+    required bool loop,
   }) async {
-    await stop();
+    await _stop();
     final mine = _generation;
     if (volume <= 0) return;
     final player = AudioPlayer()..audioCache = AudioCache(prefix: '');
@@ -108,16 +143,21 @@ class MemTonePlayer {
     }
   }
 
-  /// Stops and releases whatever plays, and any start still under way.
-  Future<void> stop() async {
-    _generation++;
+  Future<void> _stop() async {
     final player = _player;
     _player = null;
     if (player == null) return;
+    // Android 7's MediaPlayer refuses stop() in some states (a looping clip between plays):
+    // that must not keep the next tone from starting. Releasing it is what counts.
     try {
       await player.stop();
-    } finally {
+    } on Object {
+      // Not playing any more, or not stoppable in its state.
+    }
+    try {
       await player.dispose();
+    } on Object {
+      // Already gone.
     }
   }
 
