@@ -766,5 +766,16 @@
  "shareOpen": "Open",
  "shareNotice": "{name} shared {count, plural, one{1 file} other{{count} files}}",
  "@shareNotice": {"placeholders": {"name": {"type": "String"}, "count": {"type": "int"}}},
- "reason_unknown_share": "This share no longer exists."
+ "reason_unknown_share": "This share no longer exists.",
+ "channelDeviceHub": "contact's device",
+ "deviceHubServe": "Act as a hub for my contacts",
+ "deviceHubServeHelp": "This device keeps messages between your contacts while they are away and hands them over when they come near (the same Wi-Fi, or Wi-Fi Direct). Only your approved contacts can connect. You see which of your contacts send and fetch, when and how much, never the content. It works while MEM runs: turn on Stay reachable.",
+ "deviceHubSpace": "Space for contacts",
+ "deviceHubPerContact": "At most for one contact",
+ "deviceHubUsage": "Holding {count, plural, one{1 message} other{{count} messages}}, {size}",
+ "@deviceHubUsage": {"placeholders": {"count": {"type": "int"}, "size": {"type": "String"}}},
+ "deviceHubUse": "Use their device as a hub",
+ "deviceHubUseHelp": "When you meet {name}'s device on the same Wi-Fi or by Wi-Fi Direct, MEM leaves your undelivered messages there for your other contacts and picks up what waits for you. {name} sees which of their contacts sent and fetched, when and how much (P3), never the content.",
+ "@deviceHubUseHelp": {"placeholders": {"name": {"type": "String"}}},
+ "deviceHubConnected": "Connected to their hub now"
 }

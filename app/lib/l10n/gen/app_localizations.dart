@@ -3517,6 +3517,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This share no longer exists.'**
   String get reason_unknown_share;
+
+  /// No description provided for @channelDeviceHub.
+  ///
+  /// In en, this message translates to:
+  /// **'contact\'s device'**
+  String get channelDeviceHub;
+
+  /// No description provided for @deviceHubServe.
+  ///
+  /// In en, this message translates to:
+  /// **'Act as a hub for my contacts'**
+  String get deviceHubServe;
+
+  /// No description provided for @deviceHubServeHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'This device keeps messages between your contacts while they are away and hands them over when they come near (the same Wi-Fi, or Wi-Fi Direct). Only your approved contacts can connect. You see which of your contacts send and fetch, when and how much, never the content. It works while MEM runs: turn on Stay reachable.'**
+  String get deviceHubServeHelp;
+
+  /// No description provided for @deviceHubSpace.
+  ///
+  /// In en, this message translates to:
+  /// **'Space for contacts'**
+  String get deviceHubSpace;
+
+  /// No description provided for @deviceHubPerContact.
+  ///
+  /// In en, this message translates to:
+  /// **'At most for one contact'**
+  String get deviceHubPerContact;
+
+  /// No description provided for @deviceHubUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'Holding {count, plural, one{1 message} other{{count} messages}}, {size}'**
+  String deviceHubUsage(int count, String size);
+
+  /// No description provided for @deviceHubUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Use their device as a hub'**
+  String get deviceHubUse;
+
+  /// No description provided for @deviceHubUseHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'When you meet {name}\'s device on the same Wi-Fi or by Wi-Fi Direct, MEM leaves your undelivered messages there for your other contacts and picks up what waits for you. {name} sees which of their contacts sent and fetched, when and how much (P3), never the content.'**
+  String deviceHubUseHelp(String name);
+
+  /// No description provided for @deviceHubConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected to their hub now'**
+  String get deviceHubConnected;
 }
 
 class _AppLocalizationsDelegate

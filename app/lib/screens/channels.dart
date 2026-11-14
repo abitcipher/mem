@@ -9,6 +9,7 @@ import '../src/wifi_direct.dart';
 import '../src/platform.dart';
 import '../src/push.dart';
 import '../src/rust/api.dart';
+import '../widgets/attachments.dart' show formatSize;
 import '../widgets/grade_badge.dart';
 import '../theme.dart';
 
@@ -99,6 +100,9 @@ class _ChannelCard extends StatelessWidget {
             ] else if (info.canDisable && info.channel == Channel.email) ...[
               const Divider(height: 24),
               _EmailSettings(enabled: info.enabled),
+            ] else if (info.channel == Channel.deviceHub) ...[
+              const Divider(height: 24),
+              const _DeviceHubServe(),
             ] else if (info.canDisable && info.channel == Channel.hub) ...[
               const Divider(height: 24),
               _HubSettings(enabled: info.enabled),
@@ -368,6 +372,77 @@ class _BleSwitchState extends State<_BleSwitch> with WidgetsBindingObserver {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// This device as a hub for its contacts: on or off, how much it keeps, what it holds.
+class _DeviceHubServe extends StatelessWidget {
+  const _DeviceHubServe();
+
+  static const _mib = 1024 * 1024;
+  static const _totals = [64, 128, 256, 512, 1024];
+  static const _shares = [8, 16, 32, 64, 128];
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final state = AppScope.of(context);
+    final s = state.node.deviceHubStatus();
+    final total = s.totalBytes.toInt() ~/ _mib;
+    final share = s.perContactBytes.toInt() ~/ _mib;
+    Future<void> set({bool? serve, int? totalMib, int? shareMib}) async {
+      final t = totalMib ?? total;
+      await state.node.setDeviceHub(
+        serve: serve ?? s.serve,
+        totalBytes: BigInt.from(t * _mib),
+        perContactBytes: BigInt.from((shareMib ?? share).clamp(1, t) * _mib),
+      );
+      state.changed();
+    }
+
+    DropdownButton<int> pick(
+      List<int> steps,
+      int value,
+      void Function(int) on,
+    ) => DropdownButton<int>(
+      value: steps.contains(value) ? value : null,
+      hint: Text('$value MB'),
+      items: [
+        for (final v in steps) DropdownMenuItem(value: v, child: Text('$v MB')),
+      ],
+      onChanged: s.serve ? (v) => v == null ? null : on(v) : null,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(l.deviceHubServe),
+          subtitle: Text(l.deviceHubServeHelp),
+          value: s.serve,
+          onChanged: (on) => set(serve: on),
+        ),
+        Row(
+          children: [
+            Expanded(child: Text(l.deviceHubSpace)),
+            pick(_totals, total, (v) => set(totalMib: v)),
+          ],
+        ),
+        Row(
+          children: [
+            Expanded(child: Text(l.deviceHubPerContact)),
+            pick(_shares, share, (v) => set(shareMib: v)),
+          ],
+        ),
+        if (s.bundles > BigInt.zero)
+          Text(
+            l.deviceHubUsage(
+              s.bundles.toInt(),
+              formatSize(s.usedBytes.toInt()),
+            ),
+          ),
+      ],
     );
   }
 }

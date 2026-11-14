@@ -687,6 +687,10 @@ pub struct ContactItem {
     pub ringtone: Option<String>,
     /// How late we accept their edits, when not the global limit (0 always … 12 never).
     pub edit_limit: Option<u8>,
+    /// We use this contact's device as a hub when we meet it.
+    pub use_as_hub: bool,
+    /// Logged in to this contact's device hub now.
+    pub hub_online: bool,
 }
 
 /// The mail account for the email bridge. The password goes in, never out.
@@ -758,6 +762,20 @@ pub struct CourierStatus {
     pub default_bytes: u64,
     /// Bundles carried.
     pub bundles: u32,
+}
+
+/// This device as a hub for its contacts.
+pub struct DeviceHubStatus {
+    /// Serving on.
+    pub serve: bool,
+    /// Space for everyone's bundles.
+    pub total_bytes: u64,
+    /// Space for one contact's bundles.
+    pub per_contact_bytes: u64,
+    /// Held now.
+    pub used_bytes: u64,
+    /// Bundles held now.
+    pub bundles: u64,
 }
 
 /// A message for display.
@@ -2416,6 +2434,56 @@ impl MemNode {
         self.handle(Input::SetCourierLimit { bytes }).map(|_| ())
     }
 
+    /// This device as a hub for its contacts: settings and what it holds.
+    ///
+    /// # Errors
+    ///
+    /// A storage error.
+    #[frb(sync)]
+    pub fn device_hub_status(&self) -> Result<DeviceHubStatus, String> {
+        self.with(|rt| {
+            let s = rt.agent().device_hub_settings();
+            let (used_bytes, bundles) = rt.hub_usage().map_err(|e| e.to_string())?;
+            Ok(DeviceHubStatus {
+                serve: s.serve,
+                total_bytes: s.total_bytes,
+                per_contact_bytes: s.per_contact_bytes,
+                used_bytes,
+                bundles,
+            })
+        })?
+    }
+
+    /// Serves (or stops serving) as a hub for approved contacts, with these quotas (brought
+    /// within 1 MiB to 4 GiB, a contact's share at most the total).
+    ///
+    /// # Errors
+    ///
+    /// A storage error.
+    pub fn set_device_hub(
+        &self,
+        serve: bool,
+        total_bytes: u64,
+        per_contact_bytes: u64,
+    ) -> Result<(), String> {
+        self.handle(Input::SetDeviceHubSettings(mem_core::DeviceHubSettings {
+            serve,
+            total_bytes,
+            per_contact_bytes,
+        }))
+        .map(|_| ())
+    }
+
+    /// Uses (or stops using) a contact's device as a hub when we meet it nearby.
+    ///
+    /// # Errors
+    ///
+    /// `"unknown_contact"`.
+    pub fn set_use_device_hub(&self, contact_id: String, enabled: bool) -> Result<(), String> {
+        let contact = contact(&contact_id)?;
+        self.group_call(Input::SetUseDeviceHub { contact, enabled })
+    }
+
     /// How many days an unconfirmed message is retried (its lifetime), and the allowed range.
     ///
     /// # Errors
@@ -2747,6 +2815,7 @@ impl MemNode {
     pub fn contacts(&self) -> Result<Vec<ContactItem>, String> {
         self.with(|rt| {
             let agent = rt.agent();
+            let hubs_online = agent.device_hubs_online();
             let mut items: Vec<ContactItem> = agent
                 .contacts()
                 .into_iter()
@@ -2776,6 +2845,8 @@ impl MemNode {
                         alias: c.alias.clone(),
                         ringtone: c.ringtone.clone(),
                         edit_limit: c.edit_limit,
+                        use_as_hub: agent.uses_device_hub(c.id),
+                        hub_online: hubs_online.contains(&c.id),
                     }
                 })
                 .collect();

@@ -285,6 +285,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   CourierStatus dco_decode_courier_status(dynamic raw);
 
   @protected
+  DeviceHubStatus dco_decode_device_hub_status(dynamic raw);
+
+  @protected
   DeviceItem dco_decode_device_item(dynamic raw);
 
   @protected
@@ -815,6 +818,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   CourierStatus sse_decode_courier_status(SseDeserializer deserializer);
+
+  @protected
+  DeviceHubStatus sse_decode_device_hub_status(SseDeserializer deserializer);
 
   @protected
   DeviceItem sse_decode_device_item(SseDeserializer deserializer);
@@ -1459,6 +1465,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_courier_status(CourierStatus self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_device_hub_status(
+    DeviceHubStatus self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_device_item(DeviceItem self, SseSerializer serializer);

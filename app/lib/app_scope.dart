@@ -268,6 +268,7 @@ String channelLabel(AppLocalizations l, Channel c) => switch (c) {
   Channel.courier => l.channelCourier,
   Channel.wifiDirect => l.channelWifiDirect,
   Channel.audio => l.channelAudio,
+  Channel.deviceHub => l.channelDeviceHub,
 };
 
 /// The label of a channel as it was used: a hub message that went through (or may go
@@ -288,6 +289,7 @@ IconData channelIcon(Channel c) => switch (c) {
   Channel.courier => Icons.directions_walk,
   Channel.wifiDirect => Icons.wifi_tethering,
   Channel.audio => Icons.graphic_eq,
+  Channel.deviceHub => Icons.tablet_android_outlined,
 };
 
 /// A contact's name as shown: the name the user gave them, else the one they chose, else the

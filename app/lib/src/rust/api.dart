@@ -285,6 +285,13 @@ abstract class MemNode implements RustOpaqueInterface {
   /// `"unknown_message"` (also when the limit has passed), or a storage error.
   Future<void> deleteMessage({required String messageId});
 
+  /// This device as a hub for its contacts: settings and what it holds.
+  ///
+  /// # Errors
+  ///
+  /// A storage error.
+  DeviceHubStatus deviceHubStatus();
+
   /// The user left without confirming: the new phrase is forgotten.
   ///
   /// # Errors
@@ -833,6 +840,18 @@ abstract class MemNode implements RustOpaqueInterface {
   /// `bad_grade`, `invalid_floor`, or a storage error.
   Future<void> setDefaultFloor({required int floor});
 
+  /// Serves (or stops serving) as a hub for approved contacts, with these quotas (brought
+  /// within 1 MiB to 4 GiB, a contact's share at most the total).
+  ///
+  /// # Errors
+  ///
+  /// A storage error.
+  Future<void> setDeviceHub({
+    required bool serve,
+    required BigInt totalBytes,
+    required BigInt perContactBytes,
+  });
+
   /// Sets (or clears, with `None`/empty) our display name.
   ///
   /// # Errors
@@ -917,6 +936,16 @@ abstract class MemNode implements RustOpaqueInterface {
   ///
   /// A storage error.
   Future<void> setRetryDays({required int days});
+
+  /// Uses (or stops using) a contact's device as a hub when we meet it nearby.
+  ///
+  /// # Errors
+  ///
+  /// `"unknown_contact"`.
+  Future<void> setUseDeviceHub({
+    required String contactId,
+    required bool enabled,
+  });
 
   /// Turns Wi-Fi Direct on or off (persisted). The app starts or stops the radio itself.
   ///
@@ -1480,6 +1509,9 @@ enum Channel {
 
   /// Sound in the same room: pairing cards only, never messages (P0).
   audio,
+
+  /// A contact's device acting as a hub, over a direct link (P3).
+  deviceHub,
 }
 
 /// A channel, its exposure and whether it is on (the Channels screen).
@@ -1787,6 +1819,12 @@ class ContactItem {
   /// How late we accept their edits, when not the global limit (0 always … 12 never).
   final int? editLimit;
 
+  /// We use this contact's device as a hub when we meet it.
+  final bool useAsHub;
+
+  /// Logged in to this contact's device hub now.
+  final bool hubOnline;
+
   const ContactItem({
     required this.id,
     this.displayName,
@@ -1801,6 +1839,8 @@ class ContactItem {
     this.alias,
     this.ringtone,
     this.editLimit,
+    required this.useAsHub,
+    required this.hubOnline,
   });
 
   @override
@@ -1817,7 +1857,9 @@ class ContactItem {
       email.hashCode ^
       alias.hashCode ^
       ringtone.hashCode ^
-      editLimit.hashCode;
+      editLimit.hashCode ^
+      useAsHub.hashCode ^
+      hubOnline.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -1836,7 +1878,9 @@ class ContactItem {
           email == other.email &&
           alias == other.alias &&
           ringtone == other.ringtone &&
-          editLimit == other.editLimit;
+          editLimit == other.editLimit &&
+          useAsHub == other.useAsHub &&
+          hubOnline == other.hubOnline;
 }
 
 /// Courier mode: what this device carries for other people.
@@ -1881,6 +1925,51 @@ class CourierStatus {
           limitBytes == other.limitBytes &&
           maxBytes == other.maxBytes &&
           defaultBytes == other.defaultBytes &&
+          bundles == other.bundles;
+}
+
+/// This device as a hub for its contacts.
+class DeviceHubStatus {
+  /// Serving on.
+  final bool serve;
+
+  /// Space for everyone's bundles.
+  final BigInt totalBytes;
+
+  /// Space for one contact's bundles.
+  final BigInt perContactBytes;
+
+  /// Held now.
+  final BigInt usedBytes;
+
+  /// Bundles held now.
+  final BigInt bundles;
+
+  const DeviceHubStatus({
+    required this.serve,
+    required this.totalBytes,
+    required this.perContactBytes,
+    required this.usedBytes,
+    required this.bundles,
+  });
+
+  @override
+  int get hashCode =>
+      serve.hashCode ^
+      totalBytes.hashCode ^
+      perContactBytes.hashCode ^
+      usedBytes.hashCode ^
+      bundles.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DeviceHubStatus &&
+          runtimeType == other.runtimeType &&
+          serve == other.serve &&
+          totalBytes == other.totalBytes &&
+          perContactBytes == other.perContactBytes &&
+          usedBytes == other.usedBytes &&
           bundles == other.bundles;
 }
 

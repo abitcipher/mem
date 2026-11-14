@@ -2005,4 +2005,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reason_unknown_share => 'This share no longer exists.';
+
+  @override
+  String get channelDeviceHub => 'contact\'s device';
+
+  @override
+  String get deviceHubServe => 'Act as a hub for my contacts';
+
+  @override
+  String get deviceHubServeHelp =>
+      'This device keeps messages between your contacts while they are away and hands them over when they come near (the same Wi-Fi, or Wi-Fi Direct). Only your approved contacts can connect. You see which of your contacts send and fetch, when and how much, never the content. It works while MEM runs: turn on Stay reachable.';
+
+  @override
+  String get deviceHubSpace => 'Space for contacts';
+
+  @override
+  String get deviceHubPerContact => 'At most for one contact';
+
+  @override
+  String deviceHubUsage(int count, String size) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count messages',
+      one: '1 message',
+    );
+    return 'Holding $_temp0, $size';
+  }
+
+  @override
+  String get deviceHubUse => 'Use their device as a hub';
+
+  @override
+  String deviceHubUseHelp(String name) {
+    return 'When you meet $name\'s device on the same Wi-Fi or by Wi-Fi Direct, MEM leaves your undelivered messages there for your other contacts and picks up what waits for you. $name sees which of their contacts sent and fetched, when and how much (P3), never the content.';
+  }
+
+  @override
+  String get deviceHubConnected => 'Connected to their hub now';
 }

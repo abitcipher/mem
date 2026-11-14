@@ -2027,4 +2027,44 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get reason_unknown_share => 'Цього набору більше немає.';
+
+  @override
+  String get channelDeviceHub => 'пристрій контакту';
+
+  @override
+  String get deviceHubServe => 'Бути хабом для моїх контактів';
+
+  @override
+  String get deviceHubServeHelp =>
+      'Цей пристрій зберігає повідомлення між вашими контактами, поки їх немає, і передає їх, коли вони поруч (та сама Wi-Fi-мережа або Wi-Fi Direct). Під\'єднатися можуть лише ваші підтверджені контакти. Ви бачите, хто з ваших контактів надсилає й отримує, коли і скільки, але ніколи не зміст. Працює, поки MEM запущено: увімкніть «Бути на зв\'язку».';
+
+  @override
+  String get deviceHubSpace => 'Місце для контактів';
+
+  @override
+  String get deviceHubPerContact => 'Найбільше для одного контакту';
+
+  @override
+  String deviceHubUsage(int count, String size) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count повідомлення',
+      many: '$count повідомлень',
+      few: '$count повідомлення',
+      one: '$count повідомлення',
+    );
+    return 'Зберігається $_temp0, $size';
+  }
+
+  @override
+  String get deviceHubUse => 'Використовувати їхній пристрій як хаб';
+
+  @override
+  String deviceHubUseHelp(String name) {
+    return 'Коли ви поруч із пристроєм $name (та сама Wi-Fi-мережа або Wi-Fi Direct), MEM залишає там ваші недоставлені повідомлення для інших ваших контактів і забирає те, що чекає на вас. $name бачить, хто з їхніх контактів надсилав і отримував, коли і скільки (P3), але не зміст.';
+  }
+
+  @override
+  String get deviceHubConnected => 'Зараз під\'єднано до їхнього хаба';
 }

@@ -153,6 +153,30 @@ class ContactScreen extends StatelessWidget {
               ),
             ),
           ),
+          const Divider(height: 32),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            secondary: const Icon(Icons.tablet_android_outlined),
+            title: Text(l.deviceHubUse),
+            subtitle: Text(
+              [
+                l.deviceHubUseHelp(title),
+                if (c.hubOnline) l.deviceHubConnected,
+              ].join('\n\n'),
+            ),
+            value: c.useAsHub,
+            onChanged: (on) async {
+              try {
+                await state.node.setUseDeviceHub(
+                  contactId: contactId,
+                  enabled: on,
+                );
+                state.changed();
+              } on Object catch (e) {
+                if (context.mounted) showSnack(context, reasonText(context, e));
+              }
+            },
+          ),
           if (state.calls.enabled) ...[
             const Divider(height: 32),
             _ContactRingtone(contactId: contactId, ringtone: c.ringtone),
