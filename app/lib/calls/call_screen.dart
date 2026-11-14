@@ -64,7 +64,8 @@ class _CallScreenState extends State<CallScreen> {
           CallPhase.calling => l.callRingingThere,
           CallPhase.ringing => l.callIncoming,
           CallPhase.connecting => l.callConnecting,
-          CallPhase.talking => _elapsed(c.talkingSince),
+          CallPhase.talking =>
+            c.reconnecting ? l.callReconnecting : _elapsed(c.talkingSince),
           CallPhase.ended =>
             c.outgoing && !c.reached
                 ? l.callUnreachable

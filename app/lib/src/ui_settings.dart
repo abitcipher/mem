@@ -86,6 +86,15 @@ class UiSettings {
   /// Calls are kept as lines in the chat.
   bool callHistory = true;
 
+  /// Seconds our call waits for the other phone to confirm it rings ([CallTimes.reach]).
+  int callReachSeconds = CallTimes.reach.initial;
+
+  /// Seconds a call rings, ours or theirs ([CallTimes.ring]).
+  int callRingSeconds = CallTimes.ring.initial;
+
+  /// Seconds a call in progress waits for a lost connection ([CallTimes.reconnect]).
+  int callReconnectSeconds = CallTimes.reconnect.initial;
+
   /// Tone for incoming calls (a `MemTone` id, or `off`) and its volume (0..1).
   String incomingTone = 'chime';
   double incomingVolume = 0.8;
@@ -160,6 +169,12 @@ class UiSettings {
             s.voiceCalls = v == 'true';
           case 'call_history':
             s.callHistory = v != 'false';
+          case 'call_reach_s':
+            s.callReachSeconds = CallTimes.reach.clamp(int.tryParse(v));
+          case 'call_ring_s':
+            s.callRingSeconds = CallTimes.ring.clamp(int.tryParse(v));
+          case 'call_reconnect_s':
+            s.callReconnectSeconds = CallTimes.reconnect.clamp(int.tryParse(v));
           case 'incoming_tone':
             s.incomingTone = v;
           case 'incoming_volume':
@@ -210,6 +225,9 @@ class UiSettings {
           'media_player=$builtInPlayer',
           'voice_calls=$voiceCalls',
           'call_history=$callHistory',
+          'call_reach_s=$callReachSeconds',
+          'call_ring_s=$callRingSeconds',
+          'call_reconnect_s=$callReconnectSeconds',
           'incoming_tone=$incomingTone',
           'incoming_volume=$incomingVolume',
           'outgoing_tone=$outgoingTone',
@@ -226,4 +244,35 @@ class UiSettings {
       // Keeps working in memory.
     }
   }
+}
+
+/// A call time the user may set: a default and hard bounds that no setting (nor a damaged
+/// settings file) can go past.
+class CallTime {
+  /// Creates the bounds.
+  const CallTime(this.min, this.initial, this.max);
+
+  /// Seconds.
+  final int min;
+
+  /// Seconds, the default.
+  final int initial;
+
+  /// Seconds.
+  final int max;
+
+  /// [seconds] within the bounds; the default when missing.
+  int clamp(int? seconds) => (seconds ?? initial).clamp(min, max);
+}
+
+/// The user-adjustable call times.
+abstract final class CallTimes {
+  /// Waiting for the other phone to confirm it rings.
+  static const reach = CallTime(10, 20, 60);
+
+  /// Ringing, ours or theirs.
+  static const ring = CallTime(15, 45, 120);
+
+  /// A call in progress waiting for a lost connection to come back.
+  static const reconnect = CallTime(15, 60, 300);
 }

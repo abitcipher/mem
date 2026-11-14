@@ -12,7 +12,10 @@ enum MemCallState {
   /// Talking.
   connected,
 
-  /// The media could not connect, or the connection was lost.
+  /// The media path dropped for now (a network hiccup); it often comes back by itself.
+  interrupted,
+
+  /// The media could not connect, or the connection was lost for good.
   failed,
 
   /// Ended.
@@ -77,12 +80,35 @@ class MemCallSession {
     return d.sdp ?? '';
   }
 
-  /// The callee's side: takes the caller's [offerSdp] and returns our answer, to send.
+  /// The caller's side, in a call whose media path was lost: a new offer that gathers fresh
+  /// candidates (an ICE restart), to send like the first. The answer goes to [answered].
+  Future<String> restartOffer() async {
+    // Marks the next offer as an ICE restart (new credentials, fresh candidates).
+    await _pc.restartIce();
+    final d = await _pc.createOffer({'offerToReceiveAudio': true});
+    await _pc.setLocalDescription(d);
+    return d.sdp ?? '';
+  }
+
+  /// The callee's side: takes the caller's [offerSdp] and returns our answer, to send. Also
+  /// takes a restart offer in a call in progress.
   Future<String> answer(String offerSdp) async {
     await _setRemote(RTCSessionDescription(offerSdp, 'offer'));
     final d = await _pc.createAnswer({'offerToReceiveAudio': true});
     await _pc.setLocalDescription(d);
     return d.sdp ?? '';
+  }
+
+  /// A restart offer from the other side in a call in progress: our answer, to send. When both
+  /// sides offered at once, the [polite] side (the callee) withdraws its own offer and answers;
+  /// the other side keeps its offer and returns `null`.
+  Future<String?> answerRestart(String offerSdp, {required bool polite}) async {
+    final state = await _pc.getSignalingState();
+    if (state == RTCSignalingState.RTCSignalingStateHaveLocalOffer) {
+      if (!polite) return null;
+      await _pc.setLocalDescription(RTCSessionDescription('', 'rollback'));
+    }
+    return answer(offerSdp);
   }
 
   /// The caller's side: the callee's answer arrived.
@@ -153,8 +179,10 @@ class MemCallSession {
     final mapped = switch (state) {
       RTCPeerConnectionState.RTCPeerConnectionStateConnected =>
         MemCallState.connected,
-      RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
+      // Disconnected is usually brief: WebRTC recovers without help.
       RTCPeerConnectionState.RTCPeerConnectionStateDisconnected =>
+        MemCallState.interrupted,
+      RTCPeerConnectionState.RTCPeerConnectionStateFailed =>
         MemCallState.failed,
       RTCPeerConnectionState.RTCPeerConnectionStateClosed =>
         MemCallState.closed,

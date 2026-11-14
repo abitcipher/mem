@@ -1412,7 +1412,7 @@ return traffic(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String contactId)?  messageReceived,TResult Function( String messageId)?  messageStatus,TResult Function()?  reachability,TResult Function()?  contacts,TResult Function()?  requests,TResult Function()?  groups,TResult Function( String groupId)?  groupMessage,TResult Function()?  deviceRetired,TResult Function( String contactId)?  call,TResult Function()?  shares,TResult Function()?  shareWanted,TResult Function( String contactId,  Channel channel,  bool outgoing)?  traffic,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String contactId)?  messageReceived,TResult Function( String messageId)?  messageStatus,TResult Function()?  reachability,TResult Function()?  contacts,TResult Function()?  requests,TResult Function()?  groups,TResult Function( String groupId)?  groupMessage,TResult Function()?  deviceRetired,TResult Function( String contactId)?  call,TResult Function()?  shares,TResult Function()?  shareWanted,TResult Function( String contactId,  Channel channel,  bool outgoing,  bool visible)?  traffic,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case NodeEventItem_MessageReceived() when messageReceived != null:
 return messageReceived(_that.contactId);case NodeEventItem_MessageStatus() when messageStatus != null:
@@ -1426,7 +1426,7 @@ return deviceRetired();case NodeEventItem_Call() when call != null:
 return call(_that.contactId);case NodeEventItem_Shares() when shares != null:
 return shares();case NodeEventItem_ShareWanted() when shareWanted != null:
 return shareWanted();case NodeEventItem_Traffic() when traffic != null:
-return traffic(_that.contactId,_that.channel,_that.outgoing);case _:
+return traffic(_that.contactId,_that.channel,_that.outgoing,_that.visible);case _:
   return orElse();
 
 }
@@ -1444,7 +1444,7 @@ return traffic(_that.contactId,_that.channel,_that.outgoing);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String contactId)  messageReceived,required TResult Function( String messageId)  messageStatus,required TResult Function()  reachability,required TResult Function()  contacts,required TResult Function()  requests,required TResult Function()  groups,required TResult Function( String groupId)  groupMessage,required TResult Function()  deviceRetired,required TResult Function( String contactId)  call,required TResult Function()  shares,required TResult Function()  shareWanted,required TResult Function( String contactId,  Channel channel,  bool outgoing)  traffic,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String contactId)  messageReceived,required TResult Function( String messageId)  messageStatus,required TResult Function()  reachability,required TResult Function()  contacts,required TResult Function()  requests,required TResult Function()  groups,required TResult Function( String groupId)  groupMessage,required TResult Function()  deviceRetired,required TResult Function( String contactId)  call,required TResult Function()  shares,required TResult Function()  shareWanted,required TResult Function( String contactId,  Channel channel,  bool outgoing,  bool visible)  traffic,}) {final _that = this;
 switch (_that) {
 case NodeEventItem_MessageReceived():
 return messageReceived(_that.contactId);case NodeEventItem_MessageStatus():
@@ -1458,7 +1458,7 @@ return deviceRetired();case NodeEventItem_Call():
 return call(_that.contactId);case NodeEventItem_Shares():
 return shares();case NodeEventItem_ShareWanted():
 return shareWanted();case NodeEventItem_Traffic():
-return traffic(_that.contactId,_that.channel,_that.outgoing);}
+return traffic(_that.contactId,_that.channel,_that.outgoing,_that.visible);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -1472,7 +1472,7 @@ return traffic(_that.contactId,_that.channel,_that.outgoing);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String contactId)?  messageReceived,TResult? Function( String messageId)?  messageStatus,TResult? Function()?  reachability,TResult? Function()?  contacts,TResult? Function()?  requests,TResult? Function()?  groups,TResult? Function( String groupId)?  groupMessage,TResult? Function()?  deviceRetired,TResult? Function( String contactId)?  call,TResult? Function()?  shares,TResult? Function()?  shareWanted,TResult? Function( String contactId,  Channel channel,  bool outgoing)?  traffic,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String contactId)?  messageReceived,TResult? Function( String messageId)?  messageStatus,TResult? Function()?  reachability,TResult? Function()?  contacts,TResult? Function()?  requests,TResult? Function()?  groups,TResult? Function( String groupId)?  groupMessage,TResult? Function()?  deviceRetired,TResult? Function( String contactId)?  call,TResult? Function()?  shares,TResult? Function()?  shareWanted,TResult? Function( String contactId,  Channel channel,  bool outgoing,  bool visible)?  traffic,}) {final _that = this;
 switch (_that) {
 case NodeEventItem_MessageReceived() when messageReceived != null:
 return messageReceived(_that.contactId);case NodeEventItem_MessageStatus() when messageStatus != null:
@@ -1486,7 +1486,7 @@ return deviceRetired();case NodeEventItem_Call() when call != null:
 return call(_that.contactId);case NodeEventItem_Shares() when shares != null:
 return shares();case NodeEventItem_ShareWanted() when shareWanted != null:
 return shareWanted();case NodeEventItem_Traffic() when traffic != null:
-return traffic(_that.contactId,_that.channel,_that.outgoing);case _:
+return traffic(_that.contactId,_that.channel,_that.outgoing,_that.visible);case _:
   return null;
 
 }
@@ -1998,7 +1998,7 @@ String toString() {
 
 
 class NodeEventItem_Traffic extends NodeEventItem {
-  const NodeEventItem_Traffic({required this.contactId, required this.channel, required this.outgoing}): super._();
+  const NodeEventItem_Traffic({required this.contactId, required this.channel, required this.outgoing, required this.visible}): super._();
   
 
 /// Contact hex id.
@@ -2007,6 +2007,8 @@ class NodeEventItem_Traffic extends NodeEventItem {
  final  Channel channel;
 /// Sent by us.
  final  bool outgoing;
+/// A message or file shown in a chat (not setup traffic such as call setup or acks).
+ final  bool visible;
 
 /// Create a copy of NodeEventItem
 /// with the given fields replaced by the non-null parameter values.
@@ -2018,18 +2020,18 @@ $NodeEventItem_TrafficCopyWith<NodeEventItem_Traffic> get copyWith => _$NodeEven
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is NodeEventItem_Traffic&&(identical(other.contactId, contactId) || other.contactId == contactId)&&(identical(other.channel, channel) || other.channel == channel)&&(identical(other.outgoing, outgoing) || other.outgoing == outgoing));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is NodeEventItem_Traffic&&(identical(other.contactId, contactId) || other.contactId == contactId)&&(identical(other.channel, channel) || other.channel == channel)&&(identical(other.outgoing, outgoing) || other.outgoing == outgoing)&&(identical(other.visible, visible) || other.visible == visible));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,contactId,channel,outgoing);
+    return Object.hash(runtimeType,contactId,channel,outgoing,visible);
 }
 
 @override
 String toString() {
-    return 'NodeEventItem.traffic(contactId: $contactId, channel: $channel, outgoing: $outgoing)';
+    return 'NodeEventItem.traffic(contactId: $contactId, channel: $channel, outgoing: $outgoing, visible: $visible)';
 }
 
 
@@ -2040,7 +2042,7 @@ abstract mixin class $NodeEventItem_TrafficCopyWith<$Res> implements $NodeEventI
   factory $NodeEventItem_TrafficCopyWith(NodeEventItem_Traffic value, $Res Function(NodeEventItem_Traffic) _then) = _$NodeEventItem_TrafficCopyWithImpl;
 @useResult
 $Res call({
- String contactId, Channel channel, bool outgoing
+ String contactId, Channel channel, bool outgoing, bool visible
 });
 
 
@@ -2057,11 +2059,12 @@ class _$NodeEventItem_TrafficCopyWithImpl<$Res>
 
 /// Create a copy of NodeEventItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? contactId = null,Object? channel = null,Object? outgoing = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? contactId = null,Object? channel = null,Object? outgoing = null,Object? visible = null,}) {
   return _then(NodeEventItem_Traffic(
 contactId: null == contactId ? _self.contactId : contactId // ignore: cast_nullable_to_non_nullable
 as String,channel: null == channel ? _self.channel : channel // ignore: cast_nullable_to_non_nullable
 as Channel,outgoing: null == outgoing ? _self.outgoing : outgoing // ignore: cast_nullable_to_non_nullable
+as bool,visible: null == visible ? _self.visible : visible // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

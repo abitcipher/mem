@@ -2632,6 +2632,9 @@ sealed class NodeEventItem with _$NodeEventItem {
 
     /// Sent by us.
     required bool outgoing,
+
+    /// A message or file shown in a chat (not setup traffic such as call setup or acks).
+    required bool visible,
   }) = NodeEventItem_Traffic;
 }
 

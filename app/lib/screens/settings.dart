@@ -127,6 +127,7 @@ class SettingsScreen extends StatelessWidget {
             ),
           if (CallController.supported && s.voiceCalls) ...[
             const _CallTones(),
+            const _CallTimesSetting(),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(l.callHistory),
@@ -833,3 +834,75 @@ String toneName(AppLocalizations l, MemTone t) => switch (t) {
   MemTone.dial => l.callConnecting,
   MemTone.unavailable => l.callUnreachable,
 };
+
+/// The call times: how long a call waits to reach the other phone, rings, and waits for a
+/// lost connection. Each within hard bounds.
+class _CallTimesSetting extends StatelessWidget {
+  const _CallTimesSetting();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final state = AppScope.of(context);
+    final s = state.settings;
+    Widget row(
+      String title,
+      String help,
+      CallTime bounds,
+      int value,
+      void Function(UiSettings s, int v) set,
+    ) {
+      final step = bounds.max - bounds.min > 120 ? 15 : 5;
+      return Explained(
+        help: help,
+        builder: (context, helpText) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(child: titleWithHelp(title, helpText)),
+                Text(l.callSeconds(value)),
+              ],
+            ),
+            Slider(
+              min: bounds.min.toDouble(),
+              max: bounds.max.toDouble(),
+              divisions: (bounds.max - bounds.min) ~/ step,
+              value: value.toDouble(),
+              label: l.callSeconds(value),
+              onChanged: (v) =>
+                  state.updateSettings((s) => set(s, bounds.clamp(v.round()))),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        row(
+          l.callReachTitle,
+          l.callReachHelp,
+          CallTimes.reach,
+          s.callReachSeconds,
+          (s, v) => s.callReachSeconds = v,
+        ),
+        row(
+          l.callRingTitle,
+          l.callRingHelp,
+          CallTimes.ring,
+          s.callRingSeconds,
+          (s, v) => s.callRingSeconds = v,
+        ),
+        row(
+          l.callReconnectTitle,
+          l.callReconnectHelp,
+          CallTimes.reconnect,
+          s.callReconnectSeconds,
+          (s, v) => s.callReconnectSeconds = v,
+        ),
+      ],
+    );
+  }
+}

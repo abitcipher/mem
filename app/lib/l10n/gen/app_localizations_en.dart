@@ -2203,4 +2203,33 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get callStartViaHub =>
       'Call (through the hub; their phone may be off)';
+
+  @override
+  String get callReconnecting => 'Reconnecting…';
+
+  @override
+  String get callReachTitle => 'Wait for their phone to ring';
+
+  @override
+  String get callReachHelp =>
+      'How long a call waits for the other phone to confirm it rings. Without that it ends as Not reachable (their phone is off, or the call cannot get there).';
+
+  @override
+  String get callRingTitle => 'Let a call ring';
+
+  @override
+  String get callRingHelp =>
+      'How long a call rings, yours or theirs, before it ends unanswered. A caller cannot make your phone ring longer than this.';
+
+  @override
+  String get callReconnectTitle => 'Keep a call when the connection drops';
+
+  @override
+  String get callReconnectHelp =>
+      'How long a call in progress waits for a lost connection to come back; both phones try to reconnect meanwhile. You can end the call yourself at any time.';
+
+  @override
+  String callSeconds(int seconds) {
+    return '$seconds s';
+  }
 }

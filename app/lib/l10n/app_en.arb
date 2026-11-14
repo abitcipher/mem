@@ -829,5 +829,14 @@
  "callRingingThere": "Ringing…",
  "callUnreachable": "Not reachable",
  "callStartNearby": "Call (nearby now)",
- "callStartViaHub": "Call (through the hub; their phone may be off)"
+ "callStartViaHub": "Call (through the hub; their phone may be off)",
+ "callReconnecting": "Reconnecting…",
+ "callReachTitle": "Wait for their phone to ring",
+ "callReachHelp": "How long a call waits for the other phone to confirm it rings. Without that it ends as Not reachable (their phone is off, or the call cannot get there).",
+ "callRingTitle": "Let a call ring",
+ "callRingHelp": "How long a call rings, yours or theirs, before it ends unanswered. A caller cannot make your phone ring longer than this.",
+ "callReconnectTitle": "Keep a call when the connection drops",
+ "callReconnectHelp": "How long a call in progress waits for a lost connection to come back; both phones try to reconnect meanwhile. You can end the call yourself at any time.",
+ "callSeconds": "{seconds} s",
+ "@callSeconds": {"placeholders": {"seconds": {"type": "int"}}}
 }

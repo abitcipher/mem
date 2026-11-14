@@ -2229,4 +2229,33 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get callStartViaHub =>
       'Подзвонити (через хаб; їхній телефон може бути вимкнений)';
+
+  @override
+  String get callReconnecting => 'Відновлюю з\'єднання…';
+
+  @override
+  String get callReachTitle => 'Чекати, поки їхній телефон задзвонить';
+
+  @override
+  String get callReachHelp =>
+      'Скільки виклик чекає на підтвердження, що інший телефон дзвонить. Без нього виклик завершується як «Недосяжний» (телефон вимкнений або виклик не доходить).';
+
+  @override
+  String get callRingTitle => 'Скільки дзвонить виклик';
+
+  @override
+  String get callRingHelp =>
+      'Скільки дзвонить виклик, ваш чи їхній, перш ніж завершиться без відповіді. Той, хто дзвонить, не може змусити ваш телефон дзвонити довше.';
+
+  @override
+  String get callReconnectTitle => 'Тримати виклик, коли зв\'язок зник';
+
+  @override
+  String get callReconnectHelp =>
+      'Скільки розмова чекає, поки втрачений зв\'язок відновиться; тим часом обидва телефони пробують перепідключитися. Ви можете завершити виклик будь-коли.';
+
+  @override
+  String callSeconds(int seconds) {
+    return '$seconds с';
+  }
 }

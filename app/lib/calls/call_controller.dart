@@ -61,6 +61,9 @@ class ActiveCall {
   /// ends as "not reachable".
   bool reached = false;
 
+  /// Talking, but the media path dropped for now; the call waits for it to come back.
+  bool reconnecting = false;
+
   /// The caller's description, kept until the user accepts.
   String? offerSdp;
 
@@ -89,11 +92,33 @@ class CallController extends ChangeNotifier {
   /// Called after a finished call was added to a chat, so open chats show it at once.
   final VoidCallback? onHistoryChanged;
 
-  /// A call nobody answers ends after this long.
-  static const ringFor = Duration(seconds: 45);
+  /// A call nobody answers ends after this long (the user's setting, within its bounds; the
+  /// caller cannot make our phone ring longer).
+  Duration get ringFor =>
+      Duration(seconds: CallTimes.ring.clamp(settings.callRingSeconds));
 
   /// A call whose other phone does not confirm ringing within this long is not reachable.
-  static const reachFor = Duration(seconds: 20);
+  Duration get reachFor =>
+      Duration(seconds: CallTimes.reach.clamp(settings.callReachSeconds));
+
+  /// An answered call whose media does not connect within this long has failed.
+  static const connectFor = Duration(seconds: 45);
+
+  /// A call in progress whose media stays lost this long ends; until then it waits, and only
+  /// the user (or the other side) ends it.
+  Duration get dropAfter => Duration(
+    seconds: CallTimes.reconnect.clamp(settings.callReconnectSeconds),
+  );
+
+  /// Runs while the media is not (or no longer) connected.
+  Timer? _media;
+
+  /// The caller retries an ICE restart this often while the media is lost; 4 tries in a
+  /// minute stay under the offers a contact accepts per minute.
+  static const restartEvery = Duration(seconds: 15);
+
+  /// Restart tries while reconnecting (the caller's side).
+  Timer? _restart;
 
   ActiveCall? call;
   MemCallSession? _session;
@@ -218,6 +243,7 @@ class CallController extends ChangeNotifier {
     await _stopTone();
     c.phase = CallPhase.connecting;
     notifyListeners();
+    _connectLimit(c);
     try {
       final session = await _open(c);
       final sdp = await session.answer(c.offerSdp ?? '');
@@ -271,6 +297,26 @@ class CallController extends ChangeNotifier {
       case CallSignalItem_Offer(:final callId, :final sdp):
         if (!enabled) return;
         if (c != null) {
+          // The other side restarts the media path of the call in progress: answer it.
+          if (c.callId == callId &&
+              c.contactId == s.contactId &&
+              c.talkingSince != null) {
+            try {
+              final answer = await _session?.answerRestart(
+                sdp,
+                polite: !c.outgoing,
+              );
+              if (answer != null) {
+                await _send(
+                  s.contactId,
+                  CallSignalItem.answer(callId: callId, sdp: answer),
+                );
+              }
+            } on Object {
+              // The next try may work.
+            }
+            return;
+          }
           // One call at a time.
           if (c.callId != callId) {
             await _send(
@@ -302,13 +348,26 @@ class CallController extends ChangeNotifier {
         }
         await _reached(c);
       case CallSignalItem_Answer(:final callId, :final sdp):
-        if (c == null || c.callId != callId || !c.outgoing) return;
+        if (c == null || c.callId != callId || c.contactId != s.contactId) {
+          return;
+        }
+        // The answer to a restart in a call in progress (either side): just apply it.
+        if (c.talkingSince != null) {
+          try {
+            await _session?.answered(sdp);
+          } on Object {
+            // A stale answer; the next restart sends a new offer.
+          }
+          return;
+        }
+        if (!c.outgoing) return;
         // An answer also proves it got there (an older app sends no "ringing").
         c.reached = true;
         _ring?.cancel();
         await _stopTone();
         c.phase = CallPhase.connecting;
         notifyListeners();
+        _connectLimit(c);
         await _session?.answered(sdp);
       case CallSignalItem_Candidates(:final callId, :final candidates):
         if (c == null || c.callId != callId || c.contactId != s.contactId) {
@@ -331,6 +390,9 @@ class CallController extends ChangeNotifier {
   Future<MemCallSession> _open(ActiveCall c) async {
     final session = await MemCallSession.open();
     _session = session;
+    // A new call starts on the earpiece unless the user already chose the loudspeaker (it may
+    // have been pressed while the call was still ringing).
+    unawaited(session.speaker(on: c.speaker));
     session.onCandidates = (lines) => unawaited(
       _send(
         c.contactId,
@@ -342,18 +404,80 @@ class CallController extends ChangeNotifier {
       notifyListeners();
     };
     session.onState = (state) {
+      if (!identical(call, c) || c.phase == CallPhase.ended) return;
       switch (state) {
         case MemCallState.connected:
-          c.phase = CallPhase.talking;
+          _media?.cancel();
+          _restart?.cancel();
+          // Android picks its default route when audio starts or comes back: apply the
+          // user's choice again so the button and the sound agree.
+          unawaited(session.speaker(on: c.speaker));
+          c
+            ..phase = CallPhase.talking
+            ..reconnecting = false;
           c.talkingSince ??= DateTime.now();
           notifyListeners();
+        case MemCallState.interrupted || MemCallState.failed
+            when c.talkingSince != null:
+          // In a call: never end on a hiccup. Wait for the media to come back; only a long
+          // loss ends it (the user can end it any time).
+          if (!c.reconnecting) {
+            c.reconnecting = true;
+            notifyListeners();
+            _media?.cancel();
+            _media = Timer(dropAfter, () {
+              if (identical(call, c) && c.reconnecting) {
+                unawaited(_finish(CallEndReason.failed));
+              }
+            });
+            // The caller asks for a fresh path; the callee answers it (a lost path does not
+            // come back by itself once WebRTC has given it up).
+            // Both sides try, each while it is still cut off; the callee a little later, so
+            // that the two rarely offer at once.
+            _restart?.cancel();
+            final first = Duration(seconds: c.outgoing ? 3 : 9);
+            _restart = Timer(first, () {
+              unawaited(_restartIce(c));
+              _restart = Timer.periodic(restartEvery, (_) => _restartIce(c));
+            });
+          }
         case MemCallState.failed:
+          // Never connected: it cannot.
           unawaited(_finish(CallEndReason.failed));
-        case MemCallState.connecting || MemCallState.closed:
+        case MemCallState.interrupted ||
+            MemCallState.connecting ||
+            MemCallState.closed:
           break;
       }
     };
     return session;
+  }
+
+  Future<void> _restartIce(ActiveCall c) async {
+    final session = _session;
+    if (!identical(call, c) || !c.reconnecting || session == null) {
+      _restart?.cancel();
+      return;
+    }
+    try {
+      final sdp = await session.restartOffer();
+      await node.sendCallSignal(
+        contactId: c.contactId,
+        signal: CallSignalItem.offer(callId: c.callId, sdp: sdp),
+      );
+    } on Object {
+      // No channel right now: the next try may find one.
+    }
+  }
+
+  /// An answered call must connect its media within [connectFor].
+  void _connectLimit(ActiveCall c) {
+    _media?.cancel();
+    _media = Timer(connectFor, () {
+      if (identical(call, c) && c.talkingSince == null) {
+        unawaited(_finish(CallEndReason.failed));
+      }
+    });
   }
 
   void _startRinging() {
@@ -374,6 +498,8 @@ class CallController extends ChangeNotifier {
     final c = call;
     if (c == null || c.phase == CallPhase.ended) return;
     _ring?.cancel();
+    _media?.cancel();
+    _restart?.cancel();
     await _stopTone();
     if (tell) {
       await _send(
@@ -384,6 +510,14 @@ class CallController extends ChangeNotifier {
     c
       ..phase = CallPhase.ended
       ..endReason = reason;
+    // The loudspeaker is a phone-wide setting: never leave it on for the next call.
+    if (c.speaker) {
+      try {
+        await _session?.speaker(on: false);
+      } on Object {
+        // Nothing to switch back.
+      }
+    }
     // A cue when the call did not happen or broke off, not when someone just hung up.
     final broke =
         (c.outgoing && !c.reached) ||
@@ -447,6 +581,8 @@ class CallController extends ChangeNotifier {
   @override
   void dispose() {
     _ring?.cancel();
+    _media?.cancel();
+    _restart?.cancel();
     unawaited(_tones.dispose());
     unawaited(_session?.close());
     super.dispose();

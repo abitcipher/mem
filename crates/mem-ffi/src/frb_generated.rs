@@ -29,7 +29,7 @@
 
 use crate::api::*;
 use flutter_rust_bridge::for_generated::byteorder::{NativeEndian, ReadBytesExt, WriteBytesExt};
-use flutter_rust_bridge::for_generated::{Lifetimeable, Lockable, transform_result_dco};
+use flutter_rust_bridge::for_generated::{transform_result_dco, Lifetimeable, Lockable};
 use flutter_rust_bridge::{Handler, IntoIntoDart};
 
 // Section: boilerplate
@@ -8516,10 +8516,12 @@ impl SseDecode for crate::api::NodeEventItem {
                 let mut var_contactId = <String>::sse_decode(deserializer);
                 let mut var_channel = <crate::api::Channel>::sse_decode(deserializer);
                 let mut var_outgoing = <bool>::sse_decode(deserializer);
+                let mut var_visible = <bool>::sse_decode(deserializer);
                 return crate::api::NodeEventItem::Traffic {
                     contact_id: var_contactId,
                     channel: var_channel,
                     outgoing: var_outgoing,
+                    visible: var_visible,
                 };
             }
             _ => {
@@ -10349,11 +10351,13 @@ impl flutter_rust_bridge::IntoDart for crate::api::NodeEventItem {
                 contact_id,
                 channel,
                 outgoing,
+                visible,
             } => [
                 11.into_dart(),
                 contact_id.into_into_dart().into_dart(),
                 channel.into_into_dart().into_dart(),
                 outgoing.into_into_dart().into_dart(),
+                visible.into_into_dart().into_dart(),
             ]
             .into_dart(),
             _ => {
@@ -11936,11 +11940,13 @@ impl SseEncode for crate::api::NodeEventItem {
                 contact_id,
                 channel,
                 outgoing,
+                visible,
             } => {
                 <i32>::sse_encode(11, serializer);
                 <String>::sse_encode(contact_id, serializer);
                 <crate::api::Channel>::sse_encode(channel, serializer);
                 <bool>::sse_encode(outgoing, serializer);
+                <bool>::sse_encode(visible, serializer);
             }
             _ => {
                 unimplemented!("");
@@ -12549,7 +12555,7 @@ mod io {
     use flutter_rust_bridge::for_generated::byteorder::{
         NativeEndian, ReadBytesExt, WriteBytesExt,
     };
-    use flutter_rust_bridge::for_generated::{Lifetimeable, Lockable, transform_result_dco};
+    use flutter_rust_bridge::for_generated::{transform_result_dco, Lifetimeable, Lockable};
     use flutter_rust_bridge::{Handler, IntoIntoDart};
 
     // Section: boilerplate
@@ -12644,7 +12650,7 @@ mod web {
     };
     use flutter_rust_bridge::for_generated::wasm_bindgen;
     use flutter_rust_bridge::for_generated::wasm_bindgen::prelude::*;
-    use flutter_rust_bridge::for_generated::{Lifetimeable, Lockable, transform_result_dco};
+    use flutter_rust_bridge::for_generated::{transform_result_dco, Lifetimeable, Lockable};
     use flutter_rust_bridge::{Handler, IntoIntoDart};
 
     // Section: boilerplate

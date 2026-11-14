@@ -5321,13 +5321,15 @@ impl Agent {
         out.into_iter().collect()
     }
 
-    /// The contact a message is to or from, and the channel that last carried it.
+    /// The contact a message is to or from, the channel that last carried it, and whether it
+    /// shows in a chat (a message or a file) rather than being setup traffic (call setup, acks,
+    /// key updates, file parts).
     #[must_use]
-    pub fn message_route(&self, message: MsgId) -> Option<(ContactId, Option<ClaId>)> {
+    pub fn message_route(&self, message: MsgId) -> Option<(ContactId, Option<ClaId>, bool)> {
         if let Some(m) = self.messages.iter().find(|m| m.id == message) {
-            return Some((m.contact, m.channels.last().map(|u| u.cla)));
+            return Some((m.contact, m.channels.last().map(|u| u.cla), true));
         }
-        self.outbox.get(&message).map(|i| (i.contact, None))
+        self.outbox.get(&message).map(|i| (i.contact, None, false))
     }
 
     /// Lifetime of new messages in seconds: how long an unconfirmed message is retried.

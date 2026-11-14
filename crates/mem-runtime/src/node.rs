@@ -55,6 +55,8 @@ pub enum NodeEvent {
         cla: ClaId,
         /// Sent by us.
         outgoing: bool,
+        /// A message or file shown in a chat (not setup traffic).
+        visible: bool,
     },
 }
 
@@ -1383,13 +1385,14 @@ impl Node {
     /// arrival, whose channel the message records). Always `false`, so dispatch goes on.
     fn traffic(&self, message: MsgId, cla: Option<ClaId>) -> bool {
         let route = self.read(|rt| rt.agent().message_route(message));
-        if let Some((contact, last)) = route
+        if let Some((contact, last, visible)) = route
             && let Some(channel) = cla.or(last)
         {
             self.emit(NodeEvent::Traffic {
                 contact,
                 cla: channel,
                 outgoing: cla.is_some(),
+                visible,
             });
         }
         false

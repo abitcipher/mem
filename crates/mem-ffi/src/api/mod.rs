@@ -448,6 +448,8 @@ pub enum NodeEventItem {
         channel: Channel,
         /// Sent by us.
         outgoing: bool,
+        /// A message or file shown in a chat (not setup traffic such as call setup or acks).
+        visible: bool,
     },
 }
 
@@ -1515,10 +1517,12 @@ impl MemNode {
                     contact,
                     cla,
                     outgoing,
+                    visible,
                 } => NodeEventItem::Traffic {
                     contact_id: hex::encode(contact.as_bytes()),
                     channel: cla.into(),
                     outgoing,
+                    visible,
                 },
             };
             sink.add(item).is_ok()

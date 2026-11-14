@@ -75,6 +75,9 @@ class _NetworkMapScreenState extends State<NetworkMapScreen> {
           ? _controller.pulse(_me, channelNode, color: color)
           : _controller.pulse(channelNode, _me, color: color);
     }
+    // The list keeps what a person cares about: messages and files, not setup traffic
+    // (call setup, acknowledgements, key updates), which still pulses on the map.
+    if (!e.visible) return;
     final name = _name(e.contactId);
     final channel = channelLabel(l, e.channel);
     _log(

@@ -3817,6 +3817,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Call (through the hub; their phone may be off)'**
   String get callStartViaHub;
+
+  /// No description provided for @callReconnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting…'**
+  String get callReconnecting;
+
+  /// No description provided for @callReachTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait for their phone to ring'**
+  String get callReachTitle;
+
+  /// No description provided for @callReachHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'How long a call waits for the other phone to confirm it rings. Without that it ends as Not reachable (their phone is off, or the call cannot get there).'**
+  String get callReachHelp;
+
+  /// No description provided for @callRingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Let a call ring'**
+  String get callRingTitle;
+
+  /// No description provided for @callRingHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'How long a call rings, yours or theirs, before it ends unanswered. A caller cannot make your phone ring longer than this.'**
+  String get callRingHelp;
+
+  /// No description provided for @callReconnectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep a call when the connection drops'**
+  String get callReconnectTitle;
+
+  /// No description provided for @callReconnectHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'How long a call in progress waits for a lost connection to come back; both phones try to reconnect meanwhile. You can end the call yourself at any time.'**
+  String get callReconnectHelp;
+
+  /// No description provided for @callSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds} s'**
+  String callSeconds(int seconds);
 }
 
 class _AppLocalizationsDelegate

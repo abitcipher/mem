@@ -6847,6 +6847,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           contactId: dco_decode_String(raw[1]),
           channel: dco_decode_channel(raw[2]),
           outgoing: dco_decode_bool(raw[3]),
+          visible: dco_decode_bool(raw[4]),
         );
       default:
         throw Exception("unreachable");
@@ -8789,10 +8790,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         var var_contactId = sse_decode_String(deserializer);
         var var_channel = sse_decode_channel(deserializer);
         var var_outgoing = sse_decode_bool(deserializer);
+        var var_visible = sse_decode_bool(deserializer);
         return NodeEventItem_Traffic(
           contactId: var_contactId,
           channel: var_channel,
           outgoing: var_outgoing,
+          visible: var_visible,
         );
       default:
         throw UnimplementedError('');
@@ -10750,11 +10753,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         contactId: final contactId,
         channel: final channel,
         outgoing: final outgoing,
+        visible: final visible,
       ):
         sse_encode_i_32(11, serializer);
         sse_encode_String(contactId, serializer);
         sse_encode_channel(channel, serializer);
         sse_encode_bool(outgoing, serializer);
+        sse_encode_bool(visible, serializer);
     }
   }
 
