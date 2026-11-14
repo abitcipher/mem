@@ -12,6 +12,7 @@ import '../src/rust/api.dart';
 import '../widgets/attachments.dart' show formatSize;
 import '../widgets/grade_badge.dart';
 import '../theme.dart';
+import 'network_map.dart';
 
 /// Every channel with the exposure profile the core reports for it. The text comes from the core's disclosure generator; this screen only styles it.
 class ChannelsScreen extends StatelessWidget {
@@ -23,21 +24,35 @@ class ChannelsScreen extends StatelessWidget {
     final state = AppScope.of(context);
     final channels = state.node.channels(locale: localeCode(context));
     return Scaffold(
-      appBar: AppBar(title: Text(l.channels)),
+      appBar: AppBar(
+        title: Text(l.channels),
+        actions: [
+          IconButton(
+            tooltip: l.netmapTitle,
+            icon: const Icon(Icons.hub_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const NetworkMapScreen()),
+            ),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Text(l.channelsIntro),
           const SizedBox(height: 8),
-          for (final c in channels) _ChannelCard(info: c),
+          for (final c in channels) ChannelCard(info: c),
         ],
       ),
     );
   }
 }
 
-class _ChannelCard extends StatelessWidget {
-  const _ChannelCard({required this.info});
+/// One channel: its name, grade, who can see what, and its controls (also shown from the
+/// network map, so both show the same disclosure and switch).
+class ChannelCard extends StatelessWidget {
+  /// Creates the card.
+  const ChannelCard({required this.info, super.key});
 
   final ChannelInfo info;
 

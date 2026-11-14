@@ -1243,7 +1243,7 @@ extension NodeEventItemPatterns on NodeEventItem {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( NodeEventItem_MessageReceived value)?  messageReceived,TResult Function( NodeEventItem_MessageStatus value)?  messageStatus,TResult Function( NodeEventItem_Reachability value)?  reachability,TResult Function( NodeEventItem_Contacts value)?  contacts,TResult Function( NodeEventItem_Requests value)?  requests,TResult Function( NodeEventItem_Groups value)?  groups,TResult Function( NodeEventItem_GroupMessage value)?  groupMessage,TResult Function( NodeEventItem_DeviceRetired value)?  deviceRetired,TResult Function( NodeEventItem_Call value)?  call,TResult Function( NodeEventItem_Shares value)?  shares,TResult Function( NodeEventItem_ShareWanted value)?  shareWanted,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( NodeEventItem_MessageReceived value)?  messageReceived,TResult Function( NodeEventItem_MessageStatus value)?  messageStatus,TResult Function( NodeEventItem_Reachability value)?  reachability,TResult Function( NodeEventItem_Contacts value)?  contacts,TResult Function( NodeEventItem_Requests value)?  requests,TResult Function( NodeEventItem_Groups value)?  groups,TResult Function( NodeEventItem_GroupMessage value)?  groupMessage,TResult Function( NodeEventItem_DeviceRetired value)?  deviceRetired,TResult Function( NodeEventItem_Call value)?  call,TResult Function( NodeEventItem_Shares value)?  shares,TResult Function( NodeEventItem_ShareWanted value)?  shareWanted,TResult Function( NodeEventItem_Traffic value)?  traffic,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case NodeEventItem_MessageReceived() when messageReceived != null:
@@ -1257,7 +1257,8 @@ return groupMessage(_that);case NodeEventItem_DeviceRetired() when deviceRetired
 return deviceRetired(_that);case NodeEventItem_Call() when call != null:
 return call(_that);case NodeEventItem_Shares() when shares != null:
 return shares(_that);case NodeEventItem_ShareWanted() when shareWanted != null:
-return shareWanted(_that);case _:
+return shareWanted(_that);case NodeEventItem_Traffic() when traffic != null:
+return traffic(_that);case _:
   return orElse();
 
 }
@@ -1275,7 +1276,7 @@ return shareWanted(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( NodeEventItem_MessageReceived value)  messageReceived,required TResult Function( NodeEventItem_MessageStatus value)  messageStatus,required TResult Function( NodeEventItem_Reachability value)  reachability,required TResult Function( NodeEventItem_Contacts value)  contacts,required TResult Function( NodeEventItem_Requests value)  requests,required TResult Function( NodeEventItem_Groups value)  groups,required TResult Function( NodeEventItem_GroupMessage value)  groupMessage,required TResult Function( NodeEventItem_DeviceRetired value)  deviceRetired,required TResult Function( NodeEventItem_Call value)  call,required TResult Function( NodeEventItem_Shares value)  shares,required TResult Function( NodeEventItem_ShareWanted value)  shareWanted,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( NodeEventItem_MessageReceived value)  messageReceived,required TResult Function( NodeEventItem_MessageStatus value)  messageStatus,required TResult Function( NodeEventItem_Reachability value)  reachability,required TResult Function( NodeEventItem_Contacts value)  contacts,required TResult Function( NodeEventItem_Requests value)  requests,required TResult Function( NodeEventItem_Groups value)  groups,required TResult Function( NodeEventItem_GroupMessage value)  groupMessage,required TResult Function( NodeEventItem_DeviceRetired value)  deviceRetired,required TResult Function( NodeEventItem_Call value)  call,required TResult Function( NodeEventItem_Shares value)  shares,required TResult Function( NodeEventItem_ShareWanted value)  shareWanted,required TResult Function( NodeEventItem_Traffic value)  traffic,}){
 final _that = this;
 switch (_that) {
 case NodeEventItem_MessageReceived():
@@ -1289,7 +1290,8 @@ return groupMessage(_that);case NodeEventItem_DeviceRetired():
 return deviceRetired(_that);case NodeEventItem_Call():
 return call(_that);case NodeEventItem_Shares():
 return shares(_that);case NodeEventItem_ShareWanted():
-return shareWanted(_that);}
+return shareWanted(_that);case NodeEventItem_Traffic():
+return traffic(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -1303,7 +1305,7 @@ return shareWanted(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( NodeEventItem_MessageReceived value)?  messageReceived,TResult? Function( NodeEventItem_MessageStatus value)?  messageStatus,TResult? Function( NodeEventItem_Reachability value)?  reachability,TResult? Function( NodeEventItem_Contacts value)?  contacts,TResult? Function( NodeEventItem_Requests value)?  requests,TResult? Function( NodeEventItem_Groups value)?  groups,TResult? Function( NodeEventItem_GroupMessage value)?  groupMessage,TResult? Function( NodeEventItem_DeviceRetired value)?  deviceRetired,TResult? Function( NodeEventItem_Call value)?  call,TResult? Function( NodeEventItem_Shares value)?  shares,TResult? Function( NodeEventItem_ShareWanted value)?  shareWanted,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( NodeEventItem_MessageReceived value)?  messageReceived,TResult? Function( NodeEventItem_MessageStatus value)?  messageStatus,TResult? Function( NodeEventItem_Reachability value)?  reachability,TResult? Function( NodeEventItem_Contacts value)?  contacts,TResult? Function( NodeEventItem_Requests value)?  requests,TResult? Function( NodeEventItem_Groups value)?  groups,TResult? Function( NodeEventItem_GroupMessage value)?  groupMessage,TResult? Function( NodeEventItem_DeviceRetired value)?  deviceRetired,TResult? Function( NodeEventItem_Call value)?  call,TResult? Function( NodeEventItem_Shares value)?  shares,TResult? Function( NodeEventItem_ShareWanted value)?  shareWanted,TResult? Function( NodeEventItem_Traffic value)?  traffic,}){
 final _that = this;
 switch (_that) {
 case NodeEventItem_MessageReceived() when messageReceived != null:
@@ -1317,7 +1319,8 @@ return groupMessage(_that);case NodeEventItem_DeviceRetired() when deviceRetired
 return deviceRetired(_that);case NodeEventItem_Call() when call != null:
 return call(_that);case NodeEventItem_Shares() when shares != null:
 return shares(_that);case NodeEventItem_ShareWanted() when shareWanted != null:
-return shareWanted(_that);case _:
+return shareWanted(_that);case NodeEventItem_Traffic() when traffic != null:
+return traffic(_that);case _:
   return null;
 
 }
@@ -1334,7 +1337,7 @@ return shareWanted(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String contactId)?  messageReceived,TResult Function( String messageId)?  messageStatus,TResult Function()?  reachability,TResult Function()?  contacts,TResult Function()?  requests,TResult Function()?  groups,TResult Function( String groupId)?  groupMessage,TResult Function()?  deviceRetired,TResult Function( String contactId)?  call,TResult Function()?  shares,TResult Function()?  shareWanted,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String contactId)?  messageReceived,TResult Function( String messageId)?  messageStatus,TResult Function()?  reachability,TResult Function()?  contacts,TResult Function()?  requests,TResult Function()?  groups,TResult Function( String groupId)?  groupMessage,TResult Function()?  deviceRetired,TResult Function( String contactId)?  call,TResult Function()?  shares,TResult Function()?  shareWanted,TResult Function( String contactId,  Channel channel,  bool outgoing)?  traffic,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case NodeEventItem_MessageReceived() when messageReceived != null:
 return messageReceived(_that.contactId);case NodeEventItem_MessageStatus() when messageStatus != null:
@@ -1347,7 +1350,8 @@ return groupMessage(_that.groupId);case NodeEventItem_DeviceRetired() when devic
 return deviceRetired();case NodeEventItem_Call() when call != null:
 return call(_that.contactId);case NodeEventItem_Shares() when shares != null:
 return shares();case NodeEventItem_ShareWanted() when shareWanted != null:
-return shareWanted();case _:
+return shareWanted();case NodeEventItem_Traffic() when traffic != null:
+return traffic(_that.contactId,_that.channel,_that.outgoing);case _:
   return orElse();
 
 }
@@ -1365,7 +1369,7 @@ return shareWanted();case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String contactId)  messageReceived,required TResult Function( String messageId)  messageStatus,required TResult Function()  reachability,required TResult Function()  contacts,required TResult Function()  requests,required TResult Function()  groups,required TResult Function( String groupId)  groupMessage,required TResult Function()  deviceRetired,required TResult Function( String contactId)  call,required TResult Function()  shares,required TResult Function()  shareWanted,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String contactId)  messageReceived,required TResult Function( String messageId)  messageStatus,required TResult Function()  reachability,required TResult Function()  contacts,required TResult Function()  requests,required TResult Function()  groups,required TResult Function( String groupId)  groupMessage,required TResult Function()  deviceRetired,required TResult Function( String contactId)  call,required TResult Function()  shares,required TResult Function()  shareWanted,required TResult Function( String contactId,  Channel channel,  bool outgoing)  traffic,}) {final _that = this;
 switch (_that) {
 case NodeEventItem_MessageReceived():
 return messageReceived(_that.contactId);case NodeEventItem_MessageStatus():
@@ -1378,7 +1382,8 @@ return groupMessage(_that.groupId);case NodeEventItem_DeviceRetired():
 return deviceRetired();case NodeEventItem_Call():
 return call(_that.contactId);case NodeEventItem_Shares():
 return shares();case NodeEventItem_ShareWanted():
-return shareWanted();}
+return shareWanted();case NodeEventItem_Traffic():
+return traffic(_that.contactId,_that.channel,_that.outgoing);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -1392,7 +1397,7 @@ return shareWanted();}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String contactId)?  messageReceived,TResult? Function( String messageId)?  messageStatus,TResult? Function()?  reachability,TResult? Function()?  contacts,TResult? Function()?  requests,TResult? Function()?  groups,TResult? Function( String groupId)?  groupMessage,TResult? Function()?  deviceRetired,TResult? Function( String contactId)?  call,TResult? Function()?  shares,TResult? Function()?  shareWanted,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String contactId)?  messageReceived,TResult? Function( String messageId)?  messageStatus,TResult? Function()?  reachability,TResult? Function()?  contacts,TResult? Function()?  requests,TResult? Function()?  groups,TResult? Function( String groupId)?  groupMessage,TResult? Function()?  deviceRetired,TResult? Function( String contactId)?  call,TResult? Function()?  shares,TResult? Function()?  shareWanted,TResult? Function( String contactId,  Channel channel,  bool outgoing)?  traffic,}) {final _that = this;
 switch (_that) {
 case NodeEventItem_MessageReceived() when messageReceived != null:
 return messageReceived(_that.contactId);case NodeEventItem_MessageStatus() when messageStatus != null:
@@ -1405,7 +1410,8 @@ return groupMessage(_that.groupId);case NodeEventItem_DeviceRetired() when devic
 return deviceRetired();case NodeEventItem_Call() when call != null:
 return call(_that.contactId);case NodeEventItem_Shares() when shares != null:
 return shares();case NodeEventItem_ShareWanted() when shareWanted != null:
-return shareWanted();case _:
+return shareWanted();case NodeEventItem_Traffic() when traffic != null:
+return traffic(_that.contactId,_that.channel,_that.outgoing);case _:
   return null;
 
 }
@@ -1912,6 +1918,81 @@ String toString() {
 
 
 
+
+/// @nodoc
+
+
+class NodeEventItem_Traffic extends NodeEventItem {
+  const NodeEventItem_Traffic({required this.contactId, required this.channel, required this.outgoing}): super._();
+  
+
+/// Contact hex id.
+ final  String contactId;
+/// The channel.
+ final  Channel channel;
+/// Sent by us.
+ final  bool outgoing;
+
+/// Create a copy of NodeEventItem
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$NodeEventItem_TrafficCopyWith<NodeEventItem_Traffic> get copyWith => _$NodeEventItem_TrafficCopyWithImpl<NodeEventItem_Traffic>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is NodeEventItem_Traffic&&(identical(other.contactId, contactId) || other.contactId == contactId)&&(identical(other.channel, channel) || other.channel == channel)&&(identical(other.outgoing, outgoing) || other.outgoing == outgoing));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,contactId,channel,outgoing);
+}
+
+@override
+String toString() {
+    return 'NodeEventItem.traffic(contactId: $contactId, channel: $channel, outgoing: $outgoing)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $NodeEventItem_TrafficCopyWith<$Res> implements $NodeEventItemCopyWith<$Res> {
+  factory $NodeEventItem_TrafficCopyWith(NodeEventItem_Traffic value, $Res Function(NodeEventItem_Traffic) _then) = _$NodeEventItem_TrafficCopyWithImpl;
+@useResult
+$Res call({
+ String contactId, Channel channel, bool outgoing
+});
+
+
+
+
+}
+/// @nodoc
+class _$NodeEventItem_TrafficCopyWithImpl<$Res>
+    implements $NodeEventItem_TrafficCopyWith<$Res> {
+  _$NodeEventItem_TrafficCopyWithImpl(this._self, this._then);
+
+  final NodeEventItem_Traffic _self;
+  final $Res Function(NodeEventItem_Traffic) _then;
+
+/// Create a copy of NodeEventItem
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? contactId = null,Object? channel = null,Object? outgoing = null,}) {
+  return _then(NodeEventItem_Traffic(
+contactId: null == contactId ? _self.contactId : contactId // ignore: cast_nullable_to_non_nullable
+as String,channel: null == channel ? _self.channel : channel // ignore: cast_nullable_to_non_nullable
+as Channel,outgoing: null == outgoing ? _self.outgoing : outgoing // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+
+}
 
 /// @nodoc
 mixin _$ReceiveOutcome {

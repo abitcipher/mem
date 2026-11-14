@@ -33,6 +33,8 @@ pub(super) struct DevHub {
     next: AtomicU64,
     /// Serving: something new was stored (sessions look for matches).
     stored: broadcast::Sender<()>,
+    /// Serving: contacts logged in now, by session.
+    clients: Mutex<HashMap<u64, ContactId>>,
 }
 
 impl Default for DevHub {
@@ -41,6 +43,7 @@ impl Default for DevHub {
             links: Mutex::new(HashMap::new()),
             next: AtomicU64::new(DEVHUB_HANDLE_BASE),
             stored: broadcast::channel(16).0,
+            clients: Mutex::new(HashMap::new()),
         }
     }
 }
@@ -96,9 +99,55 @@ impl Node {
     pub(super) async fn serve_hub(weak: Weak<Shared>, stream: HubStream, cla: ClaId) {
         let (mut w, mut r) = stream.split();
         if let Some(contact) = Self::hub_login(&weak, &mut w, &mut r, cla).await {
+            let session = Self::client_joined(&weak, contact, None);
             Self::hub_session(&weak, &mut w, &mut r, contact).await;
+            Self::client_joined(&weak, contact, Some(session));
         }
         w.close();
+    }
+
+    /// Records a contact logged in to our hub (`ended` `None`; returns the session number) or
+    /// the end of that session.
+    fn client_joined(weak: &Weak<Shared>, contact: ContactId, ended: Option<u64>) -> u64 {
+        let Some(shared) = weak.upgrade() else {
+            return 0;
+        };
+        let mut clients = shared
+            .devhub
+            .clients
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        let session = match ended {
+            None => {
+                let n = shared.devhub.next.fetch_add(1, Ordering::Relaxed);
+                clients.insert(n, contact);
+                n
+            }
+            Some(n) => {
+                clients.remove(&n);
+                n
+            }
+        };
+        drop(clients);
+        let _ = shared.events.send(super::NodeEvent::Reachability);
+        session
+    }
+
+    /// Contacts logged in to this device's hub now.
+    #[must_use]
+    pub fn device_hub_clients(&self) -> Vec<ContactId> {
+        let mut v: Vec<ContactId> = self
+            .shared
+            .devhub
+            .clients
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .values()
+            .copied()
+            .collect();
+        v.sort();
+        v.dedup();
+        v
     }
 
     /// Hub side of the login; the contact on success.

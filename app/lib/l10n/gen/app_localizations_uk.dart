@@ -2081,4 +2081,100 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get sharedNoLongerOffered => 'Більше не спільний';
+
+  @override
+  String get netmapTitle => 'Карта мережі';
+
+  @override
+  String get netmapThisDevice => 'Цей телефон';
+
+  @override
+  String get netmapNearby => 'MEM поруч';
+
+  @override
+  String netmapNearbyCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'зараз $count',
+      many: 'зараз $count',
+      few: 'зараз $count',
+      one: 'зараз $count',
+      zero: 'зараз немає',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get netmapContactHubs => 'Хаби контактів';
+
+  @override
+  String get netmapDropHere => 'Перетягніть сюди контакт';
+
+  @override
+  String netmapDevice(String name) {
+    return 'Пристрій $name';
+  }
+
+  @override
+  String netmapServing(int count) {
+    return 'Хаб для $count';
+  }
+
+  @override
+  String get netmapLegendLive => 'з\'єднано зараз';
+
+  @override
+  String get netmapLegendLater => 'пізніше, зберігається дорогою';
+
+  @override
+  String get netmapLegendOff => 'вимкнено';
+
+  @override
+  String netmapEventUp(String name, String channel) {
+    return '$name на зв\'язку · $channel';
+  }
+
+  @override
+  String netmapEventDown(String name, String channel) {
+    return '$name від\'єднано · $channel';
+  }
+
+  @override
+  String netmapChannelUp(String channel) {
+    return '$channel: з\'єднано';
+  }
+
+  @override
+  String netmapChannelDown(String channel) {
+    return '$channel: від\'єднано';
+  }
+
+  @override
+  String netmapSent(String name, String channel) {
+    return '→ $name · $channel';
+  }
+
+  @override
+  String netmapReceived(String name, String channel) {
+    return '← $name · $channel';
+  }
+
+  @override
+  String netmapUseHubTitle(String name) {
+    return 'Використовувати пристрій $name як хаб?';
+  }
+
+  @override
+  String get netmapUse => 'Використовувати';
+
+  @override
+  String get netmapOpenChat => 'Відкрити чат';
+
+  @override
+  String get netmapHint =>
+      'Торкніться вузла, щоб побачити налаштування. Утримуйте контакт і перетягніть на «Хаби контактів», щоб використовувати його пристрій як хаб.';
+
+  @override
+  String get netmapOnYourHub => 'на вашому хабі';
 }

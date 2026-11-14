@@ -2057,4 +2057,98 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sharedNoLongerOffered => 'No longer shared';
+
+  @override
+  String get netmapTitle => 'Network map';
+
+  @override
+  String get netmapThisDevice => 'This phone';
+
+  @override
+  String get netmapNearby => 'Nearby MEM';
+
+  @override
+  String netmapNearbyCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count now',
+      one: '1 now',
+      zero: 'none now',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get netmapContactHubs => 'Contacts\' hubs';
+
+  @override
+  String get netmapDropHere => 'Drop a contact here';
+
+  @override
+  String netmapDevice(String name) {
+    return '$name\'s device';
+  }
+
+  @override
+  String netmapServing(int count) {
+    return 'Hub for $count';
+  }
+
+  @override
+  String get netmapLegendLive => 'connected now';
+
+  @override
+  String get netmapLegendLater => 'later, stored on the way';
+
+  @override
+  String get netmapLegendOff => 'off';
+
+  @override
+  String netmapEventUp(String name, String channel) {
+    return '$name connected · $channel';
+  }
+
+  @override
+  String netmapEventDown(String name, String channel) {
+    return '$name left · $channel';
+  }
+
+  @override
+  String netmapChannelUp(String channel) {
+    return '$channel connected';
+  }
+
+  @override
+  String netmapChannelDown(String channel) {
+    return '$channel disconnected';
+  }
+
+  @override
+  String netmapSent(String name, String channel) {
+    return '→ $name · $channel';
+  }
+
+  @override
+  String netmapReceived(String name, String channel) {
+    return '← $name · $channel';
+  }
+
+  @override
+  String netmapUseHubTitle(String name) {
+    return 'Use $name\'s device as a hub?';
+  }
+
+  @override
+  String get netmapUse => 'Use';
+
+  @override
+  String get netmapOpenChat => 'Open chat';
+
+  @override
+  String get netmapHint =>
+      'Tap a node for its settings. Long-press a contact and drop it on Contacts\' hubs to use their device as a hub.';
+
+  @override
+  String get netmapOnYourHub => 'uses your hub';
 }

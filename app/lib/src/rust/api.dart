@@ -499,6 +499,13 @@ abstract class MemNode implements RustOpaqueInterface {
   /// Never.
   int nearbyDevices();
 
+  /// The state of this device's connections, for the network map.
+  ///
+  /// # Errors
+  ///
+  /// A storage error.
+  NetworkSnapshot networkSnapshot();
+
   /// Generates a fresh pairing code (new nonce).
   ///
   /// # Errors
@@ -2416,6 +2423,146 @@ enum MessageStatus {
   received,
 }
 
+/// One channel on the network map.
+class NetChannelItem {
+  /// The channel.
+  final Channel channel;
+
+  /// Its grade label, e.g. "P1".
+  final String grade;
+
+  /// Turned on.
+  final bool enabled;
+
+  /// Connected now: an open encounter, a hub or mail session.
+  final bool online;
+
+  /// Devices connected over it now (contacts or not).
+  final int peers;
+
+  const NetChannelItem({
+    required this.channel,
+    required this.grade,
+    required this.enabled,
+    required this.online,
+    required this.peers,
+  });
+
+  @override
+  int get hashCode =>
+      channel.hashCode ^
+      grade.hashCode ^
+      enabled.hashCode ^
+      online.hashCode ^
+      peers.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is NetChannelItem &&
+          runtimeType == other.runtimeType &&
+          channel == other.channel &&
+          grade == other.grade &&
+          enabled == other.enabled &&
+          online == other.online &&
+          peers == other.peers;
+}
+
+/// A contact's device we use as a hub.
+class NetDeviceHubItem {
+  /// Contact hex id.
+  final String contactId;
+
+  /// Logged in now.
+  final bool online;
+
+  const NetDeviceHubItem({required this.contactId, required this.online});
+
+  @override
+  int get hashCode => contactId.hashCode ^ online.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is NetDeviceHubItem &&
+          runtimeType == other.runtimeType &&
+          contactId == other.contactId &&
+          online == other.online;
+}
+
+/// A live link to a contact.
+class NetLinkItem {
+  /// Contact hex id.
+  final String contactId;
+
+  /// The channel.
+  final Channel channel;
+
+  const NetLinkItem({required this.contactId, required this.channel});
+
+  @override
+  int get hashCode => contactId.hashCode ^ channel.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is NetLinkItem &&
+          runtimeType == other.runtimeType &&
+          contactId == other.contactId &&
+          channel == other.channel;
+}
+
+/// The state of this device's connections, for the network map. Only its own links.
+class NetworkSnapshot {
+  /// Channels that carry messages.
+  final List<NetChannelItem> channels;
+
+  /// Live links: contact hex id and the channel reaching it now.
+  final List<NetLinkItem> links;
+
+  /// Contacts whose device we use as a hub (hex), and whether we are logged in to it.
+  final List<NetDeviceHubItem> deviceHubs;
+
+  /// This device serves as a hub.
+  final bool serving;
+
+  /// Contacts logged in to this device's hub now (hex).
+  final List<String> hubClients;
+
+  /// Bundles this device holds for contacts as a hub.
+  final BigInt hubHolding;
+
+  const NetworkSnapshot({
+    required this.channels,
+    required this.links,
+    required this.deviceHubs,
+    required this.serving,
+    required this.hubClients,
+    required this.hubHolding,
+  });
+
+  @override
+  int get hashCode =>
+      channels.hashCode ^
+      links.hashCode ^
+      deviceHubs.hashCode ^
+      serving.hashCode ^
+      hubClients.hashCode ^
+      hubHolding.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is NetworkSnapshot &&
+          runtimeType == other.runtimeType &&
+          channels == other.channels &&
+          links == other.links &&
+          deviceHubs == other.deviceHubs &&
+          serving == other.serving &&
+          hubClients == other.hubClients &&
+          hubHolding == other.hubHolding;
+}
+
 @freezed
 sealed class NodeEventItem with _$NodeEventItem {
   const NodeEventItem._();
@@ -2465,6 +2612,18 @@ sealed class NodeEventItem with _$NodeEventItem {
 
   /// A contact asked for a shared file: collect it with [`MemNode::take_share_requests`].
   const factory NodeEventItem.shareWanted() = NodeEventItem_ShareWanted;
+
+  /// Something went to or came from a contact over a channel (live view only).
+  const factory NodeEventItem.traffic({
+    /// Contact hex id.
+    required String contactId,
+
+    /// The channel.
+    required Channel channel,
+
+    /// Sent by us.
+    required bool outgoing,
+  }) = NodeEventItem_Traffic;
 }
 
 /// An attached file, decrypted.

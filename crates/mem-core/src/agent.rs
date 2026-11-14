@@ -5295,6 +5295,41 @@ impl Agent {
             .collect()
     }
 
+    /// Every live link to a contact: each contact with each channel a connected peer reaches it
+    /// on (for the network map).
+    #[must_use]
+    pub fn reachable_links(&self) -> Vec<(ContactId, ClaId)> {
+        self.contacts
+            .keys()
+            .flat_map(|id| {
+                ClaId::ALL
+                    .into_iter()
+                    .filter(|c| c.caps().needs_peer)
+                    .filter(move |c| self.peer_for(*id, *c).is_some())
+                    .map(move |c| (*id, c))
+            })
+            .collect()
+    }
+
+    /// Connected peers (contacts or not) per channel that completed `hello`.
+    #[must_use]
+    pub fn peers_by_channel(&self) -> Vec<(ClaId, usize)> {
+        let mut out: BTreeMap<ClaId, usize> = BTreeMap::new();
+        for p in self.peers.values().filter(|p| p.hello) {
+            *out.entry(p.cla).or_default() += 1;
+        }
+        out.into_iter().collect()
+    }
+
+    /// The contact a message is to or from, and the channel that last carried it.
+    #[must_use]
+    pub fn message_route(&self, message: MsgId) -> Option<(ContactId, Option<ClaId>)> {
+        if let Some(m) = self.messages.iter().find(|m| m.id == message) {
+            return Some((m.contact, m.channels.last().map(|u| u.cla)));
+        }
+        self.outbox.get(&message).map(|i| (i.contact, None))
+    }
+
     /// Lifetime of new messages in seconds: how long an unconfirmed message is retried.
     #[must_use]
     pub const fn message_lifetime_s(&self) -> u32 {

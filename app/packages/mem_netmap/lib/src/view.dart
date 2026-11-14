@@ -147,16 +147,14 @@ class _NetMapViewState extends State<NetMapView>
     super.dispose();
   }
 
-  /// Fits the whole map into the view once, centred.
-  void _fit(Size viewport) {
+  /// Fits the nodes (not the whole canvas) into the view once, centred.
+  void _fit(Size viewport, double extent) {
     if (_placed || viewport.isEmpty) return;
     _placed = true;
-    final scale = math.min(
-      1.0,
-      math.min(viewport.width, viewport.height) / _side,
-    );
-    final dx = (viewport.width - _side * scale) / 2;
-    final dy = (viewport.height - _side * scale) / 2;
+    final scale = (math.min(viewport.width, viewport.height) / (2 * extent))
+        .clamp(0.3, 1.6);
+    final dx = viewport.width / 2 - _side / 2 * scale;
+    final dy = viewport.height / 2 - _side / 2 * scale;
     _transform.value = Matrix4.identity()
       ..translateByDouble(dx, dy, 0, 1)
       ..scaleByDouble(scale, scale, 1, 1);
@@ -185,9 +183,13 @@ class _NetMapViewState extends State<NetMapView>
     final positions = {
       for (final e in placed.entries) e.key: e.value + _centre,
     };
+    // How far nodes reach from the centre, cards included.
+    final extent =
+        placed.values.fold<double>(0, (m, p) => math.max(m, p.distance)) +
+        _cardWidth * 0.75;
     return LayoutBuilder(
       builder: (context, box) {
-        _fit(box.biggest);
+        _fit(box.biggest, extent);
         return ColoredBox(
           color: theme.background,
           child: InteractiveViewer(

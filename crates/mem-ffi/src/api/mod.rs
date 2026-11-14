@@ -440,6 +440,15 @@ pub enum NodeEventItem {
     Shares,
     /// A contact asked for a shared file: collect it with [`MemNode::take_share_requests`].
     ShareWanted,
+    /// Something went to or came from a contact over a channel (live view only).
+    Traffic {
+        /// Contact hex id.
+        contact_id: String,
+        /// The channel.
+        channel: Channel,
+        /// Sent by us.
+        outgoing: bool,
+    },
 }
 
 /// One call setup message.
@@ -762,6 +771,52 @@ pub struct CourierStatus {
     pub default_bytes: u64,
     /// Bundles carried.
     pub bundles: u32,
+}
+
+/// One channel on the network map.
+pub struct NetChannelItem {
+    /// The channel.
+    pub channel: Channel,
+    /// Its grade label, e.g. "P1".
+    pub grade: String,
+    /// Turned on.
+    pub enabled: bool,
+    /// Connected now: an open encounter, a hub or mail session.
+    pub online: bool,
+    /// Devices connected over it now (contacts or not).
+    pub peers: u32,
+}
+
+/// The state of this device's connections, for the network map. Only its own links.
+pub struct NetworkSnapshot {
+    /// Channels that carry messages.
+    pub channels: Vec<NetChannelItem>,
+    /// Live links: contact hex id and the channel reaching it now.
+    pub links: Vec<NetLinkItem>,
+    /// Contacts whose device we use as a hub (hex), and whether we are logged in to it.
+    pub device_hubs: Vec<NetDeviceHubItem>,
+    /// This device serves as a hub.
+    pub serving: bool,
+    /// Contacts logged in to this device's hub now (hex).
+    pub hub_clients: Vec<String>,
+    /// Bundles this device holds for contacts as a hub.
+    pub hub_holding: u64,
+}
+
+/// A live link to a contact.
+pub struct NetLinkItem {
+    /// Contact hex id.
+    pub contact_id: String,
+    /// The channel.
+    pub channel: Channel,
+}
+
+/// A contact's device we use as a hub.
+pub struct NetDeviceHubItem {
+    /// Contact hex id.
+    pub contact_id: String,
+    /// Logged in now.
+    pub online: bool,
 }
 
 /// This device as a hub for its contacts.
@@ -1443,6 +1498,15 @@ impl MemNode {
                 },
                 NodeEvent::Shares => NodeEventItem::Shares,
                 NodeEvent::ShareWanted => NodeEventItem::ShareWanted,
+                NodeEvent::Traffic {
+                    contact,
+                    cla,
+                    outgoing,
+                } => NodeEventItem::Traffic {
+                    contact_id: hex::encode(contact.as_bytes()),
+                    channel: cla.into(),
+                    outgoing,
+                },
             };
             sink.add(item).is_ok()
         });
@@ -2451,6 +2515,64 @@ impl MemNode {
     /// A storage error.
     pub fn set_courier_limit(&self, bytes: u64) -> Result<(), String> {
         self.handle(Input::SetCourierLimit { bytes }).map(|_| ())
+    }
+
+    /// The state of this device's connections, for the network map.
+    ///
+    /// # Errors
+    ///
+    /// A storage error.
+    #[frb(sync)]
+    pub fn network_snapshot(&self) -> Result<NetworkSnapshot, String> {
+        let clients = self.node.device_hub_clients();
+        self.with(|rt| {
+            let agent = rt.agent();
+            let peers = agent.peers_by_channel();
+            let online_hubs = agent.device_hubs_online();
+            let channels = ClaId::ALL
+                .into_iter()
+                .filter(|c| !matches!(c, ClaId::Share | ClaId::Plain | ClaId::Qr))
+                .map(|cla| {
+                    let n = peers.iter().find(|(c, _)| *c == cla).map_or(0, |(_, n)| *n);
+                    NetChannelItem {
+                        channel: cla.into(),
+                        grade: cla.grade().label().into(),
+                        enabled: agent.channel_enabled(cla),
+                        online: match cla {
+                            ClaId::Hub => agent.hub_online(),
+                            ClaId::Email => agent.email_online(),
+                            ClaId::DeviceHub => !online_hubs.is_empty(),
+                            _ => n > 0,
+                        },
+                        peers: u32::try_from(n).unwrap_or(u32::MAX),
+                    }
+                })
+                .collect();
+            let (_, holding) = rt.hub_usage().map_err(|e| e.to_string())?;
+            Ok(NetworkSnapshot {
+                channels,
+                links: agent
+                    .reachable_links()
+                    .into_iter()
+                    .map(|(c, cla)| NetLinkItem {
+                        contact_id: hex::encode(c.as_bytes()),
+                        channel: cla.into(),
+                    })
+                    .collect(),
+                device_hubs: agent
+                    .contacts()
+                    .into_iter()
+                    .filter(|c| agent.uses_device_hub(c.id))
+                    .map(|c| NetDeviceHubItem {
+                        contact_id: hex::encode(c.id.as_bytes()),
+                        online: online_hubs.contains(&c.id),
+                    })
+                    .collect(),
+                serving: agent.device_hub_settings().serve,
+                hub_clients: clients.iter().map(|c| hex::encode(c.as_bytes())).collect(),
+                hub_holding: holding,
+            })
+        })?
     }
 
     /// This device as a hub for its contacts: settings and what it holds.

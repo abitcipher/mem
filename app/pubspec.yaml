@@ -42,6 +42,8 @@ dependencies:
     path: plugins/mem_push
   mem_video_player:
     path: packages/mem_video_player
+  mem_netmap:
+    path: packages/mem_netmap
   mem_calls:
     path: packages/mem_calls
   flutter_rust_bridge: 2.13.0

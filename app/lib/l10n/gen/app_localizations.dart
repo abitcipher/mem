@@ -3595,6 +3595,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No longer shared'**
   String get sharedNoLongerOffered;
+
+  /// No description provided for @netmapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Network map'**
+  String get netmapTitle;
+
+  /// No description provided for @netmapThisDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone'**
+  String get netmapThisDevice;
+
+  /// No description provided for @netmapNearby.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby MEM'**
+  String get netmapNearby;
+
+  /// No description provided for @netmapNearbyCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{none now} one{1 now} other{{count} now}}'**
+  String netmapNearbyCount(int count);
+
+  /// No description provided for @netmapContactHubs.
+  ///
+  /// In en, this message translates to:
+  /// **'Contacts\' hubs'**
+  String get netmapContactHubs;
+
+  /// No description provided for @netmapDropHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop a contact here'**
+  String get netmapDropHere;
+
+  /// No description provided for @netmapDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}\'s device'**
+  String netmapDevice(String name);
+
+  /// No description provided for @netmapServing.
+  ///
+  /// In en, this message translates to:
+  /// **'Hub for {count}'**
+  String netmapServing(int count);
+
+  /// No description provided for @netmapLegendLive.
+  ///
+  /// In en, this message translates to:
+  /// **'connected now'**
+  String get netmapLegendLive;
+
+  /// No description provided for @netmapLegendLater.
+  ///
+  /// In en, this message translates to:
+  /// **'later, stored on the way'**
+  String get netmapLegendLater;
+
+  /// No description provided for @netmapLegendOff.
+  ///
+  /// In en, this message translates to:
+  /// **'off'**
+  String get netmapLegendOff;
+
+  /// No description provided for @netmapEventUp.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} connected · {channel}'**
+  String netmapEventUp(String name, String channel);
+
+  /// No description provided for @netmapEventDown.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} left · {channel}'**
+  String netmapEventDown(String name, String channel);
+
+  /// No description provided for @netmapChannelUp.
+  ///
+  /// In en, this message translates to:
+  /// **'{channel} connected'**
+  String netmapChannelUp(String channel);
+
+  /// No description provided for @netmapChannelDown.
+  ///
+  /// In en, this message translates to:
+  /// **'{channel} disconnected'**
+  String netmapChannelDown(String channel);
+
+  /// No description provided for @netmapSent.
+  ///
+  /// In en, this message translates to:
+  /// **'→ {name} · {channel}'**
+  String netmapSent(String name, String channel);
+
+  /// No description provided for @netmapReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'← {name} · {channel}'**
+  String netmapReceived(String name, String channel);
+
+  /// No description provided for @netmapUseHubTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use {name}\'s device as a hub?'**
+  String netmapUseHubTitle(String name);
+
+  /// No description provided for @netmapUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Use'**
+  String get netmapUse;
+
+  /// No description provided for @netmapOpenChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Open chat'**
+  String get netmapOpenChat;
+
+  /// No description provided for @netmapHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a node for its settings. Long-press a contact and drop it on Contacts\' hubs to use their device as a hub.'**
+  String get netmapHint;
+
+  /// No description provided for @netmapOnYourHub.
+  ///
+  /// In en, this message translates to:
+  /// **'uses your hub'**
+  String get netmapOnYourHub;
 }
 
 class _AppLocalizationsDelegate

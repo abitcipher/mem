@@ -357,6 +357,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<MessageItem> dco_decode_list_message_item(dynamic raw);
 
   @protected
+  List<NetChannelItem> dco_decode_list_net_channel_item(dynamic raw);
+
+  @protected
+  List<NetDeviceHubItem> dco_decode_list_net_device_hub_item(dynamic raw);
+
+  @protected
+  List<NetLinkItem> dco_decode_list_net_link_item(dynamic raw);
+
+  @protected
   List<OwnShareFileItem> dco_decode_list_own_share_file_item(dynamic raw);
 
   @protected
@@ -411,6 +420,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   MessageStatus dco_decode_message_status(dynamic raw);
+
+  @protected
+  NetChannelItem dco_decode_net_channel_item(dynamic raw);
+
+  @protected
+  NetDeviceHubItem dco_decode_net_device_hub_item(dynamic raw);
+
+  @protected
+  NetLinkItem dco_decode_net_link_item(dynamic raw);
+
+  @protected
+  NetworkSnapshot dco_decode_network_snapshot(dynamic raw);
 
   @protected
   NodeEventItem dco_decode_node_event_item(dynamic raw);
@@ -912,6 +933,19 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<MessageItem> sse_decode_list_message_item(SseDeserializer deserializer);
 
   @protected
+  List<NetChannelItem> sse_decode_list_net_channel_item(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<NetDeviceHubItem> sse_decode_list_net_device_hub_item(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<NetLinkItem> sse_decode_list_net_link_item(SseDeserializer deserializer);
+
+  @protected
   List<OwnShareFileItem> sse_decode_list_own_share_file_item(
     SseDeserializer deserializer,
   );
@@ -982,6 +1016,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   MessageStatus sse_decode_message_status(SseDeserializer deserializer);
+
+  @protected
+  NetChannelItem sse_decode_net_channel_item(SseDeserializer deserializer);
+
+  @protected
+  NetDeviceHubItem sse_decode_net_device_hub_item(SseDeserializer deserializer);
+
+  @protected
+  NetLinkItem sse_decode_net_link_item(SseDeserializer deserializer);
+
+  @protected
+  NetworkSnapshot sse_decode_network_snapshot(SseDeserializer deserializer);
 
   @protected
   NodeEventItem sse_decode_node_event_item(SseDeserializer deserializer);
@@ -1608,6 +1654,24 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_net_channel_item(
+    List<NetChannelItem> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_net_device_hub_item(
+    List<NetDeviceHubItem> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_net_link_item(
+    List<NetLinkItem> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_own_share_file_item(
     List<OwnShareFileItem> self,
     SseSerializer serializer,
@@ -1702,6 +1766,27 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_message_status(MessageStatus self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_net_channel_item(
+    NetChannelItem self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_net_device_hub_item(
+    NetDeviceHubItem self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_net_link_item(NetLinkItem self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_network_snapshot(
+    NetworkSnapshot self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_node_event_item(NodeEventItem self, SseSerializer serializer);

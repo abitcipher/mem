@@ -46,6 +46,16 @@ pub enum NodeEvent {
     Shares,
     /// A contact asked for a shared file: [`Node::take_share_requests`].
     ShareWanted,
+    /// Something went to or came from this contact over this channel (a message, an ack, a
+    /// file part). For a live view only; no content, no size.
+    Traffic {
+        /// The contact.
+        contact: ContactId,
+        /// The channel.
+        cla: ClaId,
+        /// Sent by us.
+        outgoing: bool,
+    },
 }
 
 /// A contact may download one of our shared files: the app reads it and serves it.
@@ -1112,6 +1122,8 @@ impl Node {
         let lan = self.lan_handle();
         for o in outputs {
             match o {
+                // Reports the send for the live view, then falls through (always false).
+                Output::Transmit { message, cla, .. } if self.traffic(*message, Some(*cla)) => {}
                 Output::Encounter { peer, msg } => {
                     // A failed send surfaces as a disconnect from the reader.
                     let _ = self.send_to(lan.as_ref(), *peer, msg);
@@ -1200,7 +1212,10 @@ impl Node {
                         }
                     }
                 },
-                Output::Deliver { contact, .. } => self.emit(NodeEvent::MessageReceived(*contact)),
+                Output::Deliver { contact, message } => {
+                    self.emit(NodeEvent::MessageReceived(*contact));
+                    self.traffic(*message, None);
+                }
                 Output::StatusChanged { message, .. } | Output::Queued { message, .. } => {
                     self.emit(NodeEvent::MessageStatus(*message));
                 }
@@ -1362,6 +1377,22 @@ impl Node {
             .unwrap_or_else(PoisonError::into_inner)
             .drain(..)
             .collect()
+    }
+
+    /// Reports traffic for the live view: `cla` is the channel of a send (`None` for an
+    /// arrival, whose channel the message records). Always `false`, so dispatch goes on.
+    fn traffic(&self, message: MsgId, cla: Option<ClaId>) -> bool {
+        let route = self.read(|rt| rt.agent().message_route(message));
+        if let Some((contact, last)) = route
+            && let Some(channel) = cla.or(last)
+        {
+            self.emit(NodeEvent::Traffic {
+                contact,
+                cla: channel,
+                outgoing: cla.is_some(),
+            });
+        }
+        false
     }
 
     fn share_output(&self, o: &Output) {

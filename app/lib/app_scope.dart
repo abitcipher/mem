@@ -43,6 +43,11 @@ class AppState extends ChangeNotifier {
     );
     var contacts = node.contacts().length;
     _events = node.events().listen((e) {
+      // Traffic is for the network map only: no redraw of every screen.
+      if (e is NodeEventItem_Traffic) {
+        _traffic.add(e);
+        return;
+      }
       if (e is NodeEventItem_Call) unawaited(calls.onSignals());
       if (e is NodeEventItem_ShareWanted) unawaited(shares.onRequests());
       if (e is NodeEventItem_MessageReceived) {
@@ -145,6 +150,10 @@ class AppState extends ChangeNotifier {
   }
 
   late final StreamSubscription<NodeEventItem> _events;
+  final _traffic = StreamController<NodeEventItem_Traffic>.broadcast();
+
+  /// Messages, acks and file parts going to or coming from contacts, by channel.
+  Stream<NodeEventItem_Traffic> get traffic => _traffic.stream;
   final _received = StreamController<String>.broadcast();
 
   /// Contact ids of messages that arrived in the background (network channels).
@@ -172,6 +181,7 @@ class AppState extends ChangeNotifier {
     wifi.dispose();
     _events.cancel();
     _received.close();
+    _traffic.close();
     super.dispose();
   }
 }

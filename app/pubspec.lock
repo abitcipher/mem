@@ -754,6 +754,13 @@ packages:
       relative: true
     source: path
     version: "0.0.1"
+  mem_netmap:
+    dependency: "direct main"
+    description:
+      path: "packages/mem_netmap"
+      relative: true
+    source: path
+    version: "0.1.0"
   mem_push:
     dependency: "direct main"
     description:
