@@ -1243,7 +1243,7 @@ extension NodeEventItemPatterns on NodeEventItem {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( NodeEventItem_MessageReceived value)?  messageReceived,TResult Function( NodeEventItem_MessageStatus value)?  messageStatus,TResult Function( NodeEventItem_Reachability value)?  reachability,TResult Function( NodeEventItem_Contacts value)?  contacts,TResult Function( NodeEventItem_Requests value)?  requests,TResult Function( NodeEventItem_Groups value)?  groups,TResult Function( NodeEventItem_GroupMessage value)?  groupMessage,TResult Function( NodeEventItem_DeviceRetired value)?  deviceRetired,TResult Function( NodeEventItem_Call value)?  call,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( NodeEventItem_MessageReceived value)?  messageReceived,TResult Function( NodeEventItem_MessageStatus value)?  messageStatus,TResult Function( NodeEventItem_Reachability value)?  reachability,TResult Function( NodeEventItem_Contacts value)?  contacts,TResult Function( NodeEventItem_Requests value)?  requests,TResult Function( NodeEventItem_Groups value)?  groups,TResult Function( NodeEventItem_GroupMessage value)?  groupMessage,TResult Function( NodeEventItem_DeviceRetired value)?  deviceRetired,TResult Function( NodeEventItem_Call value)?  call,TResult Function( NodeEventItem_Shares value)?  shares,TResult Function( NodeEventItem_ShareWanted value)?  shareWanted,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case NodeEventItem_MessageReceived() when messageReceived != null:
@@ -1255,7 +1255,9 @@ return requests(_that);case NodeEventItem_Groups() when groups != null:
 return groups(_that);case NodeEventItem_GroupMessage() when groupMessage != null:
 return groupMessage(_that);case NodeEventItem_DeviceRetired() when deviceRetired != null:
 return deviceRetired(_that);case NodeEventItem_Call() when call != null:
-return call(_that);case _:
+return call(_that);case NodeEventItem_Shares() when shares != null:
+return shares(_that);case NodeEventItem_ShareWanted() when shareWanted != null:
+return shareWanted(_that);case _:
   return orElse();
 
 }
@@ -1273,7 +1275,7 @@ return call(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( NodeEventItem_MessageReceived value)  messageReceived,required TResult Function( NodeEventItem_MessageStatus value)  messageStatus,required TResult Function( NodeEventItem_Reachability value)  reachability,required TResult Function( NodeEventItem_Contacts value)  contacts,required TResult Function( NodeEventItem_Requests value)  requests,required TResult Function( NodeEventItem_Groups value)  groups,required TResult Function( NodeEventItem_GroupMessage value)  groupMessage,required TResult Function( NodeEventItem_DeviceRetired value)  deviceRetired,required TResult Function( NodeEventItem_Call value)  call,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( NodeEventItem_MessageReceived value)  messageReceived,required TResult Function( NodeEventItem_MessageStatus value)  messageStatus,required TResult Function( NodeEventItem_Reachability value)  reachability,required TResult Function( NodeEventItem_Contacts value)  contacts,required TResult Function( NodeEventItem_Requests value)  requests,required TResult Function( NodeEventItem_Groups value)  groups,required TResult Function( NodeEventItem_GroupMessage value)  groupMessage,required TResult Function( NodeEventItem_DeviceRetired value)  deviceRetired,required TResult Function( NodeEventItem_Call value)  call,required TResult Function( NodeEventItem_Shares value)  shares,required TResult Function( NodeEventItem_ShareWanted value)  shareWanted,}){
 final _that = this;
 switch (_that) {
 case NodeEventItem_MessageReceived():
@@ -1285,7 +1287,9 @@ return requests(_that);case NodeEventItem_Groups():
 return groups(_that);case NodeEventItem_GroupMessage():
 return groupMessage(_that);case NodeEventItem_DeviceRetired():
 return deviceRetired(_that);case NodeEventItem_Call():
-return call(_that);}
+return call(_that);case NodeEventItem_Shares():
+return shares(_that);case NodeEventItem_ShareWanted():
+return shareWanted(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -1299,7 +1303,7 @@ return call(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( NodeEventItem_MessageReceived value)?  messageReceived,TResult? Function( NodeEventItem_MessageStatus value)?  messageStatus,TResult? Function( NodeEventItem_Reachability value)?  reachability,TResult? Function( NodeEventItem_Contacts value)?  contacts,TResult? Function( NodeEventItem_Requests value)?  requests,TResult? Function( NodeEventItem_Groups value)?  groups,TResult? Function( NodeEventItem_GroupMessage value)?  groupMessage,TResult? Function( NodeEventItem_DeviceRetired value)?  deviceRetired,TResult? Function( NodeEventItem_Call value)?  call,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( NodeEventItem_MessageReceived value)?  messageReceived,TResult? Function( NodeEventItem_MessageStatus value)?  messageStatus,TResult? Function( NodeEventItem_Reachability value)?  reachability,TResult? Function( NodeEventItem_Contacts value)?  contacts,TResult? Function( NodeEventItem_Requests value)?  requests,TResult? Function( NodeEventItem_Groups value)?  groups,TResult? Function( NodeEventItem_GroupMessage value)?  groupMessage,TResult? Function( NodeEventItem_DeviceRetired value)?  deviceRetired,TResult? Function( NodeEventItem_Call value)?  call,TResult? Function( NodeEventItem_Shares value)?  shares,TResult? Function( NodeEventItem_ShareWanted value)?  shareWanted,}){
 final _that = this;
 switch (_that) {
 case NodeEventItem_MessageReceived() when messageReceived != null:
@@ -1311,7 +1315,9 @@ return requests(_that);case NodeEventItem_Groups() when groups != null:
 return groups(_that);case NodeEventItem_GroupMessage() when groupMessage != null:
 return groupMessage(_that);case NodeEventItem_DeviceRetired() when deviceRetired != null:
 return deviceRetired(_that);case NodeEventItem_Call() when call != null:
-return call(_that);case _:
+return call(_that);case NodeEventItem_Shares() when shares != null:
+return shares(_that);case NodeEventItem_ShareWanted() when shareWanted != null:
+return shareWanted(_that);case _:
   return null;
 
 }
@@ -1328,7 +1334,7 @@ return call(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String contactId)?  messageReceived,TResult Function( String messageId)?  messageStatus,TResult Function()?  reachability,TResult Function()?  contacts,TResult Function()?  requests,TResult Function()?  groups,TResult Function( String groupId)?  groupMessage,TResult Function()?  deviceRetired,TResult Function( String contactId)?  call,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String contactId)?  messageReceived,TResult Function( String messageId)?  messageStatus,TResult Function()?  reachability,TResult Function()?  contacts,TResult Function()?  requests,TResult Function()?  groups,TResult Function( String groupId)?  groupMessage,TResult Function()?  deviceRetired,TResult Function( String contactId)?  call,TResult Function()?  shares,TResult Function()?  shareWanted,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case NodeEventItem_MessageReceived() when messageReceived != null:
 return messageReceived(_that.contactId);case NodeEventItem_MessageStatus() when messageStatus != null:
@@ -1339,7 +1345,9 @@ return requests();case NodeEventItem_Groups() when groups != null:
 return groups();case NodeEventItem_GroupMessage() when groupMessage != null:
 return groupMessage(_that.groupId);case NodeEventItem_DeviceRetired() when deviceRetired != null:
 return deviceRetired();case NodeEventItem_Call() when call != null:
-return call(_that.contactId);case _:
+return call(_that.contactId);case NodeEventItem_Shares() when shares != null:
+return shares();case NodeEventItem_ShareWanted() when shareWanted != null:
+return shareWanted();case _:
   return orElse();
 
 }
@@ -1357,7 +1365,7 @@ return call(_that.contactId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String contactId)  messageReceived,required TResult Function( String messageId)  messageStatus,required TResult Function()  reachability,required TResult Function()  contacts,required TResult Function()  requests,required TResult Function()  groups,required TResult Function( String groupId)  groupMessage,required TResult Function()  deviceRetired,required TResult Function( String contactId)  call,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String contactId)  messageReceived,required TResult Function( String messageId)  messageStatus,required TResult Function()  reachability,required TResult Function()  contacts,required TResult Function()  requests,required TResult Function()  groups,required TResult Function( String groupId)  groupMessage,required TResult Function()  deviceRetired,required TResult Function( String contactId)  call,required TResult Function()  shares,required TResult Function()  shareWanted,}) {final _that = this;
 switch (_that) {
 case NodeEventItem_MessageReceived():
 return messageReceived(_that.contactId);case NodeEventItem_MessageStatus():
@@ -1368,7 +1376,9 @@ return requests();case NodeEventItem_Groups():
 return groups();case NodeEventItem_GroupMessage():
 return groupMessage(_that.groupId);case NodeEventItem_DeviceRetired():
 return deviceRetired();case NodeEventItem_Call():
-return call(_that.contactId);}
+return call(_that.contactId);case NodeEventItem_Shares():
+return shares();case NodeEventItem_ShareWanted():
+return shareWanted();}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -1382,7 +1392,7 @@ return call(_that.contactId);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String contactId)?  messageReceived,TResult? Function( String messageId)?  messageStatus,TResult? Function()?  reachability,TResult? Function()?  contacts,TResult? Function()?  requests,TResult? Function()?  groups,TResult? Function( String groupId)?  groupMessage,TResult? Function()?  deviceRetired,TResult? Function( String contactId)?  call,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String contactId)?  messageReceived,TResult? Function( String messageId)?  messageStatus,TResult? Function()?  reachability,TResult? Function()?  contacts,TResult? Function()?  requests,TResult? Function()?  groups,TResult? Function( String groupId)?  groupMessage,TResult? Function()?  deviceRetired,TResult? Function( String contactId)?  call,TResult? Function()?  shares,TResult? Function()?  shareWanted,}) {final _that = this;
 switch (_that) {
 case NodeEventItem_MessageReceived() when messageReceived != null:
 return messageReceived(_that.contactId);case NodeEventItem_MessageStatus() when messageStatus != null:
@@ -1393,7 +1403,9 @@ return requests();case NodeEventItem_Groups() when groups != null:
 return groups();case NodeEventItem_GroupMessage() when groupMessage != null:
 return groupMessage(_that.groupId);case NodeEventItem_DeviceRetired() when deviceRetired != null:
 return deviceRetired();case NodeEventItem_Call() when call != null:
-return call(_that.contactId);case _:
+return call(_that.contactId);case NodeEventItem_Shares() when shares != null:
+return shares();case NodeEventItem_ShareWanted() when shareWanted != null:
+return shareWanted();case _:
   return null;
 
 }
@@ -1836,6 +1848,70 @@ as String,
 
 
 }
+
+/// @nodoc
+
+
+class NodeEventItem_Shares extends NodeEventItem {
+  const NodeEventItem_Shares(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is NodeEventItem_Shares);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+    return 'NodeEventItem.shares()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class NodeEventItem_ShareWanted extends NodeEventItem {
+  const NodeEventItem_ShareWanted(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is NodeEventItem_ShareWanted);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+    return 'NodeEventItem.shareWanted()';
+}
+
+
+}
+
+
+
 
 /// @nodoc
 mixin _$ReceiveOutcome {
@@ -2969,6 +3045,305 @@ class _$ScanUpdate_AttestCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') $Res call({Object? field0 = null,}) {
   return _then(ScanUpdate_Attest(
 null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+mixin _$SharedFileState {
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SharedFileState);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+    return 'SharedFileState()';
+}
+
+
+}
+
+/// @nodoc
+class $SharedFileStateCopyWith<$Res>  {
+$SharedFileStateCopyWith(SharedFileState _, $Res Function(SharedFileState) __);
+}
+
+
+/// Adds pattern-matching-related methods to [SharedFileState].
+extension SharedFileStatePatterns on SharedFileState {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( SharedFileState_Available value)?  available,TResult Function( SharedFileState_Requested value)?  requested,TResult Function( SharedFileState_Received value)?  received,required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case SharedFileState_Available() when available != null:
+return available(_that);case SharedFileState_Requested() when requested != null:
+return requested(_that);case SharedFileState_Received() when received != null:
+return received(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( SharedFileState_Available value)  available,required TResult Function( SharedFileState_Requested value)  requested,required TResult Function( SharedFileState_Received value)  received,}){
+final _that = this;
+switch (_that) {
+case SharedFileState_Available():
+return available(_that);case SharedFileState_Requested():
+return requested(_that);case SharedFileState_Received():
+return received(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( SharedFileState_Available value)?  available,TResult? Function( SharedFileState_Requested value)?  requested,TResult? Function( SharedFileState_Received value)?  received,}){
+final _that = this;
+switch (_that) {
+case SharedFileState_Available() when available != null:
+return available(_that);case SharedFileState_Requested() when requested != null:
+return requested(_that);case SharedFileState_Received() when received != null:
+return received(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  available,TResult Function()?  requested,TResult Function( String messageId)?  received,required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case SharedFileState_Available() when available != null:
+return available();case SharedFileState_Requested() when requested != null:
+return requested();case SharedFileState_Received() when received != null:
+return received(_that.messageId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  available,required TResult Function()  requested,required TResult Function( String messageId)  received,}) {final _that = this;
+switch (_that) {
+case SharedFileState_Available():
+return available();case SharedFileState_Requested():
+return requested();case SharedFileState_Received():
+return received(_that.messageId);}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  available,TResult? Function()?  requested,TResult? Function( String messageId)?  received,}) {final _that = this;
+switch (_that) {
+case SharedFileState_Available() when available != null:
+return available();case SharedFileState_Requested() when requested != null:
+return requested();case SharedFileState_Received() when received != null:
+return received(_that.messageId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class SharedFileState_Available extends SharedFileState {
+  const SharedFileState_Available(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SharedFileState_Available);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+    return 'SharedFileState.available()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class SharedFileState_Requested extends SharedFileState {
+  const SharedFileState_Requested(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SharedFileState_Requested);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+    return 'SharedFileState.requested()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class SharedFileState_Received extends SharedFileState {
+  const SharedFileState_Received({required this.messageId}): super._();
+  
+
+/// Message hex id.
+ final  String messageId;
+
+/// Create a copy of SharedFileState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SharedFileState_ReceivedCopyWith<SharedFileState_Received> get copyWith => _$SharedFileState_ReceivedCopyWithImpl<SharedFileState_Received>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SharedFileState_Received&&(identical(other.messageId, messageId) || other.messageId == messageId));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,messageId);
+}
+
+@override
+String toString() {
+    return 'SharedFileState.received(messageId: $messageId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SharedFileState_ReceivedCopyWith<$Res> implements $SharedFileStateCopyWith<$Res> {
+  factory $SharedFileState_ReceivedCopyWith(SharedFileState_Received value, $Res Function(SharedFileState_Received) _then) = _$SharedFileState_ReceivedCopyWithImpl;
+@useResult
+$Res call({
+ String messageId
+});
+
+
+
+
+}
+/// @nodoc
+class _$SharedFileState_ReceivedCopyWithImpl<$Res>
+    implements $SharedFileState_ReceivedCopyWith<$Res> {
+  _$SharedFileState_ReceivedCopyWithImpl(this._self, this._then);
+
+  final SharedFileState_Received _self;
+  final $Res Function(SharedFileState_Received) _then;
+
+/// Create a copy of SharedFileState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? messageId = null,}) {
+  return _then(SharedFileState_Received(
+messageId: null == messageId ? _self.messageId : messageId // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

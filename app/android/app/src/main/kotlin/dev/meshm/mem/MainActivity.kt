@@ -179,6 +179,28 @@ class MainActivity : FlutterActivity() {
             "pickFolder" -> startPicker(result, REQ_FOLDER, null) {
                 Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
             }
+            // Files shared with contacts: picked once, read when a contact asks.
+            "pickShareFiles" -> startPicker(result, REQ_SHARE_FILES, null) {
+                Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "*/*"
+                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                }
+            }
+            "pickShareFolder" -> startPicker(result, REQ_SHARE_FOLDER, null) {
+                Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+            }
+            "copyShared" -> {
+                val uri = Uri.parse(call.argument<String>("uri"))
+                val path = call.argument<String>("path") ?: ""
+                val limit = call.argument<Number>("limit")?.toLong() ?: 0L
+                val resolver = applicationContext.contentResolver
+                // Off the main thread: a shared file can be 100 MiB.
+                Thread {
+                    val size = SharedFiles.copy(resolver, uri, path, limit)
+                    runOnUiThread { result.success(size) }
+                }.start()
+            }
             "writeToFolder" -> result.success(
                 writeToFolder(
                     Uri.parse(call.argument<String>("folder")),
@@ -212,6 +234,18 @@ class MainActivity : FlutterActivity() {
         val bytes = pendingBytes
         pending = null
         pendingBytes = null
+        if (requestCode == REQ_SHARE_FILES) {
+            if (resultCode != Activity.RESULT_OK || data == null) {
+                result.success(null)
+                return
+            }
+            try {
+                result.success(SharedFiles.describePicked(contentResolver, data))
+            } catch (e: Exception) {
+                result.error("io", e.javaClass.simpleName, null)
+            }
+            return
+        }
         val uri = data?.data
         if (resultCode != Activity.RESULT_OK || uri == null) {
             result.success(null)
@@ -240,6 +274,7 @@ class MainActivity : FlutterActivity() {
                     }
                     result.success(read)
                 }
+                REQ_SHARE_FOLDER -> result.success(SharedFiles.describeTree(contentResolver, uri))
                 REQ_FOLDER -> {
                     contentResolver.takePersistableUriPermission(
                         uri,
@@ -304,6 +339,8 @@ class MainActivity : FlutterActivity() {
         const val REQ_FOLDER = 4103
         const val MAX_FILE = 64L * 1024 * 1024 + 128
         const val REQ_NOTIFY = 4104
+        const val REQ_SHARE_FILES = 4105
+        const val REQ_SHARE_FOLDER = 4106
         const val ENGINE = "mem"
         val TELEGRAM = listOf(
             "org.telegram.messenger",

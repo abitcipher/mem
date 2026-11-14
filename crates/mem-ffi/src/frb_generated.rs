@@ -40,7 +40,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -505571822;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -2039531860;
 
 // Section: executor
 
@@ -3284,6 +3284,52 @@ fn wire__crate__api__MemNode_own_operator_only_impl(
         },
     )
 }
+fn wire__crate__api__MemNode_own_shares_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "MemNode_own_shares",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<MemNode>,
+            >>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, String>((move || {
+                let mut api_that_guard = None;
+                let decode_indices_ =
+                    flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                        flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                            &api_that, 0, false,
+                        ),
+                    ]);
+                for i in decode_indices_ {
+                    match i {
+                        0 => api_that_guard = Some(api_that.lockable_decode_sync_ref()),
+                        _ => unreachable!(),
+                    }
+                }
+                let api_that_guard = api_that_guard.unwrap();
+                let output_ok = crate::api::MemNode::own_shares(&*api_that_guard)?;
+                std::result::Result::Ok(output_ok)
+            })())
+        },
+    )
+}
 fn wire__crate__api__MemNode_privacy_log_impl(
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -3700,6 +3746,114 @@ fn wire__crate__api__MemNode_remove_from_group_impl(
         },
     )
 }
+fn wire__crate__api__MemNode_remove_share_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "MemNode_remove_share",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<MemNode>,
+            >>::sse_decode(&mut deserializer);
+            let api_share_id = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let mut api_that_guard = None;
+                    let decode_indices_ =
+                        flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                            flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                &api_that, 0, false,
+                            ),
+                        ]);
+                    for i in decode_indices_ {
+                        match i {
+                            0 => api_that_guard = Some(api_that.lockable_decode_sync_ref()),
+                            _ => unreachable!(),
+                        }
+                    }
+                    let api_that_guard = api_that_guard.unwrap();
+                    let output_ok =
+                        crate::api::MemNode::remove_share(&*api_that_guard, api_share_id)?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__MemNode_request_shared_item_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "MemNode_request_shared_item",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<MemNode>,
+            >>::sse_decode(&mut deserializer);
+            let api_contact_id = <String>::sse_decode(&mut deserializer);
+            let api_share_id = <String>::sse_decode(&mut deserializer);
+            let api_item_id = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let mut api_that_guard = None;
+                    let decode_indices_ =
+                        flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                            flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                &api_that, 0, false,
+                            ),
+                        ]);
+                    for i in decode_indices_ {
+                        match i {
+                            0 => api_that_guard = Some(api_that.lockable_decode_sync_ref()),
+                            _ => unreachable!(),
+                        }
+                    }
+                    let api_that_guard = api_that_guard.unwrap();
+                    let output_ok = crate::api::MemNode::request_shared_item(
+                        &*api_that_guard,
+                        api_contact_id,
+                        api_share_id,
+                        api_item_id,
+                    )?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__MemNode_requests_impl(
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -3990,6 +4144,69 @@ fn wire__crate__api__MemNode_rules_impl(
                 let output_ok = crate::api::MemNode::rules(&*api_that_guard)?;
                 std::result::Result::Ok(output_ok)
             })())
+        },
+    )
+}
+fn wire__crate__api__MemNode_save_share_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "MemNode_save_share",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<MemNode>,
+            >>::sse_decode(&mut deserializer);
+            let api_share_id = <Option<String>>::sse_decode(&mut deserializer);
+            let api_name = <String>::sse_decode(&mut deserializer);
+            let api_contact_id = <Option<String>>::sse_decode(&mut deserializer);
+            let api_group_id = <Option<String>>::sse_decode(&mut deserializer);
+            let api_include_introduced = <bool>::sse_decode(&mut deserializer);
+            let api_files = <Vec<crate::api::ShareFileInput>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let mut api_that_guard = None;
+                    let decode_indices_ =
+                        flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                            flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                &api_that, 0, false,
+                            ),
+                        ]);
+                    for i in decode_indices_ {
+                        match i {
+                            0 => api_that_guard = Some(api_that.lockable_decode_sync_ref()),
+                            _ => unreachable!(),
+                        }
+                    }
+                    let api_that_guard = api_that_guard.unwrap();
+                    let output_ok = crate::api::MemNode::save_share(
+                        &*api_that_guard,
+                        api_share_id,
+                        api_name,
+                        api_contact_id,
+                        api_group_id,
+                        api_include_introduced,
+                        api_files,
+                    )?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
         },
     )
 }
@@ -4332,6 +4549,65 @@ fn wire__crate__api__MemNode_send_text_impl(
                     let api_that_guard = api_that_guard.unwrap();
                     let output_ok =
                         crate::api::MemNode::send_text(&*api_that_guard, api_contact_id, api_text)?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__MemNode_serve_shared_item_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "MemNode_serve_shared_item",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<MemNode>,
+            >>::sse_decode(&mut deserializer);
+            let api_request = <crate::api::ShareRequestItem>::sse_decode(&mut deserializer);
+            let api_name = <String>::sse_decode(&mut deserializer);
+            let api_media_type = <String>::sse_decode(&mut deserializer);
+            let api_path = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let mut api_that_guard = None;
+                    let decode_indices_ =
+                        flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                            flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                &api_that, 0, false,
+                            ),
+                        ]);
+                    for i in decode_indices_ {
+                        match i {
+                            0 => api_that_guard = Some(api_that.lockable_decode_sync_ref()),
+                            _ => unreachable!(),
+                        }
+                    }
+                    let api_that_guard = api_that_guard.unwrap();
+                    let output_ok = crate::api::MemNode::serve_shared_item(
+                        &*api_that_guard,
+                        api_request,
+                        api_name,
+                        api_media_type,
+                        api_path,
+                    )?;
                     std::result::Result::Ok(output_ok)
                 })())
             }
@@ -5381,6 +5657,54 @@ fn wire__crate__api__MemNode_set_wifi_direct_enabled_impl(
         },
     )
 }
+fn wire__crate__api__MemNode_shared_with_me_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "MemNode_shared_with_me",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<MemNode>,
+            >>::sse_decode(&mut deserializer);
+            let api_contact_id = <Option<String>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, String>((move || {
+                let mut api_that_guard = None;
+                let decode_indices_ =
+                    flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                        flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                            &api_that, 0, false,
+                        ),
+                    ]);
+                for i in decode_indices_ {
+                    match i {
+                        0 => api_that_guard = Some(api_that.lockable_decode_sync_ref()),
+                        _ => unreachable!(),
+                    }
+                }
+                let api_that_guard = api_that_guard.unwrap();
+                let output_ok =
+                    crate::api::MemNode::shared_with_me(&*api_that_guard, api_contact_id)?;
+                std::result::Result::Ok(output_ok)
+            })())
+        },
+    )
+}
 fn wire__crate__api__MemNode_sound_listen_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -5694,6 +6018,53 @@ fn wire__crate__api__MemNode_take_call_signals_impl(
                 let api_that_guard = api_that_guard.unwrap();
                 let output_ok =
                     Ok::<_, ()>(crate::api::MemNode::take_call_signals(&*api_that_guard))?;
+                std::result::Result::Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__MemNode_take_share_requests_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "MemNode_take_share_requests",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<MemNode>,
+            >>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let mut api_that_guard = None;
+                let decode_indices_ =
+                    flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                        flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                            &api_that, 0, false,
+                        ),
+                    ]);
+                for i in decode_indices_ {
+                    match i {
+                        0 => api_that_guard = Some(api_that.lockable_decode_sync_ref()),
+                        _ => unreachable!(),
+                    }
+                }
+                let api_that_guard = api_that_guard.unwrap();
+                let output_ok =
+                    Ok::<_, ()>(crate::api::MemNode::take_share_requests(&*api_that_guard))?;
                 std::result::Result::Ok(output_ok)
             })())
         },
@@ -7432,6 +7803,30 @@ impl SseDecode for Vec<crate::api::MessageItem> {
     }
 }
 
+impl SseDecode for Vec<crate::api::OwnShareFileItem> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::OwnShareFileItem>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::OwnShareItem> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::OwnShareItem>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<i16> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -7492,6 +7887,66 @@ impl SseDecode for Vec<crate::api::RuleItem> {
     }
 }
 
+impl SseDecode for Vec<crate::api::ShareDownloadItem> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::ShareDownloadItem>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::ShareFileInput> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::ShareFileInput>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::ShareRequestItem> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::ShareRequestItem>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::TheirShareFileItem> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::TheirShareFileItem>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::TheirShareItem> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::TheirShareItem>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for crate::api::MemberRoleItem {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -7523,6 +7978,7 @@ impl SseDecode for crate::api::MessageItem {
         let mut var_edited = <bool>::sse_decode(deserializer);
         let mut var_editable = <bool>::sse_decode(deserializer);
         let mut var_editUntilUnixMs = <Option<i64>>::sse_decode(deserializer);
+        let mut var_shareNotice = <Option<u16>>::sse_decode(deserializer);
         return crate::api::MessageItem {
             id: var_id,
             outgoing: var_outgoing,
@@ -7539,6 +7995,7 @@ impl SseDecode for crate::api::MessageItem {
             edited: var_edited,
             editable: var_editable,
             edit_until_unix_ms: var_editUntilUnixMs,
+            share_notice: var_shareNotice,
         };
     }
 }
@@ -7601,6 +8058,12 @@ impl SseDecode for crate::api::NodeEventItem {
                 return crate::api::NodeEventItem::Call {
                     contact_id: var_contactId,
                 };
+            }
+            9 => {
+                return crate::api::NodeEventItem::Shares;
+            }
+            10 => {
+                return crate::api::NodeEventItem::ShareWanted;
             }
             _ => {
                 unimplemented!("");
@@ -7796,6 +8259,40 @@ impl SseDecode for Option<Vec<u8>> {
         } else {
             return None;
         }
+    }
+}
+
+impl SseDecode for crate::api::OwnShareFileItem {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_id = <String>::sse_decode(deserializer);
+        let mut var_file = <crate::api::ShareFileInput>::sse_decode(deserializer);
+        let mut var_downloads = <Vec<crate::api::ShareDownloadItem>>::sse_decode(deserializer);
+        return crate::api::OwnShareFileItem {
+            id: var_id,
+            file: var_file,
+            downloads: var_downloads,
+        };
+    }
+}
+
+impl SseDecode for crate::api::OwnShareItem {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_id = <String>::sse_decode(deserializer);
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_contactId = <Option<String>>::sse_decode(deserializer);
+        let mut var_groupId = <Option<String>>::sse_decode(deserializer);
+        let mut var_includeIntroduced = <bool>::sse_decode(deserializer);
+        let mut var_files = <Vec<crate::api::OwnShareFileItem>>::sse_decode(deserializer);
+        return crate::api::OwnShareItem {
+            id: var_id,
+            name: var_name,
+            contact_id: var_contactId,
+            group_id: var_groupId,
+            include_introduced: var_includeIntroduced,
+            files: var_files,
+        };
     }
 }
 
@@ -8038,6 +8535,76 @@ impl SseDecode for crate::api::SentText {
     }
 }
 
+impl SseDecode for crate::api::ShareDownloadItem {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_contactId = <String>::sse_decode(deserializer);
+        let mut var_atUnixMs = <i64>::sse_decode(deserializer);
+        return crate::api::ShareDownloadItem {
+            contact_id: var_contactId,
+            at_unix_ms: var_atUnixMs,
+        };
+    }
+}
+
+impl SseDecode for crate::api::ShareFileInput {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_size = <u64>::sse_decode(deserializer);
+        let mut var_mediaType = <String>::sse_decode(deserializer);
+        let mut var_modifiedS = <Option<u64>>::sse_decode(deserializer);
+        let mut var_handle = <String>::sse_decode(deserializer);
+        return crate::api::ShareFileInput {
+            name: var_name,
+            size: var_size,
+            media_type: var_mediaType,
+            modified_s: var_modifiedS,
+            handle: var_handle,
+        };
+    }
+}
+
+impl SseDecode for crate::api::ShareRequestItem {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_contactId = <String>::sse_decode(deserializer);
+        let mut var_shareId = <String>::sse_decode(deserializer);
+        let mut var_itemId = <String>::sse_decode(deserializer);
+        let mut var_handle = <String>::sse_decode(deserializer);
+        return crate::api::ShareRequestItem {
+            contact_id: var_contactId,
+            share_id: var_shareId,
+            item_id: var_itemId,
+            handle: var_handle,
+        };
+    }
+}
+
+impl SseDecode for crate::api::SharedFileState {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut tag_ = <i32>::sse_decode(deserializer);
+        match tag_ {
+            0 => {
+                return crate::api::SharedFileState::Available;
+            }
+            1 => {
+                return crate::api::SharedFileState::Requested;
+            }
+            2 => {
+                let mut var_messageId = <String>::sse_decode(deserializer);
+                return crate::api::SharedFileState::Received {
+                    message_id: var_messageId,
+                };
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+
 impl SseDecode for crate::api::SignedAttestation {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -8060,6 +8627,46 @@ impl SseDecode for crate::api::SoundProfile {
             0 => crate::api::SoundProfile::Audible,
             1 => crate::api::SoundProfile::Ultrasound,
             _ => unreachable!("Invalid variant for SoundProfile: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::TheirShareFileItem {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_id = <String>::sse_decode(deserializer);
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_size = <u64>::sse_decode(deserializer);
+        let mut var_mediaType = <String>::sse_decode(deserializer);
+        let mut var_modifiedS = <Option<u64>>::sse_decode(deserializer);
+        let mut var_state = <crate::api::SharedFileState>::sse_decode(deserializer);
+        return crate::api::TheirShareFileItem {
+            id: var_id,
+            name: var_name,
+            size: var_size,
+            media_type: var_mediaType,
+            modified_s: var_modifiedS,
+            state: var_state,
+        };
+    }
+}
+
+impl SseDecode for crate::api::TheirShareItem {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_contactId = <String>::sse_decode(deserializer);
+        let mut var_id = <String>::sse_decode(deserializer);
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_groupId = <Option<String>>::sse_decode(deserializer);
+        let mut var_files = <Vec<crate::api::TheirShareFileItem>>::sse_decode(deserializer);
+        let mut var_updatedUnixMs = <i64>::sse_decode(deserializer);
+        return crate::api::TheirShareItem {
+            contact_id: var_contactId,
+            id: var_id,
+            name: var_name,
+            group_id: var_groupId,
+            files: var_files,
+            updated_unix_ms: var_updatedUnixMs,
         };
     }
 }
@@ -8222,70 +8829,74 @@ fn pde_ffi_dispatcher_primary_impl(
         61 => wire__crate__api__MemNode_new_pairing_code_impl(port, ptr, rust_vec_len, data_len),
         62 => wire__crate__api__MemNode_new_recovery_phrase_impl(port, ptr, rust_vec_len, data_len),
         63 => wire__crate__api__MemNode_open_attachment_impl(port, ptr, rust_vec_len, data_len),
-        70 => wire__crate__api__MemNode_receive_text_impl(port, ptr, rust_vec_len, data_len),
-        71 => wire__crate__api__MemNode_record_attestation_impl(port, ptr, rust_vec_len, data_len),
-        72 => wire__crate__api__MemNode_record_call_impl(port, ptr, rust_vec_len, data_len),
-        73 => wire__crate__api__MemNode_remove_contact_impl(port, ptr, rust_vec_len, data_len),
-        74 => wire__crate__api__MemNode_remove_from_group_impl(port, ptr, rust_vec_len, data_len),
-        76 => wire__crate__api__MemNode_restore_with_phrase_impl(port, ptr, rust_vec_len, data_len),
-        77 => wire__crate__api__MemNode_retire_device_impl(port, ptr, rust_vec_len, data_len),
-        79 => wire__crate__api__MemNode_revoke_rule_impl(port, ptr, rust_vec_len, data_len),
-        81 => wire__crate__api__MemNode_scan_frame_impl(port, ptr, rust_vec_len, data_len),
-        82 => wire__crate__api__MemNode_send_call_signal_impl(port, ptr, rust_vec_len, data_len),
-        83 => {
+        71 => wire__crate__api__MemNode_receive_text_impl(port, ptr, rust_vec_len, data_len),
+        72 => wire__crate__api__MemNode_record_attestation_impl(port, ptr, rust_vec_len, data_len),
+        73 => wire__crate__api__MemNode_record_call_impl(port, ptr, rust_vec_len, data_len),
+        74 => wire__crate__api__MemNode_remove_contact_impl(port, ptr, rust_vec_len, data_len),
+        75 => wire__crate__api__MemNode_remove_from_group_impl(port, ptr, rust_vec_len, data_len),
+        76 => wire__crate__api__MemNode_remove_share_impl(port, ptr, rust_vec_len, data_len),
+        77 => wire__crate__api__MemNode_request_shared_item_impl(port, ptr, rust_vec_len, data_len),
+        79 => wire__crate__api__MemNode_restore_with_phrase_impl(port, ptr, rust_vec_len, data_len),
+        80 => wire__crate__api__MemNode_retire_device_impl(port, ptr, rust_vec_len, data_len),
+        82 => wire__crate__api__MemNode_revoke_rule_impl(port, ptr, rust_vec_len, data_len),
+        84 => wire__crate__api__MemNode_save_share_impl(port, ptr, rust_vec_len, data_len),
+        85 => wire__crate__api__MemNode_scan_frame_impl(port, ptr, rust_vec_len, data_len),
+        86 => wire__crate__api__MemNode_send_call_signal_impl(port, ptr, rust_vec_len, data_len),
+        87 => {
             wire__crate__api__MemNode_send_contact_request_impl(port, ptr, rust_vec_len, data_len)
         }
-        84 => wire__crate__api__MemNode_send_files_impl(port, ptr, rust_vec_len, data_len),
-        85 => wire__crate__api__MemNode_send_group_text_impl(port, ptr, rust_vec_len, data_len),
-        86 => wire__crate__api__MemNode_send_text_impl(port, ptr, rust_vec_len, data_len),
-        87 => wire__crate__api__MemNode_set_accepts_requests_nearby_impl(
+        88 => wire__crate__api__MemNode_send_files_impl(port, ptr, rust_vec_len, data_len),
+        89 => wire__crate__api__MemNode_send_group_text_impl(port, ptr, rust_vec_len, data_len),
+        90 => wire__crate__api__MemNode_send_text_impl(port, ptr, rust_vec_len, data_len),
+        91 => wire__crate__api__MemNode_serve_shared_item_impl(port, ptr, rust_vec_len, data_len),
+        92 => wire__crate__api__MemNode_set_accepts_requests_nearby_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        88 => wire__crate__api__MemNode_set_ble_enabled_impl(port, ptr, rust_vec_len, data_len),
-        89 => wire__crate__api__MemNode_set_contact_alias_impl(port, ptr, rust_vec_len, data_len),
-        90 => wire__crate__api__MemNode_set_contact_email_impl(port, ptr, rust_vec_len, data_len),
-        91 => {
+        93 => wire__crate__api__MemNode_set_ble_enabled_impl(port, ptr, rust_vec_len, data_len),
+        94 => wire__crate__api__MemNode_set_contact_alias_impl(port, ptr, rust_vec_len, data_len),
+        95 => wire__crate__api__MemNode_set_contact_email_impl(port, ptr, rust_vec_len, data_len),
+        96 => {
             wire__crate__api__MemNode_set_contact_ringtone_impl(port, ptr, rust_vec_len, data_len)
         }
-        92 => wire__crate__api__MemNode_set_courier_limit_impl(port, ptr, rust_vec_len, data_len),
-        93 => wire__crate__api__MemNode_set_default_floor_impl(port, ptr, rust_vec_len, data_len),
-        94 => wire__crate__api__MemNode_set_display_name_impl(port, ptr, rust_vec_len, data_len),
-        95 => wire__crate__api__MemNode_set_edit_limit_impl(port, ptr, rust_vec_len, data_len),
-        96 => wire__crate__api__MemNode_set_email_account_impl(port, ptr, rust_vec_len, data_len),
-        97 => wire__crate__api__MemNode_set_email_enabled_impl(port, ptr, rust_vec_len, data_len),
-        98 => wire__crate__api__MemNode_set_floor_impl(port, ptr, rust_vec_len, data_len),
-        99 => wire__crate__api__MemNode_set_hub_enabled_impl(port, ptr, rust_vec_len, data_len),
-        100 => wire__crate__api__MemNode_set_hub_url_impl(port, ptr, rust_vec_len, data_len),
-        101 => wire__crate__api__MemNode_set_lan_enabled_impl(port, ptr, rust_vec_len, data_len),
-        102 => {
+        97 => wire__crate__api__MemNode_set_courier_limit_impl(port, ptr, rust_vec_len, data_len),
+        98 => wire__crate__api__MemNode_set_default_floor_impl(port, ptr, rust_vec_len, data_len),
+        99 => wire__crate__api__MemNode_set_display_name_impl(port, ptr, rust_vec_len, data_len),
+        100 => wire__crate__api__MemNode_set_edit_limit_impl(port, ptr, rust_vec_len, data_len),
+        101 => wire__crate__api__MemNode_set_email_account_impl(port, ptr, rust_vec_len, data_len),
+        102 => wire__crate__api__MemNode_set_email_enabled_impl(port, ptr, rust_vec_len, data_len),
+        103 => wire__crate__api__MemNode_set_floor_impl(port, ptr, rust_vec_len, data_len),
+        104 => wire__crate__api__MemNode_set_hub_enabled_impl(port, ptr, rust_vec_len, data_len),
+        105 => wire__crate__api__MemNode_set_hub_url_impl(port, ptr, rust_vec_len, data_len),
+        106 => wire__crate__api__MemNode_set_lan_enabled_impl(port, ptr, rust_vec_len, data_len),
+        107 => {
             wire__crate__api__MemNode_set_own_operator_only_impl(port, ptr, rust_vec_len, data_len)
         }
-        103 => wire__crate__api__MemNode_set_phrase_form_impl(port, ptr, rust_vec_len, data_len),
-        104 => wire__crate__api__MemNode_set_push_endpoint_impl(port, ptr, rust_vec_len, data_len),
-        105 => wire__crate__api__MemNode_set_retry_days_impl(port, ptr, rust_vec_len, data_len),
-        106 => wire__crate__api__MemNode_set_wifi_direct_enabled_impl(
+        108 => wire__crate__api__MemNode_set_phrase_form_impl(port, ptr, rust_vec_len, data_len),
+        109 => wire__crate__api__MemNode_set_push_endpoint_impl(port, ptr, rust_vec_len, data_len),
+        110 => wire__crate__api__MemNode_set_retry_days_impl(port, ptr, rust_vec_len, data_len),
+        111 => wire__crate__api__MemNode_set_wifi_direct_enabled_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        107 => wire__crate__api__MemNode_sound_listen_impl(port, ptr, rust_vec_len, data_len),
-        108 => wire__crate__api__MemNode_start_attestation_impl(port, ptr, rust_vec_len, data_len),
-        109 => wire__crate__api__MemNode_start_device_join_impl(port, ptr, rust_vec_len, data_len),
-        110 => {
+        113 => wire__crate__api__MemNode_sound_listen_impl(port, ptr, rust_vec_len, data_len),
+        114 => wire__crate__api__MemNode_start_attestation_impl(port, ptr, rust_vec_len, data_len),
+        115 => wire__crate__api__MemNode_start_device_join_impl(port, ptr, rust_vec_len, data_len),
+        116 => {
             wire__crate__api__MemNode_start_sound_connect_impl(port, ptr, rust_vec_len, data_len)
         }
-        111 => {
+        117 => {
             wire__crate__api__MemNode_start_sound_pairing_impl(port, ptr, rust_vec_len, data_len)
         }
-        113 => wire__crate__api__MemNode_transmit_impl(port, ptr, rust_vec_len, data_len),
-        114 => wire__crate__api__MemNode_transmit_done_impl(port, ptr, rust_vec_len, data_len),
-        126 => wire__crate__api__SoundSession_next_burst_impl(port, ptr, rust_vec_len, data_len),
-        127 => wire__crate__api__init_app_impl(port, ptr, rust_vec_len, data_len),
-        129 => wire__crate__api__open_node_impl(port, ptr, rust_vec_len, data_len),
+        120 => wire__crate__api__MemNode_transmit_impl(port, ptr, rust_vec_len, data_len),
+        121 => wire__crate__api__MemNode_transmit_done_impl(port, ptr, rust_vec_len, data_len),
+        133 => wire__crate__api__SoundSession_next_burst_impl(port, ptr, rust_vec_len, data_len),
+        134 => wire__crate__api__init_app_impl(port, ptr, rust_vec_len, data_len),
+        136 => wire__crate__api__open_node_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -8333,27 +8944,30 @@ fn pde_ffi_dispatcher_sync_impl(
         64 => wire__crate__api__MemNode_own_card_impl(ptr, rust_vec_len, data_len),
         65 => wire__crate__api__MemNode_own_devices_impl(ptr, rust_vec_len, data_len),
         66 => wire__crate__api__MemNode_own_operator_only_impl(ptr, rust_vec_len, data_len),
-        67 => wire__crate__api__MemNode_privacy_log_impl(ptr, rust_vec_len, data_len),
-        68 => wire__crate__api__MemNode_profile_impl(ptr, rust_vec_len, data_len),
-        69 => wire__crate__api__MemNode_push_endpoint_impl(ptr, rust_vec_len, data_len),
-        75 => wire__crate__api__MemNode_requests_impl(ptr, rust_vec_len, data_len),
-        78 => wire__crate__api__MemNode_retry_days_impl(ptr, rust_vec_len, data_len),
-        80 => wire__crate__api__MemNode_rules_impl(ptr, rust_vec_len, data_len),
-        112 => wire__crate__api__MemNode_take_call_signals_impl(ptr, rust_vec_len, data_len),
-        115 => wire__crate__api__MemNode_wifi_connections_impl(ptr, rust_vec_len, data_len),
-        116 => wire__crate__api__MemNode_wifi_direct_enabled_impl(ptr, rust_vec_len, data_len),
-        117 => wire__crate__api__MemNode_wifi_local_impl(ptr, rust_vec_len, data_len),
-        118 => wire__crate__api__MemNode_wifi_peer_impl(ptr, rust_vec_len, data_len),
-        119 => wire__crate__api__QrAnimation_frame_impl(ptr, rust_vec_len, data_len),
-        120 => wire__crate__api__QrAnimation_frames_needed_impl(ptr, rust_vec_len, data_len),
-        121 => wire__crate__api__QrAnimation_frames_per_second_impl(ptr, rust_vec_len, data_len),
-        122 => wire__crate__api__QrAnimation_pace_impl(ptr, rust_vec_len, data_len),
-        123 => wire__crate__api__QrAnimation_set_pace_impl(ptr, rust_vec_len, data_len),
-        124 => wire__crate__api__SoundSession_busy_impl(ptr, rust_vec_len, data_len),
-        125 => wire__crate__api__SoundSession_frames_per_round_impl(ptr, rust_vec_len, data_len),
-        128 => wire__crate__api__new_qr_scanner_impl(ptr, rust_vec_len, data_len),
-        130 => wire__crate__api__qr_for_text_impl(ptr, rust_vec_len, data_len),
-        131 => wire__crate__api__sound_sample_rate_impl(ptr, rust_vec_len, data_len),
+        67 => wire__crate__api__MemNode_own_shares_impl(ptr, rust_vec_len, data_len),
+        68 => wire__crate__api__MemNode_privacy_log_impl(ptr, rust_vec_len, data_len),
+        69 => wire__crate__api__MemNode_profile_impl(ptr, rust_vec_len, data_len),
+        70 => wire__crate__api__MemNode_push_endpoint_impl(ptr, rust_vec_len, data_len),
+        78 => wire__crate__api__MemNode_requests_impl(ptr, rust_vec_len, data_len),
+        81 => wire__crate__api__MemNode_retry_days_impl(ptr, rust_vec_len, data_len),
+        83 => wire__crate__api__MemNode_rules_impl(ptr, rust_vec_len, data_len),
+        112 => wire__crate__api__MemNode_shared_with_me_impl(ptr, rust_vec_len, data_len),
+        118 => wire__crate__api__MemNode_take_call_signals_impl(ptr, rust_vec_len, data_len),
+        119 => wire__crate__api__MemNode_take_share_requests_impl(ptr, rust_vec_len, data_len),
+        122 => wire__crate__api__MemNode_wifi_connections_impl(ptr, rust_vec_len, data_len),
+        123 => wire__crate__api__MemNode_wifi_direct_enabled_impl(ptr, rust_vec_len, data_len),
+        124 => wire__crate__api__MemNode_wifi_local_impl(ptr, rust_vec_len, data_len),
+        125 => wire__crate__api__MemNode_wifi_peer_impl(ptr, rust_vec_len, data_len),
+        126 => wire__crate__api__QrAnimation_frame_impl(ptr, rust_vec_len, data_len),
+        127 => wire__crate__api__QrAnimation_frames_needed_impl(ptr, rust_vec_len, data_len),
+        128 => wire__crate__api__QrAnimation_frames_per_second_impl(ptr, rust_vec_len, data_len),
+        129 => wire__crate__api__QrAnimation_pace_impl(ptr, rust_vec_len, data_len),
+        130 => wire__crate__api__QrAnimation_set_pace_impl(ptr, rust_vec_len, data_len),
+        131 => wire__crate__api__SoundSession_busy_impl(ptr, rust_vec_len, data_len),
+        132 => wire__crate__api__SoundSession_frames_per_round_impl(ptr, rust_vec_len, data_len),
+        135 => wire__crate__api__new_qr_scanner_impl(ptr, rust_vec_len, data_len),
+        137 => wire__crate__api__qr_for_text_impl(ptr, rust_vec_len, data_len),
+        138 => wire__crate__api__sound_sample_rate_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -9088,6 +9702,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::MessageItem {
             self.edited.into_into_dart().into_dart(),
             self.editable.into_into_dart().into_dart(),
             self.edit_until_unix_ms.into_into_dart().into_dart(),
+            self.share_notice.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -9138,6 +9753,8 @@ impl flutter_rust_bridge::IntoDart for crate::api::NodeEventItem {
             crate::api::NodeEventItem::Call { contact_id } => {
                 [8.into_dart(), contact_id.into_into_dart().into_dart()].into_dart()
             }
+            crate::api::NodeEventItem::Shares => [9.into_dart()].into_dart(),
+            crate::api::NodeEventItem::ShareWanted => [10.into_dart()].into_dart(),
             _ => {
                 unimplemented!("");
             }
@@ -9164,6 +9781,45 @@ impl flutter_rust_bridge::IntoDart for crate::api::OpenedFile {
 impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::OpenedFile {}
 impl flutter_rust_bridge::IntoIntoDart<crate::api::OpenedFile> for crate::api::OpenedFile {
     fn into_into_dart(self) -> crate::api::OpenedFile {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::OwnShareFileItem {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.id.into_into_dart().into_dart(),
+            self.file.into_into_dart().into_dart(),
+            self.downloads.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::OwnShareFileItem {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::OwnShareFileItem>
+    for crate::api::OwnShareFileItem
+{
+    fn into_into_dart(self) -> crate::api::OwnShareFileItem {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::OwnShareItem {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.id.into_into_dart().into_dart(),
+            self.name.into_into_dart().into_dart(),
+            self.contact_id.into_into_dart().into_dart(),
+            self.group_id.into_into_dart().into_dart(),
+            self.include_introduced.into_into_dart().into_dart(),
+            self.files.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::OwnShareItem {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::OwnShareItem> for crate::api::OwnShareItem {
+    fn into_into_dart(self) -> crate::api::OwnShareItem {
         self
     }
 }
@@ -9421,6 +10077,86 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::SentText> for crate::api::Sen
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::ShareDownloadItem {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.contact_id.into_into_dart().into_dart(),
+            self.at_unix_ms.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::ShareDownloadItem {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::ShareDownloadItem>
+    for crate::api::ShareDownloadItem
+{
+    fn into_into_dart(self) -> crate::api::ShareDownloadItem {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::ShareFileInput {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.name.into_into_dart().into_dart(),
+            self.size.into_into_dart().into_dart(),
+            self.media_type.into_into_dart().into_dart(),
+            self.modified_s.into_into_dart().into_dart(),
+            self.handle.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::ShareFileInput {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::ShareFileInput> for crate::api::ShareFileInput {
+    fn into_into_dart(self) -> crate::api::ShareFileInput {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::ShareRequestItem {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.contact_id.into_into_dart().into_dart(),
+            self.share_id.into_into_dart().into_dart(),
+            self.item_id.into_into_dart().into_dart(),
+            self.handle.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::ShareRequestItem {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::ShareRequestItem>
+    for crate::api::ShareRequestItem
+{
+    fn into_into_dart(self) -> crate::api::ShareRequestItem {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::SharedFileState {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            crate::api::SharedFileState::Available => [0.into_dart()].into_dart(),
+            crate::api::SharedFileState::Requested => [1.into_dart()].into_dart(),
+            crate::api::SharedFileState::Received { message_id } => {
+                [2.into_dart(), message_id.into_into_dart().into_dart()].into_dart()
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::SharedFileState {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::SharedFileState>
+    for crate::api::SharedFileState
+{
+    fn into_into_dart(self) -> crate::api::SharedFileState {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::SignedAttestation {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -9452,6 +10188,51 @@ impl flutter_rust_bridge::IntoDart for crate::api::SoundProfile {
 impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::SoundProfile {}
 impl flutter_rust_bridge::IntoIntoDart<crate::api::SoundProfile> for crate::api::SoundProfile {
     fn into_into_dart(self) -> crate::api::SoundProfile {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::TheirShareFileItem {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.id.into_into_dart().into_dart(),
+            self.name.into_into_dart().into_dart(),
+            self.size.into_into_dart().into_dart(),
+            self.media_type.into_into_dart().into_dart(),
+            self.modified_s.into_into_dart().into_dart(),
+            self.state.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::TheirShareFileItem
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::TheirShareFileItem>
+    for crate::api::TheirShareFileItem
+{
+    fn into_into_dart(self) -> crate::api::TheirShareFileItem {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::TheirShareItem {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.contact_id.into_into_dart().into_dart(),
+            self.id.into_into_dart().into_dart(),
+            self.name.into_into_dart().into_dart(),
+            self.group_id.into_into_dart().into_dart(),
+            self.files.into_into_dart().into_dart(),
+            self.updated_unix_ms.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::TheirShareItem {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::TheirShareItem> for crate::api::TheirShareItem {
+    fn into_into_dart(self) -> crate::api::TheirShareItem {
         self
     }
 }
@@ -10207,6 +10988,26 @@ impl SseEncode for Vec<crate::api::MessageItem> {
     }
 }
 
+impl SseEncode for Vec<crate::api::OwnShareFileItem> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::OwnShareFileItem>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::OwnShareItem> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::OwnShareItem>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<i16> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -10257,6 +11058,56 @@ impl SseEncode for Vec<crate::api::RuleItem> {
     }
 }
 
+impl SseEncode for Vec<crate::api::ShareDownloadItem> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::ShareDownloadItem>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::ShareFileInput> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::ShareFileInput>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::ShareRequestItem> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::ShareRequestItem>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::TheirShareFileItem> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::TheirShareFileItem>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::TheirShareItem> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::TheirShareItem>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for crate::api::MemberRoleItem {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -10292,6 +11143,7 @@ impl SseEncode for crate::api::MessageItem {
         <bool>::sse_encode(self.edited, serializer);
         <bool>::sse_encode(self.editable, serializer);
         <Option<i64>>::sse_encode(self.edit_until_unix_ms, serializer);
+        <Option<u16>>::sse_encode(self.share_notice, serializer);
     }
 }
 
@@ -10348,6 +11200,12 @@ impl SseEncode for crate::api::NodeEventItem {
             crate::api::NodeEventItem::Call { contact_id } => {
                 <i32>::sse_encode(8, serializer);
                 <String>::sse_encode(contact_id, serializer);
+            }
+            crate::api::NodeEventItem::Shares => {
+                <i32>::sse_encode(9, serializer);
+            }
+            crate::api::NodeEventItem::ShareWanted => {
+                <i32>::sse_encode(10, serializer);
             }
             _ => {
                 unimplemented!("");
@@ -10522,6 +11380,27 @@ impl SseEncode for Option<Vec<u8>> {
         if let Some(value) = self {
             <Vec<u8>>::sse_encode(value, serializer);
         }
+    }
+}
+
+impl SseEncode for crate::api::OwnShareFileItem {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.id, serializer);
+        <crate::api::ShareFileInput>::sse_encode(self.file, serializer);
+        <Vec<crate::api::ShareDownloadItem>>::sse_encode(self.downloads, serializer);
+    }
+}
+
+impl SseEncode for crate::api::OwnShareItem {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.id, serializer);
+        <String>::sse_encode(self.name, serializer);
+        <Option<String>>::sse_encode(self.contact_id, serializer);
+        <Option<String>>::sse_encode(self.group_id, serializer);
+        <bool>::sse_encode(self.include_introduced, serializer);
+        <Vec<crate::api::OwnShareFileItem>>::sse_encode(self.files, serializer);
     }
 }
 
@@ -10717,6 +11596,56 @@ impl SseEncode for crate::api::SentText {
     }
 }
 
+impl SseEncode for crate::api::ShareDownloadItem {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.contact_id, serializer);
+        <i64>::sse_encode(self.at_unix_ms, serializer);
+    }
+}
+
+impl SseEncode for crate::api::ShareFileInput {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.name, serializer);
+        <u64>::sse_encode(self.size, serializer);
+        <String>::sse_encode(self.media_type, serializer);
+        <Option<u64>>::sse_encode(self.modified_s, serializer);
+        <String>::sse_encode(self.handle, serializer);
+    }
+}
+
+impl SseEncode for crate::api::ShareRequestItem {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.contact_id, serializer);
+        <String>::sse_encode(self.share_id, serializer);
+        <String>::sse_encode(self.item_id, serializer);
+        <String>::sse_encode(self.handle, serializer);
+    }
+}
+
+impl SseEncode for crate::api::SharedFileState {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        match self {
+            crate::api::SharedFileState::Available => {
+                <i32>::sse_encode(0, serializer);
+            }
+            crate::api::SharedFileState::Requested => {
+                <i32>::sse_encode(1, serializer);
+            }
+            crate::api::SharedFileState::Received { message_id } => {
+                <i32>::sse_encode(2, serializer);
+                <String>::sse_encode(message_id, serializer);
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+
 impl SseEncode for crate::api::SignedAttestation {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -10739,6 +11668,30 @@ impl SseEncode for crate::api::SoundProfile {
             },
             serializer,
         );
+    }
+}
+
+impl SseEncode for crate::api::TheirShareFileItem {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.id, serializer);
+        <String>::sse_encode(self.name, serializer);
+        <u64>::sse_encode(self.size, serializer);
+        <String>::sse_encode(self.media_type, serializer);
+        <Option<u64>>::sse_encode(self.modified_s, serializer);
+        <crate::api::SharedFileState>::sse_encode(self.state, serializer);
+    }
+}
+
+impl SseEncode for crate::api::TheirShareItem {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.contact_id, serializer);
+        <String>::sse_encode(self.id, serializer);
+        <String>::sse_encode(self.name, serializer);
+        <Option<String>>::sse_encode(self.group_id, serializer);
+        <Vec<crate::api::TheirShareFileItem>>::sse_encode(self.files, serializer);
+        <i64>::sse_encode(self.updated_unix_ms, serializer);
     }
 }
 

@@ -6,6 +6,7 @@ import '../app_scope.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../widgets/edit_limit.dart';
 import 'settings.dart' show toneName;
+import 'shares.dart';
 import '../src/rust/api.dart';
 
 class ContactScreen extends StatelessWidget {
@@ -126,6 +127,31 @@ class ContactScreen extends StatelessWidget {
               );
               state.changed();
             },
+          ),
+          const Divider(height: 32),
+          Text(
+            l.sharesTitle,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.folder_shared_outlined),
+            title: Text(l.sharesMine(title)),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => SharesScreen(contactId: contactId),
+              ),
+            ),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.folder_outlined),
+            title: Text(l.sharedWithMe),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => SharedWithMeScreen(contactId: contactId),
+              ),
+            ),
           ),
           if (state.calls.enabled) ...[
             const Divider(height: 32),

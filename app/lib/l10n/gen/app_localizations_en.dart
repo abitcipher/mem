@@ -1885,4 +1885,124 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get attestLogCopied => 'copied';
+
+  @override
+  String get sharesTitle => 'Shared files';
+
+  @override
+  String sharesMine(String name) {
+    return 'Files I share with $name';
+  }
+
+  @override
+  String get sharesMineGroup => 'Files I share with the group';
+
+  @override
+  String get sharedWithMe => 'Shared with me';
+
+  @override
+  String get sharesHelp =>
+      'Contacts can download these files, nothing else. The files stay where they are: MEM reads one only when it is asked for and sends it to that contact alone, over direct connections for large files.';
+
+  @override
+  String get shareAddFiles => 'Add files';
+
+  @override
+  String get shareAddFolder => 'Add a folder';
+
+  @override
+  String get shareNewName => 'Name of the share';
+
+  @override
+  String get shareNewNameHelp => 'The contact sees this name.';
+
+  @override
+  String get shareRename => 'Rename';
+
+  @override
+  String get shareStop => 'Stop sharing';
+
+  @override
+  String get shareStopConfirm =>
+      'They will no longer see these files. Files they already downloaded stay with them.';
+
+  @override
+  String shareFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files',
+      one: '1 file',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String shareDownloadedBy(String names) {
+    return 'Downloaded by $names';
+  }
+
+  @override
+  String get shareNotDownloaded => 'Not downloaded yet';
+
+  @override
+  String get shareIntroduced => 'Also members I never met';
+
+  @override
+  String get shareIntroducedHelp =>
+      'Group members the admin introduced, who are not your contacts, see this share too.';
+
+  @override
+  String get shareNone => 'You share nothing here yet.';
+
+  @override
+  String get shareRemoveFile => 'Remove from the share';
+
+  @override
+  String shareSkippedLarge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files over 100 MB were left out.',
+      one: '1 file over 100 MB was left out.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sharedNone => 'Nothing is shared with you here yet.';
+
+  @override
+  String sharedFrom(String name) {
+    return 'From $name';
+  }
+
+  @override
+  String sharedInGroup(String group) {
+    return 'In $group';
+  }
+
+  @override
+  String get shareDownload => 'Download';
+
+  @override
+  String get shareRequested =>
+      'Asked for. It arrives when their device is reachable.';
+
+  @override
+  String get shareOpen => 'Open';
+
+  @override
+  String shareNotice(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files',
+      one: '1 file',
+    );
+    return '$name shared $_temp0';
+  }
+
+  @override
+  String get reason_unknown_share => 'This share no longer exists.';
 }

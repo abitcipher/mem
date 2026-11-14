@@ -13,6 +13,7 @@ import '../widgets/attachments.dart';
 import '../widgets/chat_sync.dart';
 import '../widgets/message_bubble.dart';
 import 'contact.dart';
+import 'shares.dart';
 import 'receive.dart';
 import 'send_flow.dart';
 
@@ -324,6 +325,13 @@ class _ChatScreenState extends State<ChatScreen> {
               final call = item?.call;
               if (item != null && call != null) {
                 return CallLine(item: item, call: call);
+              }
+              if (item?.shareNotice case final n?) {
+                return ShareNoticeLine(
+                  name: title,
+                  count: n,
+                  contactId: widget.contactId,
+                );
               }
               return Column(
                 crossAxisAlignment: isSentByMe

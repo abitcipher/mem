@@ -9,7 +9,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'api.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `attest_error`, `call_id_bytes`, `call_id_hex`, `consent_request`, `contact_name`, `contact`, `dial_hint`, `from_core`, `grade_from`, `grade_u8`, `group_call`, `group_item`, `handle`, `into_core`, `message_item`, `ms`, `msg`, `new`, `outcome`, `own_hint`, `parse_group`, `parse_locale`, `qr`, `reason_key`, `receive_outcome`, `rejected`, `sent_text`, `single`, `with`
+// These functions are ignored because they are not marked as `pub`: `attest_error`, `call_id_bytes`, `call_id_hex`, `consent_request`, `contact_name`, `contact`, `dial_hint`, `from_core`, `grade_from`, `grade_u8`, `group_call`, `group_item`, `handle`, `into_core`, `message_item`, `ms`, `msg`, `new`, `outcome`, `own_hint`, `parse_group`, `parse_locale`, `parse_share_item`, `parse_share`, `qr`, `reason_key`, `receive_outcome`, `rejected`, `sent_text`, `single`, `with`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`
 
 /// Creates a scanner.
@@ -532,6 +532,13 @@ abstract class MemNode implements RustOpaqueInterface {
   /// Never.
   bool ownOperatorOnly();
 
+  /// Shares we offer, for contacts and groups.
+  ///
+  /// # Errors
+  ///
+  /// Never.
+  List<OwnShareItem> ownShares();
+
   /// The privacy log, newest first.
   ///
   /// # Errors
@@ -606,6 +613,25 @@ abstract class MemNode implements RustOpaqueInterface {
     required String memberId,
   });
 
+  /// Stops a share; everyone it reached is told. Files they downloaded stay with them.
+  ///
+  /// # Errors
+  ///
+  /// `"unknown_share"`.
+  Future<void> removeShare({required String shareId});
+
+  /// Asks a contact for one file it offers us; it arrives in "Shared with me".
+  ///
+  /// # Errors
+  ///
+  /// `"unknown_share"`, `"unknown_contact"`, or `"waiting_for_key"` and the like when the
+  /// request cannot be queued.
+  Future<void> requestSharedItem({
+    required String contactId,
+    required String shareId,
+    required String itemId,
+  });
+
   /// Contact requests waiting for an answer, oldest first.
   ///
   /// # Errors
@@ -655,6 +681,23 @@ abstract class MemNode implements RustOpaqueInterface {
   ///
   /// Only if the node lock is poisoned.
   List<RuleItem> rules();
+
+  /// Creates a share (`share_id` `None`) or replaces one, for one contact or one group
+  /// (exactly one of `contact_id`, `group_id`). Everyone it reaches gets the new list.
+  /// Returns the share's id.
+  ///
+  /// # Errors
+  ///
+  /// `"invalid_name"` (1 to 64 bytes), `"file_too_large"` (more than 512 files, or one
+  /// above 100 MiB), `"invalid_attachment"`, `"unknown_contact"`, `"unknown_group"`.
+  Future<String> saveShare({
+    String? shareId,
+    required String name,
+    String? contactId,
+    String? groupId,
+    required bool includeIntroduced,
+    required List<ShareFileInput> files,
+  });
 
   /// Feeds one camera image (its luma plane) to `scanner`. A completed transfer or a MEM
   /// text code goes straight to the node, received over the QR channel (P0).
@@ -720,6 +763,20 @@ abstract class MemNode implements RustOpaqueInterface {
   ///
   /// `"invalid_text"`, `"unknown_contact"`, or a storage error.
   Future<SentText> sendText({required String contactId, required String text});
+
+  /// Sends a requested shared file, read from `path` (a readable copy the app made, or the
+  /// file itself on desktop). The share is checked again first.
+  ///
+  /// # Errors
+  ///
+  /// `"not_a_contact"` when the file is no longer shared with the contact,
+  /// `"file_too_large"`, `"invalid_attachment"`, or a storage or read error.
+  Future<void> serveSharedItem({
+    required ShareRequestItem request,
+    required String name,
+    required String mediaType,
+    required String path,
+  });
 
   /// Turns "Accept contact requests through nearby devices" on or off.
   ///
@@ -868,6 +925,13 @@ abstract class MemNode implements RustOpaqueInterface {
   /// A storage error.
   Future<void> setWifiDirectEnabled({required bool enabled});
 
+  /// Shares contacts offer us (from one contact, or all), newest first.
+  ///
+  /// # Errors
+  ///
+  /// `"unknown_contact"` for a bad id.
+  List<TheirShareItem> sharedWithMe({String? contactId});
+
   /// Feeds recorded PCM to a sound pairing. A complete card is imported as met in person,
   /// received over sound (P0), exactly as a scanned QR card.
   ///
@@ -916,6 +980,9 @@ abstract class MemNode implements RustOpaqueInterface {
 
   /// The call setup messages that arrived since the last call, oldest first.
   List<IncomingCallItem> takeCallSignals();
+
+  /// Shared files contacts asked for since the last call; read each and serve it.
+  List<ShareRequestItem> takeShareRequests();
 
   /// Asks to send a queued message over `channel`. Below-floor channels return
   /// [`TransmitOutcome::ConsentRequired`] instead of data.
@@ -2163,6 +2230,9 @@ class MessageItem {
   /// Ours: until when it may be edited or deleted, Unix ms (`None`: without end, or not ours).
   final PlatformInt64? editUntilUnixMs;
 
+  /// A quiet line instead of a message: the sender shared this many new files.
+  final int? shareNotice;
+
   const MessageItem({
     required this.id,
     required this.outgoing,
@@ -2179,6 +2249,7 @@ class MessageItem {
     required this.edited,
     required this.editable,
     this.editUntilUnixMs,
+    this.shareNotice,
   });
 
   @override
@@ -2197,7 +2268,8 @@ class MessageItem {
       call.hashCode ^
       edited.hashCode ^
       editable.hashCode ^
-      editUntilUnixMs.hashCode;
+      editUntilUnixMs.hashCode ^
+      shareNotice.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -2218,7 +2290,8 @@ class MessageItem {
           call == other.call &&
           edited == other.edited &&
           editable == other.editable &&
-          editUntilUnixMs == other.editUntilUnixMs;
+          editUntilUnixMs == other.editUntilUnixMs &&
+          shareNotice == other.shareNotice;
 }
 
 /// Message status.
@@ -2282,6 +2355,12 @@ sealed class NodeEventItem with _$NodeEventItem {
     /// Contact hex id.
     required String contactId,
   }) = NodeEventItem_Call;
+
+  /// Shares we offer, or shares offered to us, changed.
+  const factory NodeEventItem.shares() = NodeEventItem_Shares;
+
+  /// A contact asked for a shared file: collect it with [`MemNode::take_share_requests`].
+  const factory NodeEventItem.shareWanted() = NodeEventItem_ShareWanted;
 }
 
 /// An attached file, decrypted.
@@ -2312,6 +2391,87 @@ class OpenedFile {
           name == other.name &&
           mediaType == other.mediaType &&
           data == other.data;
+}
+
+/// One file of our share.
+class OwnShareFileItem {
+  /// Hex id.
+  final String id;
+
+  /// The file as added.
+  final ShareFileInput file;
+
+  /// Who downloaded it, oldest first (kept on this device only).
+  final List<ShareDownloadItem> downloads;
+
+  const OwnShareFileItem({
+    required this.id,
+    required this.file,
+    required this.downloads,
+  });
+
+  @override
+  int get hashCode => id.hashCode ^ file.hashCode ^ downloads.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is OwnShareFileItem &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          file == other.file &&
+          downloads == other.downloads;
+}
+
+/// A share we offer.
+class OwnShareItem {
+  /// Hex id.
+  final String id;
+
+  /// Name.
+  final String name;
+
+  /// The contact it is offered to (hex), for a contact share.
+  final String? contactId;
+
+  /// The group it is offered to (hex), for a group share.
+  final String? groupId;
+
+  /// For a group share: whether members we never met see it.
+  final bool includeIntroduced;
+
+  /// The files.
+  final List<OwnShareFileItem> files;
+
+  const OwnShareItem({
+    required this.id,
+    required this.name,
+    this.contactId,
+    this.groupId,
+    required this.includeIntroduced,
+    required this.files,
+  });
+
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      name.hashCode ^
+      contactId.hashCode ^
+      groupId.hashCode ^
+      includeIntroduced.hashCode ^
+      files.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is OwnShareItem &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          name == other.name &&
+          contactId == other.contactId &&
+          groupId == other.groupId &&
+          includeIntroduced == other.includeIntroduced &&
+          files == other.files;
 }
 
 /// How the recovery phrase is written.
@@ -2715,6 +2875,127 @@ class SentText {
           sendingHub == other.sendingHub;
 }
 
+/// One download of our shared file.
+class ShareDownloadItem {
+  /// Contact hex id.
+  final String contactId;
+
+  /// When it was served, Unix ms.
+  final PlatformInt64 atUnixMs;
+
+  const ShareDownloadItem({required this.contactId, required this.atUnixMs});
+
+  @override
+  int get hashCode => contactId.hashCode ^ atUnixMs.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ShareDownloadItem &&
+          runtimeType == other.runtimeType &&
+          contactId == other.contactId &&
+          atUnixMs == other.atUnixMs;
+}
+
+/// A file the user adds to a share: where it is and what the contact sees.
+class ShareFileInput {
+  /// File name shown to the contact.
+  final String name;
+
+  /// Size in bytes.
+  final BigInt size;
+
+  /// Media type.
+  final String mediaType;
+
+  /// Last change, Unix seconds, if known.
+  final BigInt? modifiedS;
+
+  /// Where the file is: an Android document address or a desktop path. Never sent.
+  final String handle;
+
+  const ShareFileInput({
+    required this.name,
+    required this.size,
+    required this.mediaType,
+    this.modifiedS,
+    required this.handle,
+  });
+
+  @override
+  int get hashCode =>
+      name.hashCode ^
+      size.hashCode ^
+      mediaType.hashCode ^
+      modifiedS.hashCode ^
+      handle.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ShareFileInput &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          size == other.size &&
+          mediaType == other.mediaType &&
+          modifiedS == other.modifiedS &&
+          handle == other.handle;
+}
+
+/// A contact asked for one of our shared files: read it at `handle` and call
+/// [`MemNode::serve_shared_item`].
+class ShareRequestItem {
+  /// Contact hex id.
+  final String contactId;
+
+  /// Share hex id.
+  final String shareId;
+
+  /// Item hex id.
+  final String itemId;
+
+  /// Where the file is, as added.
+  final String handle;
+
+  const ShareRequestItem({
+    required this.contactId,
+    required this.shareId,
+    required this.itemId,
+    required this.handle,
+  });
+
+  @override
+  int get hashCode =>
+      contactId.hashCode ^ shareId.hashCode ^ itemId.hashCode ^ handle.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ShareRequestItem &&
+          runtimeType == other.runtimeType &&
+          contactId == other.contactId &&
+          shareId == other.shareId &&
+          itemId == other.itemId &&
+          handle == other.handle;
+}
+
+@freezed
+sealed class SharedFileState with _$SharedFileState {
+  const SharedFileState._();
+
+  /// Offered; not asked for.
+  const factory SharedFileState.available() = SharedFileState_Available;
+
+  /// Asked for; the file has not arrived.
+  const factory SharedFileState.requested() = SharedFileState_Requested;
+
+  /// Here: open it as attachment 0 of this message.
+  const factory SharedFileState.received({
+    /// Message hex id.
+    required String messageId,
+  }) = SharedFileState_Received;
+}
+
 /// A signed attestation, ready to send.
 class SignedAttestation {
   /// The HTTPS body (`application/cbor`).
@@ -2752,6 +3033,108 @@ enum SoundProfile {
 
   /// Near-ultrasound: quieter to people; some phones cannot play or hear it.
   ultrasound,
+}
+
+/// One file a contact offers us.
+class TheirShareFileItem {
+  /// Hex id.
+  final String id;
+
+  /// File name.
+  final String name;
+
+  /// Size in bytes.
+  final BigInt size;
+
+  /// Media type.
+  final String mediaType;
+
+  /// Last change, Unix seconds, if known.
+  final BigInt? modifiedS;
+
+  /// Ours yet?
+  final SharedFileState state;
+
+  const TheirShareFileItem({
+    required this.id,
+    required this.name,
+    required this.size,
+    required this.mediaType,
+    this.modifiedS,
+    required this.state,
+  });
+
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      name.hashCode ^
+      size.hashCode ^
+      mediaType.hashCode ^
+      modifiedS.hashCode ^
+      state.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TheirShareFileItem &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          name == other.name &&
+          size == other.size &&
+          mediaType == other.mediaType &&
+          modifiedS == other.modifiedS &&
+          state == other.state;
+}
+
+/// A share a contact offers us.
+class TheirShareItem {
+  /// Contact hex id.
+  final String contactId;
+
+  /// Share hex id.
+  final String id;
+
+  /// Name.
+  final String name;
+
+  /// The group it is offered to (hex), if not to us alone.
+  final String? groupId;
+
+  /// The files.
+  final List<TheirShareFileItem> files;
+
+  /// When the latest list arrived, Unix ms.
+  final PlatformInt64 updatedUnixMs;
+
+  const TheirShareItem({
+    required this.contactId,
+    required this.id,
+    required this.name,
+    this.groupId,
+    required this.files,
+    required this.updatedUnixMs,
+  });
+
+  @override
+  int get hashCode =>
+      contactId.hashCode ^
+      id.hashCode ^
+      name.hashCode ^
+      groupId.hashCode ^
+      files.hashCode ^
+      updatedUnixMs.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TheirShareItem &&
+          runtimeType == other.runtimeType &&
+          contactId == other.contactId &&
+          id == other.id &&
+          name == other.name &&
+          groupId == other.groupId &&
+          files == other.files &&
+          updatedUnixMs == other.updatedUnixMs;
 }
 
 @freezed

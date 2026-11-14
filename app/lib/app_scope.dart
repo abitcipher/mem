@@ -12,6 +12,7 @@ import 'src/backup_schedule.dart';
 import 'src/ble.dart';
 import 'src/wifi_direct.dart';
 import 'src/push.dart';
+import 'src/shares.dart';
 import 'src/platform.dart';
 import 'src/ui_settings.dart';
 import 'theme.dart';
@@ -43,6 +44,7 @@ class AppState extends ChangeNotifier {
     var contacts = node.contacts().length;
     _events = node.events().listen((e) {
       if (e is NodeEventItem_Call) unawaited(calls.onSignals());
+      if (e is NodeEventItem_ShareWanted) unawaited(shares.onRequests());
       if (e is NodeEventItem_MessageReceived) {
         _fresh.add(e.contactId);
         _received.add(e.contactId);
@@ -62,6 +64,9 @@ class AppState extends ChangeNotifier {
       notifyListeners();
     });
   }
+
+  /// Serves our shared files to contacts who ask.
+  late final ShareServer shares = ShareServer(node);
 
   /// Voice calls, one at a time.
   late final CallController calls;
@@ -234,6 +239,7 @@ String reasonText(BuildContext context, Object error) {
     'group_full' => l.reason_group_full,
     'group_empty' => l.reason_group_empty,
     'not_a_contact' => l.reason_not_a_contact,
+    'unknown_share' => l.reason_unknown_share,
     'invalid_hub_url' => l.reason_invalid_hub_url,
     'not_plain_text' => l.reason_not_plain_text,
     'invalid_email_account' => l.reason_invalid_email_account,

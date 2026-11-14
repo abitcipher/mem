@@ -40,7 +40,34 @@ pub enum NodeEvent {
     DeviceRetired,
     /// Call setup from this contact is waiting: [`Node::take_call_signals`].
     Call(ContactId),
+    /// Shares we offer, or shares offered to us, changed.
+    Shares,
+    /// A contact asked for a shared file: [`Node::take_share_requests`].
+    ShareWanted,
 }
+
+/// A contact may download one of our shared files: the app reads it and serves it.
+#[derive(Clone, PartialEq, Eq)]
+pub struct ShareRequest {
+    /// Who asked.
+    pub contact: ContactId,
+    /// The share.
+    pub share: mem_core::model::ShareId,
+    /// The item.
+    pub item: mem_core::model::ShareItemId,
+    /// Where the file is, as the app gave it.
+    pub handle: String,
+}
+
+impl std::fmt::Debug for ShareRequest {
+    /// Never prints where the file is.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ShareRequest").finish_non_exhaustive()
+    }
+}
+
+/// Share requests kept for the app; the rate limit in the core keeps this small.
+const SHARE_INBOX: usize = 64;
 
 /// A call setup message from a contact, as it arrived.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -157,6 +184,8 @@ struct Shared {
     events: broadcast::Sender<NodeEvent>,
     /// Call setup waiting for the app (events carry ids only, never content).
     calls: Mutex<std::collections::VecDeque<IncomingCallSignal>>,
+    /// Shared files asked for, waiting for the app to read them.
+    share_wants: Mutex<std::collections::VecDeque<ShareRequest>>,
     config: NodeConfig,
 }
 
@@ -201,6 +230,7 @@ impl Node {
                 email: Mutex::new(None),
                 events: broadcast::channel(64).0,
                 calls: Mutex::new(std::collections::VecDeque::new()),
+                share_wants: Mutex::new(std::collections::VecDeque::new()),
                 config,
             }),
         };
@@ -1068,6 +1098,7 @@ impl Node {
     }
 
     /// Carries out network outputs and publishes events. Called without the runtime lock.
+    #[allow(clippy::too_many_lines, reason = "one arm per kind of output")]
     fn dispatch(&self, outputs: &[Output]) {
         let lan = self.lan_handle();
         for o in outputs {
@@ -1168,6 +1199,9 @@ impl Node {
                 }
                 Output::GroupMessage { group, .. } => self.emit(NodeEvent::GroupMessage(*group)),
                 Output::SolvePow(job) => self.solve_pow(*job),
+                o @ (Output::ShareSaved { .. }
+                | Output::SharesChanged
+                | Output::ShareItemWanted { .. }) => self.share_output(o),
                 _ => {}
             }
         }
@@ -1307,6 +1341,47 @@ impl Node {
     pub fn take_call_signals(&self) -> Vec<IncomingCallSignal> {
         self.shared
             .calls
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .drain(..)
+            .collect()
+    }
+
+    fn share_output(&self, o: &Output) {
+        let Output::ShareItemWanted {
+            contact,
+            share,
+            item,
+            handle,
+        } = o
+        else {
+            self.emit(NodeEvent::Shares);
+            return;
+        };
+        let r = ShareRequest {
+            contact: *contact,
+            share: *share,
+            item: *item,
+            handle: handle.clone(),
+        };
+        {
+            let mut q = self
+                .shared
+                .share_wants
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner);
+            if q.len() >= SHARE_INBOX {
+                q.pop_front();
+            }
+            q.push_back(r);
+        }
+        self.emit(NodeEvent::ShareWanted);
+    }
+
+    /// Takes the shared files contacts asked for since the last call, oldest first.
+    pub fn take_share_requests(&self) -> Vec<ShareRequest> {
+        self.shared
+            .share_wants
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .drain(..)
@@ -1933,6 +2008,105 @@ mod tests {
         assert_eq!(
             b.read(|r| r.agent().messages(a_id))[0].text,
             "found you by sound"
+        );
+        drop((a, b));
+        let _ = std::fs::remove_dir_all(da);
+        let _ = std::fs::remove_dir_all(db);
+    }
+
+    /// A shared file too large for parts: offered, asked for, read by the owner's app, pulled
+    /// directly, and kept in "Shared with me" rather than in the chat.
+    #[test]
+    fn a_shared_file_is_requested_and_pulled_over_the_local_network() {
+        use mem_core::model::{
+            AttachmentData, IntroducedMembers, NewAttachment, NewShareItem, ShareAudience,
+            SharedItemState,
+        };
+        let (da, db) = (tmp("share-a"), tmp("share-b"));
+        let a = Node::open(&da, direct()).unwrap();
+        let b = Node::open(&db, direct()).unwrap();
+        let card_b = b.read(Runtime::own_card_text);
+        let card_a = a.read(Runtime::own_card_text);
+        a.receive_text(&card_b, ClaId::Qr).unwrap();
+        b.receive_text(&card_a, ClaId::Qr).unwrap();
+        let b_id = a.read(|r| r.agent().contacts()[0].id);
+        let a_id = b.read(|r| r.agent().contacts()[0].id);
+        let file = da.join("report.bin");
+        let body: Vec<u8> = (0..300_000u32).map(|i| (i % 253) as u8).collect();
+        std::fs::write(&file, &body).unwrap();
+        let handle = file.to_string_lossy().into_owned();
+
+        let mut eva = a.subscribe();
+        let mut evb = b.subscribe();
+        a.lan_connect(b.lan_addr().unwrap());
+        a.handle(Input::SaveShare {
+            share: None,
+            name: "Reports".into(),
+            audience: ShareAudience::Contact(b_id),
+            introduced: IntroducedMembers::Excluded,
+            items: vec![NewShareItem {
+                name: "report.bin".into(),
+                size: body.len() as u64,
+                media_type: "application/octet-stream".into(),
+                modified_s: None,
+                handle: handle.clone(),
+            }],
+        })
+        .unwrap();
+        wait_for(&mut evb, |e| *e == NodeEvent::Shares);
+        let offered = b.read(|r| r.agent().shared_with_me(Some(a_id)));
+        assert_eq!(offered.len(), 1);
+        let (share, item) = (offered[0].id, offered[0].items[0].id);
+
+        b.handle(Input::RequestSharedItem {
+            contact: a_id,
+            share,
+            item,
+        })
+        .unwrap();
+        wait_for(&mut eva, |e| *e == NodeEvent::ShareWanted);
+        let wanted = a.take_share_requests();
+        assert_eq!(wanted.len(), 1);
+        assert_eq!(wanted[0].handle, handle);
+        let data = a.read(|r| r.seal_file(&file)).unwrap();
+        assert!(matches!(data, AttachmentData::Stored { .. }));
+        a.handle(Input::ServeSharedItem {
+            contact: b_id,
+            share,
+            item,
+            file: NewAttachment {
+                name: "report.bin".into(),
+                media_type: "application/octet-stream".into(),
+                data,
+                preview: None,
+            },
+        })
+        .unwrap();
+
+        let deadline = std::time::Instant::now() + Duration::from_secs(20);
+        let opened = loop {
+            let state = b.read(|r| r.agent().shared_with_me(Some(a_id))[0].items[0].state);
+            if let SharedItemState::Received(m) = state
+                && let Some(o) = b.read(|r| r.open_attachment(m, 0)).unwrap()
+            {
+                break o;
+            }
+            assert!(std::time::Instant::now() < deadline, "never arrived: {state:?}");
+            std::thread::sleep(Duration::from_millis(50));
+        };
+        assert_eq!(&opened.data[..], &body[..]);
+        // Not a chat message on either side: B's chat has only the quiet line.
+        let chat = b.read(|r| r.agent().messages(a_id));
+        assert_eq!(chat.len(), 1);
+        assert_eq!(
+            chat[0].kind,
+            mem_core::model::MessageKind::ShareNotice { new_items: 1 }
+        );
+        assert_eq!(a.read(|r| r.agent().messages(b_id)).len(), 0);
+        // The owner sees who downloaded it.
+        assert_eq!(
+            a.read(|r| r.agent().own_shares()[0].items[0].downloads.len()),
+            1
         );
         drop((a, b));
         let _ = std::fs::remove_dir_all(da);

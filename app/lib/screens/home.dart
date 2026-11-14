@@ -13,6 +13,7 @@ import 'groups.dart';
 import 'pair.dart';
 import 'privacy_log.dart';
 import 'settings.dart';
+import 'shares.dart';
 import 'receive.dart';
 import 'requests.dart';
 import '../widgets/logo.dart';
@@ -99,6 +100,12 @@ class HomeScreen extends StatelessWidget {
                     Icons.group_add_outlined,
                     l.newGroup,
                     const CreateGroupScreen(),
+                  ),
+                if (contacts.isNotEmpty)
+                  _menuItem(
+                    Icons.folder_outlined,
+                    l.sharedWithMe,
+                    const SharedWithMeScreen(),
                   ),
                 _menuItem(
                   Icons.handshake_outlined,

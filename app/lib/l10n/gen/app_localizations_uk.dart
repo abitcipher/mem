@@ -1901,4 +1901,130 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get attestLogCopied => 'скопійовано';
+
+  @override
+  String get sharesTitle => 'Спільні файли';
+
+  @override
+  String sharesMine(String name) {
+    return 'Файли, якими я ділюся з $name';
+  }
+
+  @override
+  String get sharesMineGroup => 'Файли, якими я ділюся з групою';
+
+  @override
+  String get sharedWithMe => 'Поділилися зі мною';
+
+  @override
+  String get sharesHelp =>
+      'Контакти можуть лише завантажувати ці файли. Файли лишаються там, де вони є: MEM читає файл, лише коли його просять, і надсилає тільки цьому контакту, великі файли — прямим з\'єднанням.';
+
+  @override
+  String get shareAddFiles => 'Додати файли';
+
+  @override
+  String get shareAddFolder => 'Додати теку';
+
+  @override
+  String get shareNewName => 'Назва';
+
+  @override
+  String get shareNewNameHelp => 'Контакт бачить цю назву.';
+
+  @override
+  String get shareRename => 'Перейменувати';
+
+  @override
+  String get shareStop => 'Припинити ділитися';
+
+  @override
+  String get shareStopConfirm =>
+      'Вони більше не бачитимуть цих файлів. Уже завантажені файли лишаються в них.';
+
+  @override
+  String shareFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count файлу',
+      many: '$count файлів',
+      few: '$count файли',
+      one: '$count файл',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String shareDownloadedBy(String names) {
+    return 'Завантажили: $names';
+  }
+
+  @override
+  String get shareNotDownloaded => 'Ще не завантажували';
+
+  @override
+  String get shareIntroduced => 'Також учасники, яких я не зустрічав';
+
+  @override
+  String get shareIntroducedHelp =>
+      'Учасники групи, яких представив адміністратор і які не є вашими контактами, теж бачитимуть цей набір.';
+
+  @override
+  String get shareNone => 'Ви ще нічим тут не ділитеся.';
+
+  @override
+  String get shareRemoveFile => 'Прибрати з набору';
+
+  @override
+  String shareSkippedLarge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count файлу понад 100 МБ не додано.',
+      many: '$count файлів понад 100 МБ не додано.',
+      few: '$count файли понад 100 МБ не додано.',
+      one: '$count файл понад 100 МБ не додано.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sharedNone => 'Тут з вами ще нічим не поділилися.';
+
+  @override
+  String sharedFrom(String name) {
+    return 'Від $name';
+  }
+
+  @override
+  String sharedInGroup(String group) {
+    return 'У групі $group';
+  }
+
+  @override
+  String get shareDownload => 'Завантажити';
+
+  @override
+  String get shareRequested =>
+      'Запит надіслано. Файл надійде, коли їхній пристрій буде досяжний.';
+
+  @override
+  String get shareOpen => 'Відкрити';
+
+  @override
+  String shareNotice(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count файлу',
+      many: '$count файлів',
+      few: '$count файли',
+      one: '$count файл',
+    );
+    return '$name ділиться: $_temp0';
+  }
+
+  @override
+  String get reason_unknown_share => 'Цього набору більше немає.';
 }

@@ -12,9 +12,9 @@ use flutter_rust_bridge::frb;
 use mem_core::disclosure::{self, Locale};
 use mem_core::model::{
     AttachmentState, CallOutcome, ChannelOffer, ConsentBasis, ConsentRecord, ConsentScope,
-    ContactId, DeliveryStatus, GroupId, GroupStatus, GroupView, MemberRole, MessageKind,
-    MessageView, MsgDirection, MsgId, OfferId, OpId, RejectReason, RequestId, RuleId, TrustLevel,
-    sas_emoji,
+    ContactId, DeliveryStatus, GroupId, GroupStatus, GroupView, IntroducedMembers, MemberRole,
+    MessageKind, MessageView, MsgDirection, MsgId, NewShareItem, OfferId, OpId, RejectReason,
+    RequestId, RuleId, ShareAudience, ShareId, ShareItemId, SharedItemState, TrustLevel, sas_emoji,
 };
 use mem_core::{ClaError, ClaId, Input, Output, PrivacyGrade};
 use mem_proto::frame::ObjectKind;
@@ -432,6 +432,10 @@ pub enum NodeEventItem {
         /// Contact hex id.
         contact_id: String,
     },
+    /// Shares we offer, or shares offered to us, changed.
+    Shares,
+    /// A contact asked for a shared file: collect it with [`MemNode::take_share_requests`].
+    ShareWanted,
 }
 
 /// One call setup message.
@@ -784,6 +788,8 @@ pub struct MessageItem {
     pub editable: bool,
     /// Ours: until when it may be edited or deleted, Unix ms (`None`: without end, or not ours).
     pub edit_until_unix_ms: Option<i64>,
+    /// A quiet line instead of a message: the sender shared this many new files.
+    pub share_notice: Option<u16>,
 }
 
 /// A voice call, as a line in the chat.
@@ -1074,6 +1080,112 @@ pub struct RuleItem {
     pub until_unix_ms: Option<u64>,
 }
 
+/// A file the user adds to a share: where it is and what the contact sees.
+pub struct ShareFileInput {
+    /// File name shown to the contact.
+    pub name: String,
+    /// Size in bytes.
+    pub size: u64,
+    /// Media type.
+    pub media_type: String,
+    /// Last change, Unix seconds, if known.
+    pub modified_s: Option<u64>,
+    /// Where the file is: an Android document address or a desktop path. Never sent.
+    pub handle: String,
+}
+
+/// One download of our shared file.
+pub struct ShareDownloadItem {
+    /// Contact hex id.
+    pub contact_id: String,
+    /// When it was served, Unix ms.
+    pub at_unix_ms: i64,
+}
+
+/// One file of our share.
+pub struct OwnShareFileItem {
+    /// Hex id.
+    pub id: String,
+    /// The file as added.
+    pub file: ShareFileInput,
+    /// Who downloaded it, oldest first (kept on this device only).
+    pub downloads: Vec<ShareDownloadItem>,
+}
+
+/// A share we offer.
+pub struct OwnShareItem {
+    /// Hex id.
+    pub id: String,
+    /// Name.
+    pub name: String,
+    /// The contact it is offered to (hex), for a contact share.
+    pub contact_id: Option<String>,
+    /// The group it is offered to (hex), for a group share.
+    pub group_id: Option<String>,
+    /// For a group share: whether members we never met see it.
+    pub include_introduced: bool,
+    /// The files.
+    pub files: Vec<OwnShareFileItem>,
+}
+
+/// Where a download from a contact stands.
+pub enum SharedFileState {
+    /// Offered; not asked for.
+    Available,
+    /// Asked for; the file has not arrived.
+    Requested,
+    /// Here: open it as attachment 0 of this message.
+    Received {
+        /// Message hex id.
+        message_id: String,
+    },
+}
+
+/// One file a contact offers us.
+pub struct TheirShareFileItem {
+    /// Hex id.
+    pub id: String,
+    /// File name.
+    pub name: String,
+    /// Size in bytes.
+    pub size: u64,
+    /// Media type.
+    pub media_type: String,
+    /// Last change, Unix seconds, if known.
+    pub modified_s: Option<u64>,
+    /// Ours yet?
+    pub state: SharedFileState,
+}
+
+/// A share a contact offers us.
+pub struct TheirShareItem {
+    /// Contact hex id.
+    pub contact_id: String,
+    /// Share hex id.
+    pub id: String,
+    /// Name.
+    pub name: String,
+    /// The group it is offered to (hex), if not to us alone.
+    pub group_id: Option<String>,
+    /// The files.
+    pub files: Vec<TheirShareFileItem>,
+    /// When the latest list arrived, Unix ms.
+    pub updated_unix_ms: i64,
+}
+
+/// A contact asked for one of our shared files: read it at `handle` and call
+/// [`MemNode::serve_shared_item`].
+pub struct ShareRequestItem {
+    /// Contact hex id.
+    pub contact_id: String,
+    /// Share hex id.
+    pub share_id: String,
+    /// Item hex id.
+    pub item_id: String,
+    /// Where the file is, as added.
+    pub handle: String,
+}
+
 /// The local MEM node. Opaque to Dart.
 #[frb(opaque)]
 pub struct MemNode {
@@ -1288,6 +1400,8 @@ impl MemNode {
                 NodeEvent::Call(c) => NodeEventItem::Call {
                     contact_id: hex::encode(c.as_bytes()),
                 },
+                NodeEvent::Shares => NodeEventItem::Shares,
+                NodeEvent::ShareWanted => NodeEventItem::ShareWanted,
             };
             sink.add(item).is_ok()
         });
@@ -2648,6 +2762,9 @@ impl MemNode {
                         // A message of files only shows its first file's name.
                         last_text: last.map(|m| match (m.kind, m.attachments.first()) {
                             (MessageKind::Call(_), _) => String::from("📞"),
+                            (MessageKind::ShareNotice { new_items }, _) => {
+                                format!("📁 +{new_items}")
+                            }
                             (_, Some(a)) if m.text.is_empty() => format!("📎 {}", a.name),
                             _ => m.text,
                         }),
@@ -2677,6 +2794,246 @@ impl MemNode {
                 .into_iter()
                 .map(message_item)
                 .collect()
+        })
+    }
+
+    // ---------------------------------------------------------------- shares
+
+    /// Shares we offer, for contacts and groups.
+    ///
+    /// # Errors
+    ///
+    /// Never.
+    #[frb(sync)]
+    pub fn own_shares(&self) -> Result<Vec<OwnShareItem>, String> {
+        self.with(|rt| {
+            rt.agent()
+                .own_shares()
+                .into_iter()
+                .map(|s| {
+                    let (contact_id, group_id) = match s.audience {
+                        ShareAudience::Contact(c) => (Some(hex::encode(c.as_bytes())), None),
+                        ShareAudience::Group(g) => (None, Some(hex::encode(g.as_bytes()))),
+                    };
+                    OwnShareItem {
+                        id: hex::encode(s.id.as_bytes()),
+                        name: s.name,
+                        contact_id,
+                        group_id,
+                        include_introduced: s.introduced == IntroducedMembers::Included,
+                        files: s
+                            .items
+                            .into_iter()
+                            .map(|i| OwnShareFileItem {
+                                id: hex::encode(i.id.as_bytes()),
+                                file: ShareFileInput {
+                                    name: i.item.name,
+                                    size: i.item.size,
+                                    media_type: i.item.media_type,
+                                    modified_s: i.item.modified_s,
+                                    handle: i.item.handle,
+                                },
+                                downloads: i
+                                    .downloads
+                                    .into_iter()
+                                    .map(|(c, at)| ShareDownloadItem {
+                                        contact_id: hex::encode(c.as_bytes()),
+                                        at_unix_ms: ms(at),
+                                    })
+                                    .collect(),
+                            })
+                            .collect(),
+                    }
+                })
+                .collect()
+        })
+    }
+
+    /// Shares contacts offer us (from one contact, or all), newest first.
+    ///
+    /// # Errors
+    ///
+    /// `"unknown_contact"` for a bad id.
+    #[frb(sync)]
+    pub fn shared_with_me(
+        &self,
+        contact_id: Option<String>,
+    ) -> Result<Vec<TheirShareItem>, String> {
+        let from = contact_id.as_deref().map(contact).transpose()?;
+        self.with(|rt| {
+            rt.agent()
+                .shared_with_me(from)
+                .into_iter()
+                .map(|s| TheirShareItem {
+                    contact_id: hex::encode(s.contact.as_bytes()),
+                    id: hex::encode(s.id.as_bytes()),
+                    name: s.name,
+                    group_id: s.group.map(|g| hex::encode(g.as_bytes())),
+                    updated_unix_ms: ms(s.updated_unix_ms),
+                    files: s
+                        .items
+                        .into_iter()
+                        .map(|i| TheirShareFileItem {
+                            id: hex::encode(i.id.as_bytes()),
+                            name: i.name,
+                            size: i.size,
+                            media_type: i.media_type,
+                            modified_s: i.modified_s,
+                            state: match i.state {
+                                SharedItemState::Available => SharedFileState::Available,
+                                SharedItemState::Requested => SharedFileState::Requested,
+                                SharedItemState::Received(m) => SharedFileState::Received {
+                                    message_id: hex::encode(m.as_bytes()),
+                                },
+                            },
+                        })
+                        .collect(),
+                })
+                .collect()
+        })
+    }
+
+    /// Creates a share (`share_id` `None`) or replaces one, for one contact or one group
+    /// (exactly one of `contact_id`, `group_id`). Everyone it reaches gets the new list.
+    /// Returns the share's id.
+    ///
+    /// # Errors
+    ///
+    /// `"invalid_name"` (1 to 64 bytes), `"file_too_large"` (more than 512 files, or one
+    /// above 100 MiB), `"invalid_attachment"`, `"unknown_contact"`, `"unknown_group"`.
+    pub fn save_share(
+        &self,
+        share_id: Option<String>,
+        name: String,
+        contact_id: Option<String>,
+        group_id: Option<String>,
+        include_introduced: bool,
+        files: Vec<ShareFileInput>,
+    ) -> Result<String, String> {
+        let share = share_id.as_deref().map(parse_share).transpose()?;
+        let audience = match (contact_id, group_id) {
+            (Some(c), None) => ShareAudience::Contact(contact(&c)?),
+            (None, Some(g)) => ShareAudience::Group(parse_group(&g)?),
+            _ => return Err("unknown_contact".into()),
+        };
+        let out = self.handle(Input::SaveShare {
+            share,
+            name,
+            audience,
+            introduced: if include_introduced {
+                IntroducedMembers::Included
+            } else {
+                IntroducedMembers::Excluded
+            },
+            items: files
+                .into_iter()
+                .map(|f| NewShareItem {
+                    name: f.name,
+                    size: f.size,
+                    media_type: f.media_type,
+                    modified_s: f.modified_s,
+                    handle: f.handle,
+                })
+                .collect(),
+        })?;
+        if let Some(r) = rejected(&out) {
+            return Err(reason_key(r));
+        }
+        out.iter()
+            .find_map(|o| match o {
+                Output::ShareSaved { share } => Some(hex::encode(share.as_bytes())),
+                _ => None,
+            })
+            .ok_or_else(|| String::from("unknown_share"))
+    }
+
+    /// Stops a share; everyone it reached is told. Files they downloaded stay with them.
+    ///
+    /// # Errors
+    ///
+    /// `"unknown_share"`.
+    pub fn remove_share(&self, share_id: String) -> Result<(), String> {
+        let share = parse_share(&share_id)?;
+        self.group_call(Input::RemoveShare { share })
+    }
+
+    /// Asks a contact for one file it offers us; it arrives in "Shared with me".
+    ///
+    /// # Errors
+    ///
+    /// `"unknown_share"`, `"unknown_contact"`, or `"waiting_for_key"` and the like when the
+    /// request cannot be queued.
+    pub fn request_shared_item(
+        &self,
+        contact_id: String,
+        share_id: String,
+        item_id: String,
+    ) -> Result<(), String> {
+        let contact = contact(&contact_id)?;
+        let share = parse_share(&share_id)?;
+        let item = parse_share_item(&item_id)?;
+        self.group_call(Input::RequestSharedItem {
+            contact,
+            share,
+            item,
+        })
+    }
+
+    /// Shared files contacts asked for since the last call; read each and serve it.
+    #[frb(sync)]
+    pub fn take_share_requests(&self) -> Vec<ShareRequestItem> {
+        self.node
+            .take_share_requests()
+            .into_iter()
+            .map(|r| ShareRequestItem {
+                contact_id: hex::encode(r.contact.as_bytes()),
+                share_id: hex::encode(r.share.as_bytes()),
+                item_id: hex::encode(r.item.as_bytes()),
+                handle: r.handle,
+            })
+            .collect()
+    }
+
+    /// Sends a requested shared file, read from `path` (a readable copy the app made, or the
+    /// file itself on desktop). The share is checked again first.
+    ///
+    /// # Errors
+    ///
+    /// `"not_a_contact"` when the file is no longer shared with the contact,
+    /// `"file_too_large"`, `"invalid_attachment"`, or a storage or read error.
+    pub fn serve_shared_item(
+        &self,
+        request: ShareRequestItem,
+        name: String,
+        media_type: String,
+        path: String,
+    ) -> Result<(), String> {
+        let contact = contact(&request.contact_id)?;
+        let share = parse_share(&request.share_id)?;
+        let item = parse_share_item(&request.item_id)?;
+        let path = std::path::Path::new(&path);
+        let size = std::fs::metadata(path)
+            .map_err(|e| e.kind().to_string())?
+            .len();
+        // Small files go in parts with the message; large ones are stored to be pulled.
+        let data = if size > SMALL_FILE {
+            self.with(|rt| rt.seal_file(path))?
+                .map_err(|e| e.to_string())?
+        } else {
+            mem_core::model::AttachmentData::Bytes(
+                std::fs::read(path).map_err(|e| e.kind().to_string())?,
+            )
+        };
+        self.group_call(Input::ServeSharedItem {
+            contact,
+            share,
+            item,
+            file: mem_core::model::NewAttachment {
+                name,
+                media_type,
+                data,
+                preview: None,
+            },
         })
     }
 
@@ -3390,6 +3747,25 @@ fn parse_group(hex_id: &str) -> Result<GroupId, String> {
     Ok(GroupId::from_bytes(bytes))
 }
 
+fn parse_share(hex_id: &str) -> Result<ShareId, String> {
+    let bytes: [u8; 16] = hex::decode(hex_id)
+        .ok()
+        .and_then(|b| b.try_into().ok())
+        .ok_or("unknown_share")?;
+    Ok(ShareId::from_bytes(bytes))
+}
+
+fn parse_share_item(hex_id: &str) -> Result<ShareItemId, String> {
+    let bytes: [u8; 16] = hex::decode(hex_id)
+        .ok()
+        .and_then(|b| b.try_into().ok())
+        .ok_or("unknown_share")?;
+    Ok(ShareItemId::from_bytes(bytes))
+}
+
+/// Largest file sent with its message in parts (it fits the 256 KiB sealed bucket).
+const SMALL_FILE: u64 = 256 * 1024 - 1;
+
 fn message_item(m: MessageView) -> MessageItem {
     MessageItem {
         id: hex::encode(m.id.as_bytes()),
@@ -3398,6 +3774,10 @@ fn message_item(m: MessageView) -> MessageItem {
         edited: m.edited,
         editable: m.editable,
         edit_until_unix_ms: m.edit_until_unix_ms.map(ms),
+        share_notice: match m.kind {
+            MessageKind::ShareNotice { new_items } => Some(new_items),
+            _ => None,
+        },
         call: match m.kind {
             MessageKind::Call(c) => Some(CallItem {
                 duration_s: c.duration_s,

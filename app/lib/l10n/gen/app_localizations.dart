@@ -3349,6 +3349,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'copied'**
   String get attestLogCopied;
+
+  /// No description provided for @sharesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared files'**
+  String get sharesTitle;
+
+  /// No description provided for @sharesMine.
+  ///
+  /// In en, this message translates to:
+  /// **'Files I share with {name}'**
+  String sharesMine(String name);
+
+  /// No description provided for @sharesMineGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Files I share with the group'**
+  String get sharesMineGroup;
+
+  /// No description provided for @sharedWithMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with me'**
+  String get sharedWithMe;
+
+  /// No description provided for @sharesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Contacts can download these files, nothing else. The files stay where they are: MEM reads one only when it is asked for and sends it to that contact alone, over direct connections for large files.'**
+  String get sharesHelp;
+
+  /// No description provided for @shareAddFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Add files'**
+  String get shareAddFiles;
+
+  /// No description provided for @shareAddFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a folder'**
+  String get shareAddFolder;
+
+  /// No description provided for @shareNewName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name of the share'**
+  String get shareNewName;
+
+  /// No description provided for @shareNewNameHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The contact sees this name.'**
+  String get shareNewNameHelp;
+
+  /// No description provided for @shareRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get shareRename;
+
+  /// No description provided for @shareStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop sharing'**
+  String get shareStop;
+
+  /// No description provided for @shareStopConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'They will no longer see these files. Files they already downloaded stay with them.'**
+  String get shareStopConfirm;
+
+  /// No description provided for @shareFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 file} other{{count} files}}'**
+  String shareFiles(int count);
+
+  /// No description provided for @shareDownloadedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded by {names}'**
+  String shareDownloadedBy(String names);
+
+  /// No description provided for @shareNotDownloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Not downloaded yet'**
+  String get shareNotDownloaded;
+
+  /// No description provided for @shareIntroduced.
+  ///
+  /// In en, this message translates to:
+  /// **'Also members I never met'**
+  String get shareIntroduced;
+
+  /// No description provided for @shareIntroducedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Group members the admin introduced, who are not your contacts, see this share too.'**
+  String get shareIntroducedHelp;
+
+  /// No description provided for @shareNone.
+  ///
+  /// In en, this message translates to:
+  /// **'You share nothing here yet.'**
+  String get shareNone;
+
+  /// No description provided for @shareRemoveFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from the share'**
+  String get shareRemoveFile;
+
+  /// No description provided for @shareSkippedLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 file over 100 MB was left out.} other{{count} files over 100 MB were left out.}}'**
+  String shareSkippedLarge(int count);
+
+  /// No description provided for @sharedNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is shared with you here yet.'**
+  String get sharedNone;
+
+  /// No description provided for @sharedFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From {name}'**
+  String sharedFrom(String name);
+
+  /// No description provided for @sharedInGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'In {group}'**
+  String sharedInGroup(String group);
+
+  /// No description provided for @shareDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get shareDownload;
+
+  /// No description provided for @shareRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'Asked for. It arrives when their device is reachable.'**
+  String get shareRequested;
+
+  /// No description provided for @shareOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get shareOpen;
+
+  /// No description provided for @shareNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} shared {count, plural, one{1 file} other{{count} files}}'**
+  String shareNotice(String name, int count);
+
+  /// No description provided for @reason_unknown_share.
+  ///
+  /// In en, this message translates to:
+  /// **'This share no longer exists.'**
+  String get reason_unknown_share;
 }
 
 class _AppLocalizationsDelegate

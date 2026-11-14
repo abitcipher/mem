@@ -8,6 +8,7 @@ import '../src/rust/api.dart';
 import '../widgets/chat_sync.dart';
 import '../widgets/message_bubble.dart';
 import 'chat.dart';
+import 'shares.dart';
 
 /// A member's name as shown: the name the user gave them (contacts only), else the name from
 /// their card, else the start of their fingerprint.
@@ -276,6 +277,16 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                       }) {
                         final item = _items[message.id];
                         final settings = AppScope.read(context).settings;
+                        if (item?.shareNotice case final n?) {
+                          return ShareNoticeLine(
+                            name:
+                                names[message.authorId] ??
+                                message.authorId.substring(0, 8),
+                            count: n,
+                            contactId: message.authorId,
+                            groupId: widget.groupId,
+                          );
+                        }
                         return Column(
                           crossAxisAlignment: isSentByMe
                               ? CrossAxisAlignment.end
@@ -469,6 +480,27 @@ class GroupInfoScreen extends StatelessWidget {
               ),
             ),
           const Divider(),
+          if (live) ...[
+            ListTile(
+              leading: const Icon(Icons.folder_shared_outlined),
+              title: Text(l.sharesMineGroup),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => SharesScreen(groupId: g.id),
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.folder_outlined),
+              title: Text(l.sharedWithMe),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => SharedWithMeScreen(groupId: g.id),
+                ),
+              ),
+            ),
+            const Divider(),
+          ],
           if (g.isAdmin && live)
             ListTile(
               leading: const Icon(Icons.person_add_alt),

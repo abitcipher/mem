@@ -217,6 +217,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ReceiveOutcome dco_decode_box_autoadd_receive_outcome(dynamic raw);
 
   @protected
+  ShareRequestItem dco_decode_box_autoadd_share_request_item(dynamic raw);
+
+  @protected
   int dco_decode_box_autoadd_u_16(dynamic raw);
 
   @protected
@@ -349,6 +352,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<MessageItem> dco_decode_list_message_item(dynamic raw);
 
   @protected
+  List<OwnShareFileItem> dco_decode_list_own_share_file_item(dynamic raw);
+
+  @protected
+  List<OwnShareItem> dco_decode_list_own_share_item(dynamic raw);
+
+  @protected
   List<int> dco_decode_list_prim_i_16_loose(dynamic raw);
 
   @protected
@@ -368,6 +377,21 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<RuleItem> dco_decode_list_rule_item(dynamic raw);
+
+  @protected
+  List<ShareDownloadItem> dco_decode_list_share_download_item(dynamic raw);
+
+  @protected
+  List<ShareFileInput> dco_decode_list_share_file_input(dynamic raw);
+
+  @protected
+  List<ShareRequestItem> dco_decode_list_share_request_item(dynamic raw);
+
+  @protected
+  List<TheirShareFileItem> dco_decode_list_their_share_file_item(dynamic raw);
+
+  @protected
+  List<TheirShareItem> dco_decode_list_their_share_item(dynamic raw);
 
   @protected
   MemberRoleItem dco_decode_member_role_item(dynamic raw);
@@ -436,6 +460,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List? dco_decode_opt_list_prim_u_8_strict(dynamic raw);
 
   @protected
+  OwnShareFileItem dco_decode_own_share_file_item(dynamic raw);
+
+  @protected
+  OwnShareItem dco_decode_own_share_item(dynamic raw);
+
+  @protected
   PhraseFormItem dco_decode_phrase_form_item(dynamic raw);
 
   @protected
@@ -472,10 +502,28 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   SentText dco_decode_sent_text(dynamic raw);
 
   @protected
+  ShareDownloadItem dco_decode_share_download_item(dynamic raw);
+
+  @protected
+  ShareFileInput dco_decode_share_file_input(dynamic raw);
+
+  @protected
+  ShareRequestItem dco_decode_share_request_item(dynamic raw);
+
+  @protected
+  SharedFileState dco_decode_shared_file_state(dynamic raw);
+
+  @protected
   SignedAttestation dco_decode_signed_attestation(dynamic raw);
 
   @protected
   SoundProfile dco_decode_sound_profile(dynamic raw);
+
+  @protected
+  TheirShareFileItem dco_decode_their_share_file_item(dynamic raw);
+
+  @protected
+  TheirShareItem dco_decode_their_share_item(dynamic raw);
 
   @protected
   TransmitOutcome dco_decode_transmit_outcome(dynamic raw);
@@ -693,6 +741,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  ShareRequestItem sse_decode_box_autoadd_share_request_item(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   int sse_decode_box_autoadd_u_16(SseDeserializer deserializer);
 
   @protected
@@ -843,6 +896,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<MessageItem> sse_decode_list_message_item(SseDeserializer deserializer);
 
   @protected
+  List<OwnShareFileItem> sse_decode_list_own_share_file_item(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<OwnShareItem> sse_decode_list_own_share_item(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<int> sse_decode_list_prim_i_16_loose(SseDeserializer deserializer);
 
   @protected
@@ -864,6 +927,31 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<RuleItem> sse_decode_list_rule_item(SseDeserializer deserializer);
+
+  @protected
+  List<ShareDownloadItem> sse_decode_list_share_download_item(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<ShareFileInput> sse_decode_list_share_file_input(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<ShareRequestItem> sse_decode_list_share_request_item(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<TheirShareFileItem> sse_decode_list_their_share_file_item(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<TheirShareItem> sse_decode_list_their_share_item(
+    SseDeserializer deserializer,
+  );
 
   @protected
   MemberRoleItem sse_decode_member_role_item(SseDeserializer deserializer);
@@ -942,6 +1030,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List? sse_decode_opt_list_prim_u_8_strict(SseDeserializer deserializer);
 
   @protected
+  OwnShareFileItem sse_decode_own_share_file_item(SseDeserializer deserializer);
+
+  @protected
+  OwnShareItem sse_decode_own_share_item(SseDeserializer deserializer);
+
+  @protected
   PhraseFormItem sse_decode_phrase_form_item(SseDeserializer deserializer);
 
   @protected
@@ -978,10 +1072,32 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   SentText sse_decode_sent_text(SseDeserializer deserializer);
 
   @protected
+  ShareDownloadItem sse_decode_share_download_item(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ShareFileInput sse_decode_share_file_input(SseDeserializer deserializer);
+
+  @protected
+  ShareRequestItem sse_decode_share_request_item(SseDeserializer deserializer);
+
+  @protected
+  SharedFileState sse_decode_shared_file_state(SseDeserializer deserializer);
+
+  @protected
   SignedAttestation sse_decode_signed_attestation(SseDeserializer deserializer);
 
   @protected
   SoundProfile sse_decode_sound_profile(SseDeserializer deserializer);
+
+  @protected
+  TheirShareFileItem sse_decode_their_share_file_item(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  TheirShareItem sse_decode_their_share_item(SseDeserializer deserializer);
 
   @protected
   TransmitOutcome sse_decode_transmit_outcome(SseDeserializer deserializer);
@@ -1247,6 +1363,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_box_autoadd_share_request_item(
+    ShareRequestItem self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_u_16(int self, SseSerializer serializer);
 
   @protected
@@ -1454,6 +1576,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_own_share_file_item(
+    List<OwnShareFileItem> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_own_share_item(
+    List<OwnShareItem> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_prim_i_16_loose(
     List<int> self,
     SseSerializer serializer,
@@ -1488,6 +1622,36 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_list_rule_item(List<RuleItem> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_share_download_item(
+    List<ShareDownloadItem> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_share_file_input(
+    List<ShareFileInput> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_share_request_item(
+    List<ShareRequestItem> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_their_share_file_item(
+    List<TheirShareFileItem> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_their_share_item(
+    List<TheirShareItem> self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_member_role_item(
@@ -1590,6 +1754,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_own_share_file_item(
+    OwnShareFileItem self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_own_share_item(OwnShareItem self, SseSerializer serializer);
+
+  @protected
   void sse_encode_phrase_form_item(
     PhraseFormItem self,
     SseSerializer serializer,
@@ -1635,6 +1808,30 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_sent_text(SentText self, SseSerializer serializer);
 
   @protected
+  void sse_encode_share_download_item(
+    ShareDownloadItem self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_share_file_input(
+    ShareFileInput self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_share_request_item(
+    ShareRequestItem self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_shared_file_state(
+    SharedFileState self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_signed_attestation(
     SignedAttestation self,
     SseSerializer serializer,
@@ -1642,6 +1839,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_sound_profile(SoundProfile self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_their_share_file_item(
+    TheirShareFileItem self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_their_share_item(
+    TheirShareItem self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_transmit_outcome(
