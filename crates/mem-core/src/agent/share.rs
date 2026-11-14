@@ -22,8 +22,9 @@ use serde::{Deserialize, Serialize};
 use super::{Agent, Message, MsgDirection, Output, StorageOp};
 use crate::model::{
     ContactId, DeliveryStatus, GroupId, GroupStatus, IntroducedMembers, MessageKind, MsgId,
-    NewAttachment, NewShareItem, OwnShareItemView, OwnShareView, RejectReason, ShareAudience,
-    ShareId, ShareItemId, SharedItemState, TheirShareItemView, TheirShareView,
+    NewAttachment, NewShareItem, OwnShareItemView, OwnShareView, ReceivedSharedFileView,
+    RejectReason, ShareAudience, ShareId, ShareItemId, SharedItemState, TheirShareItemView,
+    TheirShareView,
 };
 
 /// Requests served per contact and minute; more are dropped.
@@ -642,6 +643,79 @@ impl Agent {
             .collect()
     }
 
+    /// Files contacts shared with us that we downloaded (from one contact or all), newest
+    /// first; also those whose share has ended.
+    #[must_use]
+    pub fn received_shared_files(&self, contact: Option<ContactId>) -> Vec<ReceivedSharedFileView> {
+        let mut v: Vec<ReceivedSharedFileView> = self
+            .messages
+            .iter()
+            .filter(|m| m.direction == MsgDirection::Incoming)
+            .filter(|m| contact.is_none_or(|c| c == m.contact))
+            .filter_map(|m| {
+                let MessageKind::SharedFile { share, item } = m.kind else {
+                    return None;
+                };
+                let file = &m.attachments.first()?.reference;
+                Some(ReceivedSharedFileView {
+                    message: m.id,
+                    contact: m.contact,
+                    name: file.name.clone(),
+                    size: file.size,
+                    media_type: file.media_type.clone(),
+                    received_unix_ms: m
+                        .channels
+                        .first()
+                        .map_or(m.created_unix_ms, |u| u.at_unix_ms),
+                    share,
+                    still_offered: self.shares.theirs.iter().any(|s| {
+                        s.contact == m.contact.0
+                            && s.id == share.0
+                            && s.items.iter().any(|i| i.id == item.0)
+                    }),
+                })
+            })
+            .collect();
+        v.sort_by_key(|f| core::cmp::Reverse(f.received_unix_ms));
+        v
+    }
+
+    /// Deletes a downloaded shared file: the message, its stored blob (or the parts of it so
+    /// far), and the record that we asked for it, so a share that still offers it shows it as
+    /// available again.
+    pub(super) fn delete_received_file(&mut self, message: MsgId) -> Vec<Output> {
+        let Some(at) = self.messages.iter().position(|m| {
+            m.id == message
+                && m.direction == MsgDirection::Incoming
+                && matches!(m.kind, MessageKind::SharedFile { .. })
+        }) else {
+            return alloc::vec![Output::Rejected(RejectReason::UnknownMessage)];
+        };
+        let gone = self.messages.remove(at);
+        self.shares
+            .requested
+            .retain(|q| q.message != Some(message.0));
+        let mut out = Vec::new();
+        for a in &gone.attachments {
+            let address = a.reference.address;
+            // Content addresses are unique per sealing; still, keep a blob another message uses.
+            if self
+                .messages
+                .iter()
+                .any(|m| m.attachments.iter().any(|x| x.reference.address == address))
+            {
+                continue;
+            }
+            self.blobs.remove(&address);
+            self.partials.remove(&address);
+            self.pulls.remove(&address);
+            out.push(Output::Persist(StorageOp::DeleteBlob { address }));
+        }
+        out.push(Output::Persist(StorageOp::SaveSnapshot));
+        out.push(Output::SharesChanged);
+        out
+    }
+
     /// Shares offered to us ("Shared with me"), from one contact or all, newest first.
     #[must_use]
     pub fn shared_with_me(&self, contact: Option<ContactId>) -> Vec<TheirShareView> {
@@ -870,6 +944,78 @@ mod tests {
         assert_eq!(carrier.attachments[0].reference.name, "sea.jpg");
         // A remembers who downloaded it.
         assert_eq!(p.a.own_shares()[0].items[0].downloads.len(), 1);
+
+        // Listed as downloaded; still there after A stops sharing.
+        let kept = p.b.received_shared_files(Some(p.a_id));
+        assert_eq!(kept.len(), 1);
+        assert_eq!((kept[0].message, kept[0].name.as_str()), (m, "sea.jpg"));
+        assert!(kept[0].still_offered);
+        let _ = p.a.handle(Input::RemoveShare { share }, &mut p.ra);
+        p.carry(true);
+        assert_eq!(p.b.shared_with_me(None).len(), 0);
+        let kept = p.b.received_shared_files(None);
+        assert_eq!(kept.len(), 1);
+        assert!(!kept[0].still_offered);
+        // Deleted: the message and its blob go.
+        let address = carrier_address(&p.b, m);
+        let out =
+            p.b.handle(Input::DeleteReceivedFile { message: m }, &mut p.rb);
+        assert!(out.contains(&Output::Persist(StorageOp::DeleteBlob { address })));
+        assert_eq!(p.b.received_shared_files(None).len(), 0);
+        assert!(!p.b.blobs.contains(&address));
+        assert!(p.b.messages.iter().all(|x| x.id != m));
+        // Only received shared files can be deleted this way.
+        let notice = p.b.messages(p.a_id)[0].id;
+        let out =
+            p.b.handle(Input::DeleteReceivedFile { message: notice }, &mut p.rb);
+        assert!(out.contains(&Output::Rejected(RejectReason::UnknownMessage)));
+    }
+
+    fn carrier_address(a: &Agent, m: MsgId) -> [u8; 32] {
+        a.messages.iter().find(|x| x.id == m).unwrap().attachments[0]
+            .reference
+            .address
+    }
+
+    #[test]
+    fn a_deleted_download_of_an_offered_file_is_available_again() {
+        let mut p = paired();
+        let share = p.share();
+        p.carry(true);
+        let item = p.b.shared_with_me(None)[0].items[0].id;
+        let _ = p.b.handle(
+            Input::RequestSharedItem {
+                contact: p.a_id,
+                share,
+                item,
+            },
+            &mut p.rb,
+        );
+        p.carry(false);
+        let _ = p.a.handle(
+            Input::ServeSharedItem {
+                contact: p.b_id,
+                share,
+                item,
+                file: NewAttachment {
+                    name: "sea.jpg".into(),
+                    media_type: "image/jpeg".into(),
+                    data: AttachmentData::Bytes(alloc::vec![7; 1200]),
+                    preview: None,
+                },
+            },
+            &mut p.ra,
+        );
+        p.carry(true);
+        let SharedItemState::Received(m) = p.b.shared_with_me(None)[0].items[0].state else {
+            panic!("not received");
+        };
+        let _ =
+            p.b.handle(Input::DeleteReceivedFile { message: m }, &mut p.rb);
+        assert_eq!(
+            p.b.shared_with_me(None)[0].items[0].state,
+            SharedItemState::Available
+        );
     }
 
     #[test]

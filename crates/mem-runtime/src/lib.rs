@@ -182,6 +182,9 @@ impl Runtime {
                 Output::Persist(StorageOp::PutBlob { address, sealed }) => {
                     self.store.put_blob(address, sealed)?;
                 }
+                Output::Persist(StorageOp::DeleteBlob { address }) => {
+                    self.store.delete_blob(address)?;
+                }
                 Output::Persist(StorageOp::WriteBlob {
                     address,
                     offset,

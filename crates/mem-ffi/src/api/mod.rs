@@ -1195,6 +1195,25 @@ pub struct TheirShareItem {
     pub updated_unix_ms: i64,
 }
 
+/// A file a contact shared with us that we downloaded; kept until deleted.
+pub struct ReceivedSharedFileItem {
+    /// Message hex id: open it as attachment 0, delete it with
+    /// [`MemNode::delete_received_file`].
+    pub message_id: String,
+    /// Contact hex id.
+    pub contact_id: String,
+    /// File name.
+    pub name: String,
+    /// Size in bytes.
+    pub size: u64,
+    /// Media type.
+    pub media_type: String,
+    /// When it arrived, Unix ms.
+    pub received_unix_ms: i64,
+    /// Whether its share still offers it.
+    pub still_offered: bool,
+}
+
 /// A contact asked for one of our shared files: read it at `handle` and call
 /// [`MemNode::serve_shared_item`].
 pub struct ShareRequestItem {
@@ -2966,6 +2985,45 @@ impl MemNode {
                 })
                 .collect()
         })
+    }
+
+    /// Files contacts shared with us that we downloaded (from one contact or all), newest
+    /// first; also those whose share has ended.
+    ///
+    /// # Errors
+    ///
+    /// `"unknown_contact"` for a bad id.
+    #[frb(sync)]
+    pub fn received_shared_files(
+        &self,
+        contact_id: Option<String>,
+    ) -> Result<Vec<ReceivedSharedFileItem>, String> {
+        let from = contact_id.as_deref().map(contact).transpose()?;
+        self.with(|rt| {
+            rt.agent()
+                .received_shared_files(from)
+                .into_iter()
+                .map(|f| ReceivedSharedFileItem {
+                    message_id: hex::encode(f.message.as_bytes()),
+                    contact_id: hex::encode(f.contact.as_bytes()),
+                    name: f.name,
+                    size: f.size,
+                    media_type: f.media_type,
+                    received_unix_ms: ms(f.received_unix_ms),
+                    still_offered: f.still_offered,
+                })
+                .collect()
+        })
+    }
+
+    /// Deletes a downloaded shared file from this device (the message and its stored file).
+    ///
+    /// # Errors
+    ///
+    /// `"unknown_message"`, or a storage error.
+    pub fn delete_received_file(&self, message_id: String) -> Result<(), String> {
+        let message = msg(&message_id)?;
+        self.group_call(Input::DeleteReceivedFile { message })
     }
 
     /// Creates a share (`share_id` `None`) or replaces one, for one contact or one group

@@ -3571,6 +3571,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connected to their hub now'**
   String get deviceHubConnected;
+
+  /// No description provided for @sharedDownloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded'**
+  String get sharedDownloaded;
+
+  /// No description provided for @sharedDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete from this device'**
+  String get sharedDelete;
+
+  /// No description provided for @sharedDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name} from this device? You can download it again only while it is still shared with you.'**
+  String sharedDeleteConfirm(String name);
+
+  /// No description provided for @sharedNoLongerOffered.
+  ///
+  /// In en, this message translates to:
+  /// **'No longer shared'**
+  String get sharedNoLongerOffered;
 }
 
 class _AppLocalizationsDelegate

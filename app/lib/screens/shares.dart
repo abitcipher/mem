@@ -322,9 +322,14 @@ class SharedWithMeScreen extends StatelessWidget {
       for (final c in state.node.contacts()) c.id: contactTitle(c),
     };
     final groups = {for (final g in state.node.groups()) g.id: g.name};
+    // Downloaded files stay listed after their share ends, until deleted here.
+    final downloaded = groupId == null
+        ? state.node.receivedSharedFiles(contactId: contactId)
+        : const <ReceivedSharedFileItem>[];
+    String from(String id) => names[id] ?? id.substring(0, 8);
     return Scaffold(
       appBar: AppBar(title: Text(l.sharedWithMe)),
-      body: shares.isEmpty
+      body: shares.isEmpty && downloaded.isEmpty
           ? Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -343,9 +348,7 @@ class SharedWithMeScreen extends StatelessWidget {
                       title: Text(s.name),
                       subtitle: Text(
                         [
-                          l.sharedFrom(
-                            names[s.contactId] ?? s.contactId.substring(0, 8),
-                          ),
+                          l.sharedFrom(from(s.contactId)),
                           if (s.groupId case final g?)
                             l.sharedInGroup(groups[g] ?? g.substring(0, 8)),
                           l.shareFiles(s.files.length),
@@ -357,8 +360,86 @@ class SharedWithMeScreen extends StatelessWidget {
                       ],
                     ),
                   ),
+                if (downloaded.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 8, 4, 4),
+                    child: Text(
+                      l.sharedDownloaded,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  for (final f in downloaded)
+                    _DownloadedTile(file: f, from: from(f.contactId)),
+                ],
               ],
             ),
+    );
+  }
+}
+
+/// A downloaded shared file: open it, or delete it from this device.
+class _DownloadedTile extends StatelessWidget {
+  const _DownloadedTile({required this.file, required this.from});
+
+  final ReceivedSharedFileItem file;
+  final String from;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final state = AppScope.read(context);
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+      leading: const Icon(Icons.download_done_outlined),
+      title: Text(file.name),
+      subtitle: Text(
+        [
+          formatSize(file.size.toInt()),
+          l.sharedFrom(from),
+          if (!file.stillOffered) l.sharedNoLongerOffered,
+        ].join(' · '),
+      ),
+      onTap: () => exportAttachment(
+        context,
+        file.messageId,
+        0,
+        AttachmentItem(
+          name: file.name,
+          mediaType: file.mediaType,
+          size: file.size,
+          preview: null,
+          state: const AttachmentStatus.ready(),
+        ),
+      ),
+      trailing: IconButton(
+        tooltip: l.sharedDelete,
+        icon: const Icon(Icons.delete_outline),
+        onPressed: () async {
+          final ok = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              content: Text(l.sharedDeleteConfirm(file.name)),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(l.cancel),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: Text(l.sharedDelete),
+                ),
+              ],
+            ),
+          );
+          if (ok != true || !context.mounted) return;
+          try {
+            await state.node.deleteReceivedFile(messageId: file.messageId);
+            state.changed();
+          } on Object catch (e) {
+            if (context.mounted) showSnack(context, reasonText(context, e));
+          }
+        },
+      ),
     );
   }
 }

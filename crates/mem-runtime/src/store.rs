@@ -185,6 +185,18 @@ impl Store {
         Ok(())
     }
 
+    /// Removes a stored blob and any partial file of it; missing files are fine.
+    pub(crate) fn delete_blob(&self, address: &[u8; 32]) -> Result<(), StoreError> {
+        for path in [self.blob_path(address), self.partial_path(address)] {
+            match fs::remove_file(&path) {
+                Ok(()) => {}
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                Err(e) => return Err(e.into()),
+            }
+        }
+        Ok(())
+    }
+
     fn blob_path(&self, address: &[u8; 32]) -> PathBuf {
         self.dir
             .join(BLOB_DIR)

@@ -820,6 +820,28 @@ pub struct TheirShareView {
     pub updated_unix_ms: u64,
 }
 
+/// A file a contact shared with us and we downloaded. It stays until we delete it, also after
+/// the contact stops sharing it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReceivedSharedFileView {
+    /// The message that carries it (its attachment 0 is the file).
+    pub message: MsgId,
+    /// Who shared it.
+    pub contact: ContactId,
+    /// File name (chosen by the sender).
+    pub name: String,
+    /// Size in bytes.
+    pub size: u64,
+    /// Media type (stated by the sender).
+    pub media_type: String,
+    /// When it arrived, Unix ms.
+    pub received_unix_ms: u64,
+    /// The share it came from.
+    pub share: ShareId,
+    /// Whether that share still offers it.
+    pub still_offered: bool,
+}
+
 /// One item a contact offers us.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TheirShareItemView {

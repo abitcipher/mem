@@ -2043,4 +2043,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deviceHubConnected => 'Connected to their hub now';
+
+  @override
+  String get sharedDownloaded => 'Downloaded';
+
+  @override
+  String get sharedDelete => 'Delete from this device';
+
+  @override
+  String sharedDeleteConfirm(String name) {
+    return 'Delete $name from this device? You can download it again only while it is still shared with you.';
+  }
+
+  @override
+  String get sharedNoLongerOffered => 'No longer shared';
 }

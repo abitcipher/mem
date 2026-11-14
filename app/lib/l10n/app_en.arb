@@ -777,5 +777,10 @@
  "deviceHubUse": "Use their device as a hub",
  "deviceHubUseHelp": "When you meet {name}'s device on the same Wi-Fi or by Wi-Fi Direct, MEM leaves your undelivered messages there for your other contacts and picks up what waits for you. {name} sees which of their contacts sent and fetched, when and how much (P3), never the content.",
  "@deviceHubUseHelp": {"placeholders": {"name": {"type": "String"}}},
- "deviceHubConnected": "Connected to their hub now"
+ "deviceHubConnected": "Connected to their hub now",
+ "sharedDownloaded": "Downloaded",
+ "sharedDelete": "Delete from this device",
+ "sharedDeleteConfirm": "Delete {name} from this device? You can download it again only while it is still shared with you.",
+ "@sharedDeleteConfirm": {"placeholders": {"name": {"type": "String"}}},
+ "sharedNoLongerOffered": "No longer shared"
 }

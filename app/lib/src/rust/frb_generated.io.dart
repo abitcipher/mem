@@ -376,6 +376,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<PrivacyLogItem> dco_decode_list_privacy_log_item(dynamic raw);
 
   @protected
+  List<ReceivedSharedFileItem> dco_decode_list_received_shared_file_item(
+    dynamic raw,
+  );
+
+  @protected
   List<RequestItem> dco_decode_list_request_item(dynamic raw);
 
   @protected
@@ -485,6 +490,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ReceiveOutcome dco_decode_receive_outcome(dynamic raw);
+
+  @protected
+  ReceivedSharedFileItem dco_decode_received_shared_file_item(dynamic raw);
 
   @protected
   RequestItem dco_decode_request_item(dynamic raw);
@@ -929,6 +937,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  List<ReceivedSharedFileItem> sse_decode_list_received_shared_file_item(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<RequestItem> sse_decode_list_request_item(SseDeserializer deserializer);
 
   @protected
@@ -1058,6 +1071,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ReceiveOutcome sse_decode_receive_outcome(SseDeserializer deserializer);
+
+  @protected
+  ReceivedSharedFileItem sse_decode_received_shared_file_item(
+    SseDeserializer deserializer,
+  );
 
   @protected
   RequestItem sse_decode_request_item(SseDeserializer deserializer);
@@ -1627,6 +1645,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_received_shared_file_item(
+    List<ReceivedSharedFileItem> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_request_item(
     List<RequestItem> self,
     SseSerializer serializer,
@@ -1798,6 +1822,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_receive_outcome(
     ReceiveOutcome self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_received_shared_file_item(
+    ReceivedSharedFileItem self,
     SseSerializer serializer,
   );
 

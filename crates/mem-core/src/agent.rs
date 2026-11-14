@@ -197,6 +197,11 @@ pub enum Input {
         /// The item.
         item: crate::model::ShareItemId,
     },
+    /// Deletes a file a contact shared with us that we downloaded (the message and its blob).
+    DeleteReceivedFile {
+        /// The message carrying it.
+        message: MsgId,
+    },
     /// The runtime read a file asked for by [`Output::ShareItemWanted`]: send it.
     ServeSharedItem {
         /// Who asked.
@@ -542,6 +547,12 @@ pub enum StorageOp {
         address: [u8; 32],
         /// The sealed blob.
         sealed: Vec<u8>,
+    },
+    /// Delete the stored blob at `address` and any partial file of it. Comes before the
+    /// snapshot that no longer records it.
+    DeleteBlob {
+        /// Content address.
+        address: [u8; 32],
     },
     /// Write a piece of a blob being pulled into its partial file, at `offset`.
     WriteBlob {
@@ -1484,6 +1495,7 @@ impl Agent {
                 share,
                 item,
             } => self.request_shared_item(contact, share, item, rng),
+            Input::DeleteReceivedFile { message } => self.delete_received_file(message),
             Input::ServeSharedItem {
                 contact,
                 share,

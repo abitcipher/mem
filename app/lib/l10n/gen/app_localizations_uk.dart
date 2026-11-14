@@ -2067,4 +2067,18 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get deviceHubConnected => 'Зараз під\'єднано до їхнього хаба';
+
+  @override
+  String get sharedDownloaded => 'Завантажені';
+
+  @override
+  String get sharedDelete => 'Видалити з цього пристрою';
+
+  @override
+  String sharedDeleteConfirm(String name) {
+    return 'Видалити $name з цього пристрою? Завантажити знову можна, лише поки ним із вами діляться.';
+  }
+
+  @override
+  String get sharedNoLongerOffered => 'Більше не спільний';
 }

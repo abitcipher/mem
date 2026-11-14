@@ -285,6 +285,13 @@ abstract class MemNode implements RustOpaqueInterface {
   /// `"unknown_message"` (also when the limit has passed), or a storage error.
   Future<void> deleteMessage({required String messageId});
 
+  /// Deletes a downloaded shared file from this device (the message and its stored file).
+  ///
+  /// # Errors
+  ///
+  /// `"unknown_message"`, or a storage error.
+  Future<void> deleteReceivedFile({required String messageId});
+
   /// This device as a hub for its contacts: settings and what it holds.
   ///
   /// # Errors
@@ -576,6 +583,14 @@ abstract class MemNode implements RustOpaqueInterface {
     required String text,
     required Channel channel,
   });
+
+  /// Files contacts shared with us that we downloaded (from one contact or all), newest
+  /// first; also those whose share has ended.
+  ///
+  /// # Errors
+  ///
+  /// `"unknown_contact"` for a bad id.
+  List<ReceivedSharedFileItem> receivedSharedFiles({String? contactId});
 
   /// Records how an attestation went back, for the attestation log.
   ///
@@ -2715,6 +2730,64 @@ sealed class ReceiveOutcome with _$ReceiveOutcome {
 
   /// The text contains no MEM data.
   const factory ReceiveOutcome.notMem() = ReceiveOutcome_NotMem;
+}
+
+/// A file a contact shared with us that we downloaded; kept until deleted.
+class ReceivedSharedFileItem {
+  /// Message hex id: open it as attachment 0, delete it with
+  /// [`MemNode::delete_received_file`].
+  final String messageId;
+
+  /// Contact hex id.
+  final String contactId;
+
+  /// File name.
+  final String name;
+
+  /// Size in bytes.
+  final BigInt size;
+
+  /// Media type.
+  final String mediaType;
+
+  /// When it arrived, Unix ms.
+  final PlatformInt64 receivedUnixMs;
+
+  /// Whether its share still offers it.
+  final bool stillOffered;
+
+  const ReceivedSharedFileItem({
+    required this.messageId,
+    required this.contactId,
+    required this.name,
+    required this.size,
+    required this.mediaType,
+    required this.receivedUnixMs,
+    required this.stillOffered,
+  });
+
+  @override
+  int get hashCode =>
+      messageId.hashCode ^
+      contactId.hashCode ^
+      name.hashCode ^
+      size.hashCode ^
+      mediaType.hashCode ^
+      receivedUnixMs.hashCode ^
+      stillOffered.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ReceivedSharedFileItem &&
+          runtimeType == other.runtimeType &&
+          messageId == other.messageId &&
+          contactId == other.contactId &&
+          name == other.name &&
+          size == other.size &&
+          mediaType == other.mediaType &&
+          receivedUnixMs == other.receivedUnixMs &&
+          stillOffered == other.stillOffered;
 }
 
 /// A contact request waiting for an answer. Never shown as a message.
