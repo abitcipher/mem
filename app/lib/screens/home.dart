@@ -18,6 +18,7 @@ import 'receive.dart';
 import 'requests.dart';
 import '../widgets/logo.dart';
 import '../widgets/glow.dart';
+import '../widgets/logo_mark.dart';
 import '../widgets/inbound.dart';
 import 'attest.dart';
 import 'backup.dart';
@@ -86,8 +87,7 @@ class HomeScreen extends StatelessWidget {
                 onPressed: () => push(const RequestsScreen()),
               ),
             // Minimal home: everything that is not needed every time lives in one menu.
-            PopupMenuButton<Widget>(
-              icon: const Icon(Icons.more_vert),
+            _MainMenu(
               onSelected: push,
               itemBuilder: (_) => [
                 _menuItem(
@@ -281,5 +281,37 @@ class HomeScreen extends StatelessWidget {
       title: Text(label),
       contentPadding: EdgeInsets.zero,
     ),
+  );
+}
+
+/// The main menu behind the MEM logo: the logo turns half a turn clockwise when the menu opens
+/// and another half turn clockwise when it closes, back upright.
+class _MainMenu extends StatefulWidget {
+  const _MainMenu({required this.onSelected, required this.itemBuilder});
+
+  final void Function(Widget screen) onSelected;
+  final PopupMenuItemBuilder<Widget> itemBuilder;
+
+  @override
+  State<_MainMenu> createState() => _MainMenuState();
+}
+
+class _MainMenuState extends State<_MainMenu> {
+  var _halfTurns = 0;
+
+  void _turn() => setState(() => _halfTurns++);
+
+  @override
+  Widget build(BuildContext context) => PopupMenuButton<Widget>(
+    icon: SpinningLogo(halfTurns: _halfTurns),
+    // Below the button, so the logo stays visible while it turns.
+    position: PopupMenuPosition.under,
+    onOpened: _turn,
+    onCanceled: _turn,
+    onSelected: (screen) {
+      _turn();
+      widget.onSelected(screen);
+    },
+    itemBuilder: widget.itemBuilder,
   );
 }
