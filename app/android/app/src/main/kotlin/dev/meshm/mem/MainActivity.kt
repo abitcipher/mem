@@ -159,6 +159,17 @@ class MainActivity : FlutterActivity() {
                 shareTo(call.argument<String>("package"), call.argument<String>("text")),
             )
             "batteryUnrestricted" -> result.success(batteryUnrestricted())
+            // This build's name and number, shown in Settings.
+            "appVersion" -> {
+                val info = packageManager.getPackageInfo(packageName, 0)
+                val code = if (Build.VERSION.SDK_INT >= 28) {
+                    info.longVersionCode
+                } else {
+                    @Suppress("DEPRECATION")
+                    info.versionCode.toLong()
+                }
+                result.success(mapOf("name" to info.versionName, "code" to code))
+            }
             "requestBatteryUnrestricted" -> {
                 requestBatteryUnrestricted()
                 result.success(null)

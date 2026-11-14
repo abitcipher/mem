@@ -112,7 +112,8 @@
  "saved": "Saved",
  "yourFingerprint": "Your fingerprint",
  "about": "About this build",
- "aboutBody": "MEM v0.2 — experimental. Messages are end-to-end encrypted (HPKE, Ed25519). They travel by animated QR code in person, directly over the same Wi-Fi network, or as encrypted text through another app. Courier and hub delivery come later. Do not rely on it for high-risk communication until an external security review.",
+ "@aboutBody": {"placeholders": {"version": {"type": "String"}}},
+ "aboutBody": "MEM v{version}. Messages are end-to-end encrypted (HPKE, with a post-quantum key exchange where both sides have it; Ed25519 signatures). They go the most private way that works: in person by QR code, directly over Wi-Fi, Wi-Fi Direct or Bluetooth, carried by nearby MEM devices, through a hub, or as encrypted text through another app. MEM asks before it uses a less private way.",
  "error": "Something went wrong: {details}",
  "@error": {
   "placeholders": {
@@ -838,5 +839,7 @@
  "callReconnectTitle": "Keep a call when the connection drops",
  "callReconnectHelp": "How long a call in progress waits for a lost connection to come back; both phones try to reconnect meanwhile. You can end the call yourself at any time.",
  "callSeconds": "{seconds} s",
- "@callSeconds": {"placeholders": {"seconds": {"type": "int"}}}
+ "@callSeconds": {"placeholders": {"seconds": {"type": "int"}}},
+ "aboutBuild": "{name} · version code {code}",
+ "@aboutBuild": {"placeholders": {"name": {"type": "String"}, "code": {"type": "int"}}}
 }

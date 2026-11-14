@@ -282,8 +282,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get about => 'Про цю збірку';
 
   @override
-  String get aboutBody =>
-      'MEM v0.2 — експериментальна версія. Повідомлення наскрізно зашифровані (HPKE, Ed25519). Вони передаються анімованим QR-кодом при зустрічі, напряму через ту саму мережу Wi-Fi або як зашифрований текст через інший застосунок. Кур\'єри й хаб з\'являться пізніше. Не покладайтеся на неї для ризикованого спілкування до зовнішнього аудиту безпеки.';
+  String aboutBody(String version) {
+    return 'MEM v$version. Повідомлення наскрізно зашифровані (HPKE, з постквантовим обміном ключами, де його мають обидві сторони; підписи Ed25519). Вони йдуть найприватнішим доступним шляхом: при зустрічі QR-кодом, напряму через Wi-Fi, Wi-Fi Direct чи Bluetooth, через пристрої MEM поруч, через хаб або як зашифрований текст через інший застосунок. MEM питає, перш ніж скористатися менш приватним шляхом.';
+  }
 
   @override
   String error(String details) {
@@ -2257,5 +2258,10 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String callSeconds(int seconds) {
     return '$seconds с';
+  }
+
+  @override
+  String aboutBuild(String name, int code) {
+    return '$name · код версії $code';
   }
 }

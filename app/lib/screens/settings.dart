@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:material_ui/material_ui.dart';
@@ -283,18 +284,7 @@ class SettingsScreen extends StatelessWidget {
           ),
 
           const Divider(height: 40),
-          Row(
-            children: [
-              const MemLogo(size: 40),
-              const SizedBox(width: 12),
-              Text(
-                l.about,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(l.aboutBody),
+          const _About(),
           const SizedBox(height: 24),
         ],
       ),
@@ -901,6 +891,104 @@ class _CallTimesSetting extends StatelessWidget {
           CallTimes.reconnect,
           s.callReconnectSeconds,
           (s, v) => s.callReconnectSeconds = v,
+        ),
+      ],
+    );
+  }
+}
+
+/// The footer: the logo and "About"; pressing the logo shows or hides the text, which starts
+/// with the version and ends with the build's signature in a faint colour.
+class _About extends StatefulWidget {
+  const _About();
+
+  @override
+  State<_About> createState() => _AboutState();
+}
+
+class _AboutState extends State<_About> {
+  var _open = false;
+  ({String name, int code})? _version;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(
+      PlatformServices.appVersion().then((v) {
+        if (mounted) setState(() => _version = v);
+      }),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final v = _version;
+    final faint = Theme.of(context).colorScheme.onSurface
+        .withValues(alpha: 0.38);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          button: true,
+          expanded: _open,
+          label: l.about,
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: () => setState(() => _open = !_open),
+            child: const MemLogo(size: 40),
+          ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topLeft,
+          child: !_open
+              ? const SizedBox(width: double.infinity)
+              : Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(top: 10),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l.about,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      // The build number from the name (`mem.89`); the version code also
+                      // carries the ABI (4089 on x86_64).
+                      Text(
+                        l.aboutBody(
+                          v == null
+                              ? ''
+                              : RegExp(r'(\d+)$')
+                                        .firstMatch(v.name)
+                                        ?.group(1) ??
+                                    v.name,
+                        ),
+                      ),
+                      if (v != null) ...[
+                        const SizedBox(height: 12),
+                        SelectableText(
+                          l.aboutBuild(v.name, v.code),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: faint,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
         ),
       ],
     );

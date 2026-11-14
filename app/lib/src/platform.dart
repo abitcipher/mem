@@ -151,6 +151,20 @@ abstract final class PlatformServices {
     }
   }
 
+  /// This build's version name (e.g. `mem.88`) and number (88); null where unknown.
+  static Future<({String name, int code})?> appVersion() async {
+    if (!_android) return null;
+    try {
+      final m = await _channel.invokeMapMethod<String, Object?>('appVersion');
+      final name = m?['name'] as String?;
+      final code = (m?['code'] as num?)?.toInt();
+      if (name == null || code == null) return null;
+      return (name: name, code: code);
+    } on PlatformException {
+      return null;
+    }
+  }
+
   /// Text another app handed to MEM ("Share → MEM", or MEM in the selected-text menu),
   /// once; null if none. Android only.
   static Future<String?> takeInboundText() async {

@@ -611,8 +611,8 @@ abstract class AppLocalizations {
   /// No description provided for @aboutBody.
   ///
   /// In en, this message translates to:
-  /// **'MEM v0.2 — experimental. Messages are end-to-end encrypted (HPKE, Ed25519). They travel by animated QR code in person, directly over the same Wi-Fi network, or as encrypted text through another app. Courier and hub delivery come later. Do not rely on it for high-risk communication until an external security review.'**
-  String get aboutBody;
+  /// **'MEM v{version}. Messages are end-to-end encrypted (HPKE, with a post-quantum key exchange where both sides have it; Ed25519 signatures). They go the most private way that works: in person by QR code, directly over Wi-Fi, Wi-Fi Direct or Bluetooth, carried by nearby MEM devices, through a hub, or as encrypted text through another app. MEM asks before it uses a less private way.'**
+  String aboutBody(String version);
 
   /// No description provided for @error.
   ///
@@ -3865,6 +3865,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{seconds} s'**
   String callSeconds(int seconds);
+
+  /// No description provided for @aboutBuild.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} · version code {code}'**
+  String aboutBuild(String name, int code);
 }
 
 class _AppLocalizationsDelegate
