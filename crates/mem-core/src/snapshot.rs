@@ -158,6 +158,9 @@ struct StateV1 {
     partials: Vec<PartialDto>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pulls: Vec<PullDto>,
+    /// Shares we offer and shares offered to us.
+    #[serde(default, skip_serializing_if = "crate::agent::share::Shares::is_empty")]
+    shares: crate::agent::share::Shares,
     /// How late we accept contacts' edits (a scale position; 0: always).
     #[serde(default, skip_serializing_if = "is_zero")]
     edit_limit: u8,
@@ -329,7 +332,7 @@ struct MessageDto {
     id: [u8; 16],
     contact: [u8; 32],
     outgoing: bool,
-    /// 0 text, 1 our contact request.
+    /// 0 text, 1 our contact request, 2 call line, 3 a shared file, 4 a share notice.
     #[serde(default)]
     kind: u8,
     text: String,
@@ -349,6 +352,12 @@ struct MessageDto {
     /// A call line: its duration in seconds and outcome code.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     call: Option<(u32, u8)>,
+    /// A shared file: its share and item.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    share: Option<([u8; 16], [u8; 16])>,
+    /// A share notice: how many items were new.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    notice: Option<u16>,
 }
 
 /// An attached file of a message, with the file key (the snapshot is encrypted).
@@ -628,9 +637,19 @@ impl Agent {
                         MessageKind::Text => 0,
                         MessageKind::ContactRequest => 1,
                         MessageKind::Call(_) => 2,
+                        MessageKind::SharedFile { .. } => 3,
+                        MessageKind::ShareNotice { .. } => 4,
                     },
                     call: match m.kind {
                         MessageKind::Call(c) => Some((c.duration_s, c.outcome.code())),
+                        _ => None,
+                    },
+                    share: match m.kind {
+                        MessageKind::SharedFile { share, item } => Some((share.0, item.0)),
+                        _ => None,
+                    },
+                    notice: match m.kind {
+                        MessageKind::ShareNotice { new_items } => Some(new_items),
                         _ => None,
                     },
                     text: m.text.clone(),
@@ -741,6 +760,7 @@ impl Agent {
                 .map(|(c, d)| (*c.as_bytes(), d.contact.0, d.message.0, d.expires_unix_ms))
                 .collect(),
             blobs: self.blobs.iter().copied().collect(),
+            shares: self.shares.clone(),
             edit_limit: self.edit_limit,
             pulls: self
                 .pulls
@@ -952,12 +972,17 @@ impl Agent {
                 } else {
                     MsgDirection::Incoming
                 },
-                kind: match (m.kind, m.call) {
-                    (1, _) => MessageKind::ContactRequest,
-                    (2, Some((duration_s, outcome))) => MessageKind::Call(CallInfo {
+                kind: match (m.kind, m.call, m.share, m.notice) {
+                    (1, ..) => MessageKind::ContactRequest,
+                    (2, Some((duration_s, outcome)), ..) => MessageKind::Call(CallInfo {
                         duration_s,
                         outcome: CallOutcome::from_code(outcome).ok_or(SnapshotError::Corrupt)?,
                     }),
+                    (3, _, Some((share, item)), _) => MessageKind::SharedFile {
+                        share: crate::model::ShareId(share),
+                        item: crate::model::ShareItemId(item),
+                    },
+                    (4, _, _, Some(new_items)) => MessageKind::ShareNotice { new_items },
                     _ => MessageKind::Text,
                 },
                 text: m.text.clone(),
@@ -1105,6 +1130,7 @@ impl Agent {
             .collect();
         Ok(Self {
             blobs: s.blobs.iter().copied().collect(),
+            shares: s.shares.clone(),
             partials,
             pulls,
             offer_limits: crate::agent::call_limits(),

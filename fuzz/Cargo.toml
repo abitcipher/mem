@@ -86,6 +86,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "share_decode"
+path = "fuzz_targets/share_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "hub_decode"
 path = "fuzz_targets/hub_decode.rs"
 test = false

@@ -556,8 +556,17 @@ impl Agent {
     ) -> Vec<Output> {
         match content {
             GroupContent::Text(t) => self.received_group_text(from, id, created_unix_ms, t, via),
-            GroupContent::State(s) => self.received_state(from, s),
-            GroupContent::Reply(r) => self.received_reply(from, r, rng),
+            // Membership may change: group shares follow their members.
+            GroupContent::State(s) => {
+                let mut out = self.received_state(from, s);
+                out.extend(self.group_shares_follow(rng));
+                out
+            }
+            GroupContent::Reply(r) => {
+                let mut out = self.received_reply(from, r, rng);
+                out.extend(self.group_shares_follow(rng));
+                out
+            }
         }
     }
 

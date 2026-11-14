@@ -330,6 +330,13 @@ impl<'b> MapReader<'b> {
         crate::attachment::read_list(&mut self.d, key)
     }
 
+    /// Reads `key` and hands over the decoder positioned at its value, for nested structures
+    /// the caller reads itself (bounded by the limits [`MapReader::new`] already checked).
+    pub(crate) fn nested(&mut self, key: u64) -> Result<&mut Decoder<'b>, SchemaError> {
+        self.key(key)?;
+        Ok(&mut self.d)
+    }
+
     pub(crate) fn text(&mut self, key: u64) -> Result<&'b str, SchemaError> {
         self.key(key)?;
         self.d.str().map_err(|_| SchemaError::WrongType { key })

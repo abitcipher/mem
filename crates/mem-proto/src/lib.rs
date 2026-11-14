@@ -31,6 +31,7 @@ pub mod hub;
 pub mod hublist;
 pub mod inner;
 pub mod payload;
+pub mod share;
 
 pub use envelope::{Bundle, BundleId, BundleKind, BundleParams, Pow, RendezvousTag};
 pub use error::{CborError, InvalidBundle, ProtoError, SchemaError};

@@ -16,6 +16,7 @@ mod group;
 mod hub;
 mod intro;
 mod own;
+pub(crate) mod share;
 
 pub(crate) use intro::{ContactRequest, PendingIntro};
 pub use intro::{
@@ -167,6 +168,44 @@ pub enum Input {
     DeleteMessage {
         /// The message.
         message: MsgId,
+    },
+    /// Creates a share (`share` `None`) or replaces one; everyone it reaches gets the list.
+    SaveShare {
+        /// The share to replace, or `None` for a new one.
+        share: Option<crate::model::ShareId>,
+        /// Its name, 1..=64 bytes.
+        name: String,
+        /// Who it is for.
+        audience: crate::model::ShareAudience,
+        /// For a group: whether members we never met see it.
+        introduced: crate::model::IntroducedMembers,
+        /// The files, at most 512.
+        items: Vec<crate::model::NewShareItem>,
+    },
+    /// Stops a share; everyone it reached is told.
+    RemoveShare {
+        /// The share.
+        share: crate::model::ShareId,
+    },
+    /// Asks a contact for one item it offers us.
+    RequestSharedItem {
+        /// Who offers it.
+        contact: ContactId,
+        /// The share.
+        share: crate::model::ShareId,
+        /// The item.
+        item: crate::model::ShareItemId,
+    },
+    /// The runtime read a file asked for by [`Output::ShareItemWanted`]: send it.
+    ServeSharedItem {
+        /// Who asked.
+        contact: ContactId,
+        /// The share.
+        share: crate::model::ShareId,
+        /// The item.
+        item: crate::model::ShareItemId,
+        /// The file.
+        file: crate::model::NewAttachment,
     },
     /// How late we accept edits: globally (`contact` `None`) or for one conversation
     /// (`position` `None`: as global). A scale position, 0 always to 12 never.
@@ -552,6 +591,25 @@ pub enum Output {
         /// Length of the whole blob.
         total: u64,
     },
+    /// A share was created or replaced (its id, for a new one).
+    ShareSaved {
+        /// The share.
+        share: crate::model::ShareId,
+    },
+    /// Shares offered to us, or the state of our downloads, changed.
+    SharesChanged,
+    /// A contact may download this item now: read the file at `handle` and answer with
+    /// [`Input::ServeSharedItem`] (or do nothing if it is gone).
+    ShareItemWanted {
+        /// Who asked.
+        contact: ContactId,
+        /// The share.
+        share: crate::model::ShareId,
+        /// The item.
+        item: crate::model::ShareItemId,
+        /// Where the file is, as the app gave it.
+        handle: String,
+    },
     /// A call setup message arrived from an approved contact.
     CallSignal {
         /// Who calls or answers.
@@ -760,6 +818,15 @@ pub(crate) struct Contact {
     pub(crate) device_list: Option<mem_proto::device::DeviceList>,
     /// Highest serial of our device list this contact's main device confirmed.
     pub(crate) told_list: u32,
+}
+
+/// What [`Agent::queue_message`] sends: the inner content and how the message is kept here.
+pub(crate) struct Outgoing {
+    pub(crate) content_type: u64,
+    pub(crate) content: Vec<u8>,
+    /// The text kept in the conversation (empty for files only).
+    pub(crate) text: String,
+    pub(crate) kind: MessageKind,
 }
 
 pub(crate) struct Message {
@@ -1003,6 +1070,16 @@ enum OpenedContent {
     EditLimit(u8),
     /// The sender withdraws an earlier text.
     Delete([u8; 16]),
+    /// What the sender offers to download.
+    ShareCatalog(mem_proto::share::ShareCatalog),
+    /// A request to download one of our items.
+    ShareRequest(mem_proto::share::ShareRef),
+    /// The answer to our request, with the file.
+    ShareFile {
+        created_unix_ms: u64,
+        item: mem_proto::share::ShareRef,
+        attachments: Vec<AttachmentRef>,
+    },
     /// A standalone ack bundle (kind 1, content type 2).
     Ack,
     /// Group traffic.
@@ -1010,6 +1087,23 @@ enum OpenedContent {
         created_unix_ms: u64,
         content: GroupContent,
     },
+}
+
+impl OpenedContent {
+    /// Content kept out of the chat's text flow: parts, call setup, edits, shares.
+    const fn is_hidden(&self) -> bool {
+        matches!(
+            self,
+            Self::Edit(_)
+                | Self::EditLimit(_)
+                | Self::Delete(_)
+                | Self::Call(_)
+                | Self::Part(_)
+                | Self::ShareCatalog(_)
+                | Self::ShareRequest(_)
+                | Self::ShareFile { .. }
+        )
+    }
 }
 
 /// A connected peer (volatile).
@@ -1120,6 +1214,8 @@ pub struct Agent {
     pub(crate) offer_limits: call::OfferLimits,
     /// How late we accept contacts' edits (a scale position; 0: always).
     pub(crate) edit_limit: u8,
+    /// Shares we offer and shares offered to us.
+    pub(crate) shares: share::Shares,
     pub(crate) seen: VecDeque<MsgId>,
     pub(crate) rules: Vec<ConsentRule>,
     pub(crate) privacy_log: Vec<PrivacyLogEntry>,
@@ -1248,6 +1344,7 @@ impl Agent {
             pulls: BTreeMap::new(),
             offer_limits: call::OfferLimits::default(),
             edit_limit: 0,
+            shares: share::Shares::default(),
             delivered: BTreeMap::new(),
             message_lifetime_s: MESSAGE_LIFETIME_S,
             default_floor: DEFAULT_FLOOR,
@@ -1305,6 +1402,25 @@ impl Agent {
             Input::SendCallSignal { contact, signal } => self.send_call(contact, signal, rng),
             Input::EditMessage { message, text } => self.edit_message(message, &text, rng),
             Input::DeleteMessage { message } => self.delete_message(message, rng),
+            Input::SaveShare {
+                share,
+                name,
+                audience,
+                introduced,
+                items,
+            } => self.save_share(share, &name, audience, introduced, items, rng),
+            Input::RemoveShare { share } => self.remove_share(share, rng),
+            Input::RequestSharedItem {
+                contact,
+                share,
+                item,
+            } => self.request_shared_item(contact, share, item, rng),
+            Input::ServeSharedItem {
+                contact,
+                share,
+                item,
+                file,
+            } => self.serve_shared_item(contact, share, item, file, rng),
             Input::SetEditLimit { contact, position } => {
                 self.set_edit_limit(contact, position, rng)
             }
@@ -1400,7 +1516,11 @@ impl Agent {
             | Input::DeclineGroupInvitation(_)
             | Input::LeaveGroup(_)
             | Input::AddMemberAsContact(_)
-            | Input::SendGroupText { .. }) => self.group_input(input, rng),
+            | Input::SendGroupText { .. }) => {
+                let mut out = self.group_input(input, rng);
+                out.extend(self.group_shares_follow(rng));
+                out
+            }
             Input::SetHubUrl(url) => match url.map(|u| String::from(u.trim())) {
                 Some(u) if !hub::valid_url(&u) => {
                     alloc::vec![Output::Rejected(RejectReason::InvalidHubUrl)]
@@ -1477,7 +1597,31 @@ impl Agent {
             Ok(f) => f,
             Err(r) => return alloc::vec![Output::Rejected(r)],
         };
-        let mut out = self.user_send(contact, text, files, rng);
+        let out = self.user_send(contact, text, files, rng);
+        self.flush_queued(out, false)
+    }
+
+    /// Queues `what` with `files` to `contact` without the checks of a user's message (the
+    /// caller made its own), then offers it to open channels. With `one_copy`, the message
+    /// and its parts are never handed to couriers.
+    pub(super) fn send_and_flush(
+        &mut self,
+        contact: ContactId,
+        what: Outgoing,
+        files: Vec<crate::model::NewAttachment>,
+        one_copy: bool,
+        rng: &mut impl CryptoRng,
+    ) -> Vec<Output> {
+        let files = match Self::seal_files(files, rng) {
+            Ok(f) => f,
+            Err(r) => return alloc::vec![Output::Rejected(r)],
+        };
+        let out = self.queue_message(contact, what, files, rng);
+        self.flush_queued(out, one_copy)
+    }
+
+    /// Offers the message `out` queued, and its parts, to open channels.
+    fn flush_queued(&mut self, mut out: Vec<Output>, one_copy: bool) -> Vec<Output> {
         let queued = out.iter().find_map(|o| match o {
             Output::Queued { message, .. } => Some(*message),
             _ => None,
@@ -1494,6 +1638,13 @@ impl Agent {
                         .collect()
                 })
                 .unwrap_or_default();
+            if one_copy {
+                for id in core::iter::once(message).chain(parts.iter().copied()) {
+                    if let Some(item) = self.outbox.get_mut(&id) {
+                        item.copies = 1;
+                    }
+                }
+            }
             out.extend(self.flush_message(message));
             for part in parts {
                 out.extend(self.flush_message(part));
@@ -1502,10 +1653,7 @@ impl Agent {
         out
     }
 
-    #[allow(
-        clippy::too_many_lines,
-        reason = "one straight sequence: seal, store, queue, device copies, parts"
-    )]
+    /// A message the user writes: text checked, the contact one we may write to.
     fn user_send(
         &mut self,
         contact_id: ContactId,
@@ -1521,6 +1669,37 @@ impl Agent {
         if let Err(r) = self.may_write_to(contact_id) {
             return alloc::vec![Output::Rejected(r)];
         }
+        let Ok(content) = encode_text(text) else {
+            return alloc::vec![Output::Rejected(RejectReason::InvalidText)];
+        };
+        let what = Outgoing {
+            content_type: CONTENT_TYPE_TEXT,
+            content,
+            text: String::from(text),
+            kind: MessageKind::Text,
+        };
+        self.queue_message(contact_id, what, files, rng)
+    }
+
+    /// Seals and queues one message (any content type, with attachments) to a contact, keeps
+    /// it in the conversation, and queues copies for the contact's other devices.
+    #[allow(
+        clippy::too_many_lines,
+        reason = "one straight sequence: seal, store, queue, device copies, parts"
+    )]
+    fn queue_message(
+        &mut self,
+        contact_id: ContactId,
+        what: Outgoing,
+        files: Vec<attach::SealedFile>,
+        rng: &mut impl CryptoRng,
+    ) -> Vec<Output> {
+        let Outgoing {
+            content_type,
+            content,
+            text,
+            kind,
+        } = what;
         if self.purge_key.is_none() {
             self.purge_key = Some(SenderPurgeKey::generate(rng));
         }
@@ -1535,9 +1714,6 @@ impl Agent {
         // Acks owed to this contact ride along; they stay owed until this bundle
         // is actually handed to a channel.
         let acks = self.owed_acks(contact_id, None);
-        let Ok(content) = encode_text(text) else {
-            return alloc::vec![Output::Rejected(RejectReason::InvalidText)];
-        };
         let copy_content = content.clone();
         let key_update = self.key_update_for(contact);
         let key_serial = key_update.as_ref().map(|k| k.serial);
@@ -1551,7 +1727,7 @@ impl Agent {
             contact,
             Sealing {
                 kind: BundleKind::Message,
-                content_type: CONTENT_TYPE_TEXT,
+                content_type,
                 content,
                 attachments: files.iter().map(|f| f.reference.clone()).collect(),
                 ack_requested: Some(true),
@@ -1579,8 +1755,8 @@ impl Agent {
             id,
             contact: contact_id,
             direction: MsgDirection::Outgoing,
-            kind: MessageKind::Text,
-            text: String::from(text),
+            kind,
+            text,
             created_unix_ms: self.now_unix_ms,
             status: DeliveryStatus::Queued,
             channels: Vec::new(),
@@ -1613,7 +1789,7 @@ impl Agent {
             contact_id,
             id,
             BundleKind::Message,
-            CONTENT_TYPE_TEXT,
+            content_type,
             &copy_content,
             rng,
         );
@@ -4040,15 +4216,19 @@ impl Agent {
         contact: ContactId,
         content: &OpenedContent,
     ) -> Result<(), RejectReason> {
-        if matches!(
-            content,
-            OpenedContent::Text { .. }
-                | OpenedContent::Part(_)
-                | OpenedContent::Call(_)
-                | OpenedContent::Edit(_)
-                | OpenedContent::EditLimit(_)
-                | OpenedContent::Delete(_)
-        ) && self.contacts.get(&contact).is_some_and(|c| c.group_only)
+        let part_expected =
+            matches!(content, OpenedContent::Part(_)) && self.shares.awaiting_from(contact);
+        if !part_expected
+            && matches!(
+                content,
+                OpenedContent::Text { .. }
+                    | OpenedContent::Part(_)
+                    | OpenedContent::Call(_)
+                    | OpenedContent::Edit(_)
+                    | OpenedContent::EditLimit(_)
+                    | OpenedContent::Delete(_)
+            )
+            && self.contacts.get(&contact).is_some_and(|c| c.group_only)
         {
             return Err(RejectReason::NotAContact);
         }
@@ -4160,14 +4340,7 @@ impl Agent {
             out.extend(self.received_group(contact, id, created_unix_ms, content, via, rng));
             return out;
         }
-        if matches!(
-            content,
-            OpenedContent::Edit(_)
-                | OpenedContent::EditLimit(_)
-                | OpenedContent::Delete(_)
-                | OpenedContent::Call(_)
-                | OpenedContent::Part(_)
-        ) {
+        if content.is_hidden() {
             let from = (contact, id, commitment, from_device);
             return self.received_hidden(from, content, cla, grade, out);
         }
@@ -4211,8 +4384,11 @@ impl Agent {
         grade: PrivacyGrade,
         mut out: Vec<Output>,
     ) -> Vec<Output> {
-        // Call setup is never acknowledged; everything else is, like a message.
-        if !matches!(content, OpenedContent::Call(_)) {
+        // Call setup is never acknowledged; a shared file is acknowledged where it is kept.
+        if !matches!(
+            content,
+            OpenedContent::Call(_) | OpenedContent::ShareFile { .. }
+        ) {
             self.remember_delivered(commitment, contact, id, from_device);
             self.owe_ack_from(contact, id, from_device);
         }
@@ -4225,8 +4401,55 @@ impl Agent {
                 let blob = self.received_part(contact, part);
                 out.splice(0..0, blob);
             }
+            OpenedContent::ShareFile {
+                created_unix_ms,
+                item,
+                attachments,
+            } => {
+                let d = Delivered {
+                    contact,
+                    id,
+                    commitment,
+                    created_unix_ms,
+                    ack_requested: true,
+                    from_device,
+                };
+                let channel = ChannelUse {
+                    cla,
+                    grade,
+                    at_unix_ms: self.now_unix_ms,
+                };
+                out.extend(self.received_share_file(d, item, attachments, channel));
+            }
+            OpenedContent::ShareCatalog(c) => out.extend(self.received_catalog(contact, c)),
+            OpenedContent::ShareRequest(r) => out.extend(self.received_share_request(contact, r)),
             other => out.extend(self.received_edit_content(contact, other, id)),
         }
+        out
+    }
+
+    /// The answer to a download request (already tombstoned): kept with its share when we
+    /// asked for it; acknowledged but dropped otherwise, so the sender stops.
+    fn received_share_file(
+        &mut self,
+        d: Delivered,
+        item: mem_proto::share::ShareRef,
+        attachments: Vec<AttachmentRef>,
+        channel: ChannelUse,
+    ) -> Vec<Output> {
+        if !self.share_file_expected(d.contact, item) {
+            self.remember_delivered(d.commitment, d.contact, d.id, d.from_device);
+            self.owe_ack_from(d.contact, d.id, d.from_device);
+            return Vec::new();
+        }
+        let (contact, id) = (d.contact, d.id);
+        let kind = MessageKind::SharedFile {
+            share: crate::model::ShareId(item.share_id),
+            item: crate::model::ShareItemId(item.item_id),
+        };
+        let mut out = self.store_message(d, String::new(), attachments, channel, kind);
+        self.share_file_arrived(contact, item, id);
+        out.push(Output::SharesChanged);
         out
     }
 
@@ -4237,6 +4460,18 @@ impl Agent {
         text: String,
         attachments: Vec<AttachmentRef>,
         channel: ChannelUse,
+    ) -> Vec<Output> {
+        self.store_message(d, text, attachments, channel, MessageKind::Text)
+    }
+
+    /// Stores a delivered 1:1 text (already tombstoned) and owes its ack.
+    fn store_message(
+        &mut self,
+        d: Delivered,
+        text: String,
+        attachments: Vec<AttachmentRef>,
+        channel: ChannelUse,
+        kind: MessageKind,
     ) -> Vec<Output> {
         let Delivered {
             contact,
@@ -4262,7 +4497,7 @@ impl Agent {
             id,
             contact,
             direction: MsgDirection::Incoming,
-            kind: MessageKind::Text,
+            kind,
             text,
             created_unix_ms,
             status: DeliveryStatus::Received,
@@ -4887,7 +5122,11 @@ impl Agent {
     pub fn messages(&self, contact: ContactId) -> Vec<MessageView> {
         self.messages
             .iter()
-            .filter(|m| m.contact == contact && m.group.is_none())
+            .filter(|m| {
+                m.contact == contact
+                    && m.group.is_none()
+                    && !matches!(m.kind, MessageKind::SharedFile { .. })
+            })
             .map(|m| MessageView {
                 attachments: self.attachment_views(m),
                 editable: self.editable(m),
@@ -5003,6 +5242,34 @@ fn verify_card(
     ))
 }
 
+/// A share list (content type 14), a download request (15) or the answer with the file (16,
+/// exactly one attachment; the others carry none).
+fn opened_share(
+    content_type: u64,
+    fields: &InnerFields,
+    id: MsgId,
+) -> Result<OpenedContent, RejectReason> {
+    use mem_proto::share::ShareRef;
+    use mem_proto::share::{CONTENT_TYPE_SHARE_CATALOG, CONTENT_TYPE_SHARE_FILE, ShareCatalog};
+    let bad = |_| RejectReason::Malformed;
+    let files = usize::from(content_type == CONTENT_TYPE_SHARE_FILE);
+    if fields.attachments.len() != files {
+        return Err(RejectReason::Malformed);
+    }
+    let content = &fields.content;
+    Ok(match content_type {
+        CONTENT_TYPE_SHARE_CATALOG => {
+            OpenedContent::ShareCatalog(ShareCatalog::decode(content).map_err(bad)?)
+        }
+        CONTENT_TYPE_SHARE_FILE => OpenedContent::ShareFile {
+            created_unix_ms: uuid_v7_ms(&id.0),
+            item: ShareRef::decode(content).map_err(bad)?,
+            attachments: fields.attachments.clone(),
+        },
+        _ => OpenedContent::ShareRequest(ShareRef::decode(content).map_err(bad)?),
+    })
+}
+
 /// What an authenticated inner payload holds, by envelope kind and content type. A standalone
 /// ack's ids replace `acks`.
 fn opened_content(
@@ -5019,7 +5286,13 @@ fn opened_content(
             ack_requested: fields.ack_requested != Some(false),
             attachments: fields.attachments.clone(),
         },
-        // Only text names attachments.
+        (
+            BundleKind::Message,
+            t @ (mem_proto::share::CONTENT_TYPE_SHARE_CATALOG
+            | mem_proto::share::CONTENT_TYPE_SHARE_REQUEST
+            | mem_proto::share::CONTENT_TYPE_SHARE_FILE),
+        ) if fields.ack_requested == Some(true) => opened_share(t, fields, id)?,
+        // Otherwise only text names attachments.
         _ if !fields.attachments.is_empty() => return Err(RejectReason::Malformed),
         (BundleKind::Message, CONTENT_TYPE_EDIT) if fields.ack_requested == Some(true) => {
             OpenedContent::Edit(Edit::decode(&fields.content).map_err(|_| RejectReason::Malformed)?)
@@ -5093,7 +5366,10 @@ fn opened_content(
             | CONTENT_TYPE_CALL
             | CONTENT_TYPE_EDIT
             | CONTENT_TYPE_EDIT_LIMIT
-            | CONTENT_TYPE_DELETE,
+            | CONTENT_TYPE_DELETE
+            | mem_proto::share::CONTENT_TYPE_SHARE_CATALOG
+            | mem_proto::share::CONTENT_TYPE_SHARE_REQUEST
+            | mem_proto::share::CONTENT_TYPE_SHARE_FILE,
         ) => {
             return Err(RejectReason::Malformed);
         }

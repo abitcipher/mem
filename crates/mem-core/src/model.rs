@@ -243,6 +243,19 @@ pub enum MessageKind {
     ContactRequest,
     /// A voice call, kept as a line in the chat (local only; never sent).
     Call(CallInfo),
+    /// A file of a share: the answer to a download request (ours or theirs). Shown under
+    /// "Shared with me" / the share, not in the chat.
+    SharedFile {
+        /// The share.
+        share: ShareId,
+        /// The item.
+        item: ShareItemId,
+    },
+    /// A quiet line in the chat: the contact shared new files (its text is the share's name).
+    ShareNotice {
+        /// How many items are new.
+        new_items: u16,
+    },
 }
 
 /// What happened in a voice call.
@@ -690,4 +703,147 @@ pub fn sas_emoji(sas: &[u8; 6]) -> String {
         );
     }
     out
+}
+
+/// A share: files offered to one contact or a group's members, download only.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ShareId(pub(crate) [u8; 16]);
+
+/// One item of a share.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ShareItemId(pub(crate) [u8; 16]);
+
+macro_rules! raw_bytes {
+    ($t:ty) => {
+        impl $t {
+            /// Raw bytes.
+            #[must_use]
+            pub const fn as_bytes(&self) -> &[u8; 16] {
+                &self.0
+            }
+
+            /// Wraps raw bytes, e.g. from the UI layer.
+            #[must_use]
+            pub const fn from_bytes(bytes: [u8; 16]) -> Self {
+                Self(bytes)
+            }
+        }
+    };
+}
+raw_bytes!(ShareId);
+raw_bytes!(ShareItemId);
+
+/// Who a share is offered to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ShareAudience {
+    /// One contact.
+    Contact(ContactId),
+    /// The members of a group we belong to.
+    Group(GroupId),
+}
+
+/// Whether group members we never met (introduced by the group's admin) see a group share.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum IntroducedMembers {
+    /// Only our own contacts in the group (the default).
+    #[default]
+    Excluded,
+    /// Every current member.
+    Included,
+}
+
+/// A file the user adds to a share. MEM does not copy it: `handle` says where it is (on
+/// Android, a document address the app keeps permission for); it is read only when requested.
+#[derive(Clone, PartialEq, Eq)]
+pub struct NewShareItem {
+    /// File name shown to the contact.
+    pub name: String,
+    /// Size in bytes.
+    pub size: u64,
+    /// Media type, e.g. `image/jpeg`.
+    pub media_type: String,
+    /// Last change, Unix seconds, if known.
+    pub modified_s: Option<u64>,
+    /// Where the file is (opaque to the core; never sent).
+    pub handle: String,
+}
+
+impl core::fmt::Debug for NewShareItem {
+    /// Never prints the name or where the file is.
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("NewShareItem")
+            .field("size", &self.size)
+            .finish_non_exhaustive()
+    }
+}
+
+/// One of our shares, for the share editor.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OwnShareView {
+    /// Id.
+    pub id: ShareId,
+    /// Name.
+    pub name: String,
+    /// Who it is offered to.
+    pub audience: ShareAudience,
+    /// For a group share: whether members we never met see it.
+    pub introduced: IntroducedMembers,
+    /// The items.
+    pub items: Vec<OwnShareItemView>,
+}
+
+/// One item of our share.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OwnShareItemView {
+    /// Id.
+    pub id: ShareItemId,
+    /// The file as the user added it.
+    pub item: NewShareItem,
+    /// Who downloaded it and when (local only).
+    pub downloads: Vec<(ContactId, u64)>,
+}
+
+/// A share a contact offers us.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TheirShareView {
+    /// Who offers it.
+    pub contact: ContactId,
+    /// Id.
+    pub id: ShareId,
+    /// Name.
+    pub name: String,
+    /// The group it is offered to, if not to us alone.
+    pub group: Option<GroupId>,
+    /// The items.
+    pub items: Vec<TheirShareItemView>,
+    /// When the latest list arrived.
+    pub updated_unix_ms: u64,
+}
+
+/// One item a contact offers us.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TheirShareItemView {
+    /// Id.
+    pub id: ShareItemId,
+    /// File name.
+    pub name: String,
+    /// Size in bytes.
+    pub size: u64,
+    /// Media type.
+    pub media_type: String,
+    /// Last change, Unix seconds, if known.
+    pub modified_s: Option<u64>,
+    /// Whether we asked for it or have it.
+    pub state: SharedItemState,
+}
+
+/// Where a download stands.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SharedItemState {
+    /// Offered; not asked for.
+    Available,
+    /// Asked for; the file has not arrived.
+    Requested,
+    /// Here: the message that carries it (its attachment holds the file).
+    Received(MsgId),
 }

@@ -9,7 +9,7 @@ inner = {
   2: bstr .size 16,        ; conversation_id
   3: uint,                 ; content_type
   4: bstr,                 ; content (CBOR per content_type)
-  ? 5: [1*16 attachment_ref], ; with content type 1 or 5
+  ? 5: [1*16 attachment_ref], ; with content type 1 or 5; exactly one with 16
   ? 6: key_update,
   ? 7: bool,               ; ack requested
   8: bstr .size 64,        ; Ed25519 signature (see header)
@@ -68,6 +68,31 @@ edit-limit = { 0: 0..12 }
 ; Content type 13 (delete, envelope kind 0, acknowledged): the sender withdraws an earlier 1:1
 ; text; the recipient applies the same limit as for edits.
 delete = { 0: bstr .size 16 }    ; message_id of the original
+
+; Content type 14 (share catalog, envelope kind 0, acknowledged): what the sender offers to
+; download, to one contact or to a group's members. It replaces the list the sender sent before
+; for the same share; an empty item list withdraws the share.
+share-catalog = {
+  0: bstr .size 16,             ; share_id, random
+  1: tstr .size (1..64),        ; share name
+  2: [0*512 share-item],
+  ? 3: bstr .size 16,           ; group_id, when offered to a group's members
+}                               ; at most 30720 bytes encoded
+share-item = {
+  0: bstr .size 16,             ; item_id, random per share
+  1: tstr .size (1..255),       ; file name
+  2: uint .le 104857600,        ; size in bytes
+  3: tstr .size (1..127),       ; media type
+  ? 4: uint,                    ; last change, Unix seconds
+}
+
+; Content type 15 (share request, envelope kind 0, acknowledged): download one offered item.
+; Content type 16 (share file, envelope kind 0, acknowledged): the answer to a request, with the
+; file as the one attachment_ref in field 5; accepted only for an item the receiver requested.
+share-ref = {
+  0: bstr .size 16,             ; share_id
+  1: bstr .size 16,             ; item_id
+}
 
 ; The sender's current mailbox key; only a higher serial replaces a held key.
 key_update = {
