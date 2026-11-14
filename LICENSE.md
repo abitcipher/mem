@@ -8,6 +8,7 @@ MEM is source-available software. It is not open source.
 |---|---|
 | `spec/` (protocol schemas and test vectors) | [Creative Commons Attribution 4.0 International](spec/LICENSE) |
 | `crates/cla-audio/vendor/ggwave/` | Its own license (MIT), see `crates/cla-audio/vendor/ggwave/LICENSE` |
+| Portions of `app/packages/mem_netmap/` adapted from graph_flow (each such file says so in its first lines) | Their own license (MIT), see `app/packages/mem_netmap/THIRD_PARTY_NOTICES.md` |
 | Everything else | [PolyForm Strict License 1.0.0](LICENSE-PolyForm-Strict-1.0.0.md), with the additional permission for security research below |
 
 In short, for everything under the PolyForm Strict License: you may read, build and run the
