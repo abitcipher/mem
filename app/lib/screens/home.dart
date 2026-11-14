@@ -306,6 +306,7 @@ class _MainMenuState extends State<_MainMenu> {
     icon: SpinningLogo(halfTurns: _halfTurns),
     // Below the button, so the logo stays visible while it turns.
     position: PopupMenuPosition.under,
+    offset: const Offset(0, 6),
     onOpened: _turn,
     onCanceled: _turn,
     onSelected: (screen) {

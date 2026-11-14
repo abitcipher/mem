@@ -33,7 +33,7 @@ class LogoMark extends StatelessWidget {
 /// closes, so open is upside down and closed is upright again.
 class SpinningLogo extends StatelessWidget {
   /// Creates the icon turned by [halfTurns] half turns.
-  const SpinningLogo({required this.halfTurns, this.size = 26, super.key});
+  const SpinningLogo({required this.halfTurns, this.size = 27.3, super.key});
 
   /// Menu opens and closes so far.
   final int halfTurns;
