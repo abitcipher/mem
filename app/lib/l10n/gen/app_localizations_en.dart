@@ -1059,7 +1059,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'For someone you cannot meet: paste their MEM code. They get a contact request with your code and your note, and decide whether to accept. It travels through nearby MEM devices, so it can take a while.';
 
   @override
-  String get requestCodeLabel => 'Their code (memcard1:…)';
+  String get requestCodeLabel => 'Their code (memcard0:…)';
 
   @override
   String get requestNoteLabel => 'Note (optional)';

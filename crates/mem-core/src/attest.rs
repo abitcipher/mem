@@ -215,7 +215,7 @@ mod tests {
         let mut rng = ChaCha20Rng::from_seed([2; 32]);
         let id = IdentityKey::from_seed(&[1; 32]);
         assert_eq!(
-            AttestSession::start(&id, "memcard1:AAAA", &mut rng).unwrap_err(),
+            AttestSession::start(&id, "memcard0:AAAA", &mut rng).unwrap_err(),
             AttestError::WrongObject
         );
         let mut s = AttestSession::start(&id, &request_text("offeror", 1), &mut rng).unwrap();

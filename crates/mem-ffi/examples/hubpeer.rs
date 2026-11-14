@@ -5,11 +5,11 @@
 //! hub stays off and the node uses the local network instead. Append commands to
 //! `<state-dir>/cmd`, one per line:
 //! - `card` prints this node's card text
-//! - `pair <raw-screencap>` reads a `memcard1:` QR as `request` does and pairs with that card
+//! - `pair <raw-screencap>` reads a `memcard0:` QR as `request` does and pairs with that card
 //!   (the other side pairs by receiving this node's card text)
 //! - `nearby` prints the contacts reachable on the local network now
 //! - `qr <raw-screencap>` prints the text of a QR code found in a screencap
-//! - `request <raw-screencap> <note>` reads a `memcard1:` QR from an `adb exec-out screencap`
+//! - `request <raw-screencap> <note>` reads a `memcard0:` QR from an `adb exec-out screencap`
 //!   (raw RGBA) file and sends that card a contact request
 //! - `contacts`, `msgs <id-prefix>`, `send <id-prefix> <text>`
 

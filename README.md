@@ -22,7 +22,7 @@ app, and later radio, couriers and our own hub.
      the camera at it until it completes.
    - **Wait for Wi-Fi**: it is sent automatically the next time you are both on the same network.
    - **Sharing through another app (P4)**: MEM first shows what that app will learn. Then you
-     send the `mem1:…` text through any messenger, and your contact pastes it into *Receive*.
+     send the `mem0:…` text through any messenger, and your contact pastes it into *Receive*.
 4. *Channels* (Wi-Fi icon) shows what each channel exposes and turns Wi-Fi delivery off.
    *Privacy log* lists every message that went below a contact's privacy floor.
 

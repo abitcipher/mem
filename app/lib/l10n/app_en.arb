@@ -435,7 +435,7 @@
  "reason_waiting_for_key": "Waiting for your contact's new encryption key. Any message from them brings it, and this message then goes out by itself.",
  "requestTab": "Request",
  "requestHint": "For someone you cannot meet: paste their MEM code. They get a contact request with your code and your note, and decide whether to accept. It travels through nearby MEM devices, so it can take a while.",
- "requestCodeLabel": "Their code (memcard1:…)",
+ "requestCodeLabel": "Their code (memcard0:…)",
  "requestNoteLabel": "Note (optional)",
  "requestNoteHelp": "Shown with your request: who you are and how they know you.",
  "sendRequest": "Send request",

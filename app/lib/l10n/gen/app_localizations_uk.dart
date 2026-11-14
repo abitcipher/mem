@@ -1072,7 +1072,7 @@ class AppLocalizationsUk extends AppLocalizations {
       'Для того, з ким не можете зустрітися: вставте його код MEM. Він отримає запит на контакт із вашим кодом і приміткою та вирішить, чи прийняти. Запит іде через пристрої MEM поруч, тож це може зайняти час.';
 
   @override
-  String get requestCodeLabel => 'Його код (memcard1:…)';
+  String get requestCodeLabel => 'Його код (memcard0:…)';
 
   @override
   String get requestNoteLabel => 'Примітка (необов\'язково)';

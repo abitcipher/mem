@@ -22,7 +22,7 @@ import java.security.SecureRandom
  * phones, forms a P2P group, and reports the group owner's address and Iroh endpoint so the Rust
  * side can run the usual encounter over the link.
  *
- * - Advertisement: DNS-SD service `_mem1._udp` with TXT `v` (version), `n` (random nonce,
+ * - Advertisement: DNS-SD service `_mem0._udp` with TXT `v` (version), `n` (random nonce,
  *   rotated every 15 minutes), `i`/`p` (Iroh endpoint id and port: a per-start transport key,
  *   never the identity), `q` (1 if this phone can host a group others join silently, Android
  *   10+), and, while hosting such a group, `g`/`s` (network name and passphrase).
@@ -277,7 +277,7 @@ class WifiDirect(private val context: Context, private val events: Events) {
 
     companion object {
         const val INSTANCE = "mem"
-        const val SERVICE_TYPE = "_mem1._udp"
+        const val SERVICE_TYPE = "_mem0._udp"
         const val NONCE_EVERY_MS = 15 * 60 * 1000L
         const val DISCOVER_EVERY_MS = 30_000L
         const val JOIN_TIMEOUT_MS = 60_000L

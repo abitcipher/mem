@@ -1925,7 +1925,7 @@ abstract class AppLocalizations {
   /// No description provided for @requestCodeLabel.
   ///
   /// In en, this message translates to:
-  /// **'Their code (memcard1:…)'**
+  /// **'Their code (memcard0:…)'**
   String get requestCodeLabel;
 
   /// No description provided for @requestNoteLabel.

@@ -39,8 +39,8 @@ use tracing::debug;
 pub const ALPN: &[u8] = b"mem/encounter/1";
 /// QUIC application protocol for a device acting as a hub.
 pub const HUB_ALPN: &[u8] = b"mem/hub/1";
-/// mDNS service name: advertised as `_mem1._udp.local`.
-pub const SERVICE_NAME: &str = "mem1";
+/// mDNS service name: advertised as `_mem0._udp.local`.
+pub const SERVICE_NAME: &str = "mem0";
 /// QUIC keep-alive interval.
 pub const KEEP_ALIVE: Duration = Duration::from_secs(3);
 /// A connection with no traffic for this long is closed.

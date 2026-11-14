@@ -675,7 +675,7 @@ pub struct SentText {
 
 /// Our pairing card.
 pub struct CardView {
-    /// Armored text (`memcard1:...`).
+    /// Armored text (`memcard0:...`).
     pub text: String,
     /// The same text as a QR code.
     pub qr: Option<QrView>,
@@ -2771,7 +2771,7 @@ impl MemNode {
         })
     }
 
-    /// Asks the owner of a card (`memcard1:` text, pasted or scanned) to become a contact,
+    /// Asks the owner of a card (`memcard0:` text, pasted or scanned) to become a contact,
     /// without meeting. Returns the new contact's hex id; the request is sealed after
     /// a few seconds of proof of work and then sent like a message.
     ///

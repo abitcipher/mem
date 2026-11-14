@@ -71,7 +71,7 @@ format may change between minor versions.
   - The camera feeds its luma plane to `rxing` in the core.
   - This replaces `mobile_scanner`, which uses Google ML Kit and reports usage to Google, contrary
     to the P0 exposure profile.
-  - Pairing-card QR codes (`memcard1:`) still work.
+  - Pairing-card QR codes (`memcard0:`) still work.
 - **Wi-Fi delivery (Iroh, P1)**:
   - Phones on the same local network find each other by mDNS and connect directly over QUIC.
   - There are no relays, no n0 discovery and no port mapping, and the transport key is random on
@@ -130,7 +130,7 @@ external security review has been done.
   rendezvous tags. The envelope carries no identities or timestamps.
 - **Two channels**:
   - **QR code on screen (P0)**: the receiver scans it. Needs no network and no other app.
-  - **Share as text (P4)**: an armored `mem1:` string sent through any app (Signal, WhatsApp,
+  - **Share as text (P4)**: an armored `mem0:` string sent through any app (Signal, WhatsApp,
     email…) and pasted into MEM → Receive.
 - **Consent before downgrade**: sending below the contact's privacy floor
   (default P2) shows a disclosure generated from the channel's exposure profile. That covers who

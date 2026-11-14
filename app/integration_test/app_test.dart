@@ -279,7 +279,7 @@ void main() {
     final armored = tester
         .widget<SelectableText>(find.byType(SelectableText))
         .data!;
-    expect(armored, startsWith('mem1:'));
+    expect(armored, startsWith('mem0:'));
     await _shot(tester, '06-share');
     await tester.tap(find.text('Copy'));
     await _settle(tester);

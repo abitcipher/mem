@@ -623,7 +623,7 @@ mod tests {
             dearmor(&format!("scan this: {text} thanks")).unwrap(),
             Some(AttestText::Request(b))
         );
-        assert_eq!(dearmor("memcard1:AAAA").unwrap(), None);
+        assert_eq!(dearmor("memcard0:AAAA").unwrap(), None);
     }
 
     #[test]

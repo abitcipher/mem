@@ -1,5 +1,5 @@
 ; MEM pairing card, v1.
-; Text form: "memcard1:" + base64url (no padding) of this CBOR.
+; Text form: "memcard0:" + base64url (no padding) of this CBOR.
 
 card = {
   0: 1,                    ; version

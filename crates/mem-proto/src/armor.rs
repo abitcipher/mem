@@ -12,9 +12,9 @@ use crate::envelope::MAX_BUNDLE_LEN;
 use crate::error::{ProtoError, SchemaError};
 
 /// Prefix of an armored bundle.
-pub const BUNDLE_PREFIX: &str = "mem1:";
+pub const BUNDLE_PREFIX: &str = "mem0:";
 /// Prefix of an armored pairing card.
-pub const CARD_PREFIX: &str = "memcard1:";
+pub const CARD_PREFIX: &str = "memcard0:";
 
 /// What an armored string contains.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -70,7 +70,7 @@ pub fn dearmor(text: &str) -> Result<Armored, ProtoError> {
             max: max_chars * 2,
         });
     }
-    // Check the longer prefixes first: neither contains "mem1:", but be explicit.
+    // Check the longer prefixes first: neither contains "mem0:", but be explicit.
     for (prefix, kind) in [
         (crate::device::DEVICE_REQUEST_PREFIX, 2),
         (CARD_PREFIX, 1),
@@ -107,7 +107,7 @@ mod tests {
     fn roundtrip_and_embedded_text() {
         let data = vec![0, 1, 2, 250, 251, 255];
         let s = armor_bundle(&data);
-        assert!(s.starts_with("mem1:"));
+        assert!(s.starts_with("mem0:"));
         assert_eq!(dearmor(&s).unwrap(), Armored::Bundle(data.clone()));
         let pasted = alloc::format!("Hi! here it is:\n{s}\nbye");
         assert_eq!(dearmor(&pasted).unwrap(), Armored::Bundle(data.clone()));
@@ -117,7 +117,7 @@ mod tests {
     #[test]
     fn rejects_garbage() {
         assert!(dearmor("hello").is_err());
-        assert!(dearmor("mem1:!!!").is_err());
+        assert!(dearmor("mem0:!!!").is_err());
         assert!(dearmor(&"a".repeat(1_000_000)).is_err());
     }
 }

@@ -5,7 +5,7 @@
 //!   The UI only paints the matrix (no image encoding).
 //! - **Receive:** the camera's luma (Y) plane goes to [`Scanner::scan_luma`], which finds a QR
 //!   code with `rxing` (pure Rust, also builds for Wasm), feeds frames to the assembler and
-//!   reports progress until the object is complete. Static text QR codes (`memcard1:`/`mem1:`
+//!   reports progress until the object is complete. Static text QR codes (`memcard0:`/`mem0:`
 //!   from v0.1) are passed through as text.
 //!
 //! Everything a camera sees is hostile: the decoders are bounded and never panic.
@@ -195,7 +195,7 @@ pub enum Payload {
 pub enum ScanEvent {
     /// No QR code found, or one that is neither a frame nor text.
     Nothing,
-    /// A text QR code (e.g. a `memcard1:` card from v0.1).
+    /// A text QR code (e.g. a `memcard0:` card from v0.1).
     Text(String),
     /// A frame of a transfer in progress.
     Progress {
@@ -448,11 +448,11 @@ mod tests {
 
     #[test]
     fn text_qr_codes_pass_through() {
-        let m = render_text("memcard1:abc").unwrap();
+        let m = render_text("memcard0:abc").unwrap();
         let (img, stride) = photograph(&m, 6, 640, 480);
         assert_eq!(
             Scanner::new().scan_luma(&img, 640, 480, stride),
-            ScanEvent::Text("memcard1:abc".into())
+            ScanEvent::Text("memcard0:abc".into())
         );
     }
 
